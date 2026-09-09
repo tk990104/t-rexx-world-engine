@@ -30,6 +30,8 @@ The foundation currently provides:
 
 The composition root will add the existing viewer, data manager, camera coordinator, annotations, panel host, and scene director during the next integration slice.
 
+AstroEye event records use `src/domain/events/eventSchema.js`. A record retains its original local date/time, IANA time zone, resolved UTC instant, verified venue coordinates, participants, competition, and source. Daylight-saving gaps fail closed; folds require an explicit matching UTC choice instead of silently selecting one occurrence.
+
 ## Boundary rules
 
 - A module may depend only on capabilities it declares.
