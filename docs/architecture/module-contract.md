@@ -32,7 +32,7 @@ The composition root will add the existing viewer, data manager, camera coordina
 
 AstroEye event records use `src/domain/events/eventSchema.js`. A record retains its original local date/time, IANA time zone, resolved UTC instant, verified venue coordinates, participants, competition, and source. Daylight-saving gaps fail closed; folds require an explicit matching UTC choice instead of silently selecting one occurrence.
 
-The first calculation adapter uses Astronomy Engine under MIT. Results identify the exact engine version and reference frame. The initial slice calculates tropical apparent geocentric true-ecliptic-of-date positions; houses and aspects remain deliberately absent until their methods and independent fixtures are added.
+The first calculation adapter uses Astronomy Engine under MIT. Results identify the exact engine version and reference frame. The calculation core produces tropical apparent geocentric true-ecliptic-of-date positions, Whole Sign or Equal houses, major aspects with applying/separating motion, and traditional unequal planetary hours. Placidus and other house systems remain absent until independently verified fixtures are available.
 
 ## Boundary rules
 
