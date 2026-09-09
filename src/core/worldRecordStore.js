@@ -213,6 +213,18 @@ export function createWorldRecordStore({
         return copy(normalized);
       });
     },
+    async saveEventWithChart(event, chart) {
+      const normalizedEvent = normalizeEvent(event);
+      const normalizedChart = normalizeChart(chart);
+      if (normalizedChart.eventId !== normalizedEvent.id) {
+        throw new RangeError('Chart eventId must match the event saved in the same transaction');
+      }
+      return transact([STORE_EVENTS, STORE_CHARTS], 'readwrite', async (transaction) => {
+        await requestResult(transaction.objectStore(STORE_EVENTS).put(copy(normalizedEvent)));
+        await requestResult(transaction.objectStore(STORE_CHARTS).put(copy(normalizedChart)));
+        return Object.freeze({ event: copy(normalizedEvent), chart: copy(normalizedChart) });
+      });
+    },
     async getChart(chartId) {
       return get(STORE_CHARTS, requireText(chartId, 'chartId'));
     },

@@ -1,6 +1,6 @@
 # Module Platform Contract
 
-Status: foundation implemented, globe integration pending.
+Status: foundation and first AstroEye event/globe integration implemented.
 
 T-Rexx World Engine uses a modular monolith. Product modules share the existing Cesium globe and server process, but register through explicit services rather than adding business logic to `src/ui.js` or `vite.config.js`.
 
@@ -32,6 +32,8 @@ The foundation currently provides:
 The composition root will add the existing viewer, data manager, camera coordinator, annotations, panel host, and scene director during the next integration slice.
 
 AstroEye event records use `src/domain/events/eventSchema.js`. A record retains its original local date/time, IANA time zone, resolved UTC instant, verified venue coordinates, participants, competition, and source. Daylight-saving gaps fail closed; folds require an explicit matching UTC choice instead of silently selecting one occurrence.
+
+The first workspace is launched from the existing data rail and mounted through `PanelRegistry`. It supports manual entry, an explicit repeated-hour choice, saved-event selection, versioned JSON import/export, chart summaries, and a Cesium venue marker. Selecting an event changes `WorldClock` to event mode but deliberately leaves Cesium's live-feed clock untouched.
 
 The first calculation adapter uses Astronomy Engine under MIT. Results identify the exact engine version and reference frame. The calculation core produces tropical apparent geocentric true-ecliptic-of-date positions, Whole Sign or Equal houses, major aspects with applying/separating motion, and traditional unequal planetary hours. Placidus and other house systems remain absent until independently verified fixtures are available.
 

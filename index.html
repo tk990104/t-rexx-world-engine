@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>God's Eye View</title>
+  <title>T-Rexx World Engine</title>
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,8 +25,8 @@
   <!-- Title -->
   <div id="title-bar">
     <div class="title-glow"></div>
-    <h1><span class="title-logo brand-logo" data-logo-gaze data-logo-src="/logo.svg" aria-hidden="true"><img src="/logo.svg" alt="" /></span> <span>GOD'S EYE <span class="title-accent">VIEW</span></span></h1>
-    <p class="subtitle">NO PLACE LEFT BEHIND</p>
+    <h1><span class="title-logo brand-logo" data-logo-gaze data-logo-src="/logo.svg" aria-hidden="true"><img src="/logo.svg" alt="" /></span> <span>T-REXX <span class="title-accent">WORLD ENGINE</span></span></h1>
+    <p class="subtitle">ASTROEYE · EVENT INTELLIGENCE</p>
   </div>
 
   <!-- Style indicator -->
@@ -598,6 +598,13 @@
         <button class="panel-collapse-btn" data-collapse-target="data-panel" title="Collapse panel">+</button>
       </div>
       <div id="data-toggles" class="data-toggle-list"></div>
+      <button id="astroeye-entry-layers" class="data-panel-launch" type="button">
+        <span class="material-symbols-outlined" aria-hidden="true">planet</span>
+        <span class="data-panel-launch-text">
+          <span class="data-panel-launch-title">ASTROEYE</span>
+          <span class="data-panel-launch-sub">event charts on the living Earth</span>
+        </span>
+      </button>
       <!-- FLIGHT SIM is a MODE, not a data layer: it takes over the camera and
            the render loop rather than drawing something onto the globe. It sits
            OUTSIDE #data-toggles because _renderToggles() clears that
@@ -921,8 +928,8 @@
   <div id="loading-screen">
     <div class="loader-content">
       <span class="loader-logo brand-logo" data-logo-gaze data-logo-src="/logo.svg" aria-hidden="true"><img src="/logo.svg" alt="" /></span>
-      <h2>GOD'S EYE <span class="title-accent">VIEW</span></h2>
-      <p class="loader-status">Initializing photorealistic world...</p>
+      <h2>T-REXX <span class="title-accent">WORLD ENGINE</span></h2>
+      <p class="loader-status">Initializing the living world...</p>
     </div>
   </div>
 

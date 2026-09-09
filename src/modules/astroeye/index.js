@@ -1,7 +1,7 @@
 import { ASTROEYE_MANIFEST } from './manifest.js';
 import { ASTRONOMY_ENGINE_SOURCE } from './calculation/astronomyEngineProvider.js';
 
-/** Headless AstroEye lifecycle; event/chart services arrive in the next slice. */
+/** AstroEye lifecycle for the first saved-event and world-presentation slice. */
 export function createAstroEyeModule() {
   let active = false;
   return {

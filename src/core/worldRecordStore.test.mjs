@@ -59,6 +59,20 @@ test('deleting an event atomically removes its derived charts', async () => {
   await records.close();
 });
 
+test('an event and its calculated chart can be saved in one transaction', async () => {
+  const records = store();
+  const chart = calculateAstroEyeChart(EVENT);
+  const saved = await records.saveEventWithChart(EVENT, chart);
+  assert.equal(saved.event.id, EVENT.id);
+  assert.equal(saved.chart.eventId, EVENT.id);
+  await assert.rejects(
+    records.saveEventWithChart({ ...EVENT, id: 'other-event' }, chart),
+    /must match/,
+  );
+  assert.equal(await records.getEvent('other-event'), null);
+  await records.close();
+});
+
 test('replace import is atomic and rejects charts without an event', async () => {
   const records = store();
   await records.saveEvent(EVENT);

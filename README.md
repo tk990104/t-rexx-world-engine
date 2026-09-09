@@ -44,6 +44,7 @@ The live layers are grounded in public feeds: the airliner crossing your screen 
 
 ## 🎛️ What This Thing Does
 
+- **🪐 AstroEye event workspace:** Enter a verified local time, IANA time zone, and venue; save a reproducible chart; and fly the globe to the event marker.
 - **🛩️ Cockpit view:** Ride inside a tracked flight — the camera holds the terrain under you all the way down.
 - **📡 Contacts:** A 250 km roster of everything near your target — step through live aircraft and drop into any cockpit.
 - **🎯 Click-to-track anything:** Camera locks on, draws a fading trail, surfaces full metadata — and a tracked fire or vessel hands you off to the nearest live camera in one click.
@@ -63,7 +64,7 @@ The live layers are grounded in public feeds: the airliner crossing your screen 
 
 Requires Node.js 24.14.x or 26.x (enforced by `package.json`).
 
-1. Copy `.env.example` → `.env` and set `GOOGLE_MAPS_API_KEY`.
+1. Optional: copy `.env.example` → `.env` and set `GOOGLE_MAPS_API_KEY` for photorealistic 3D tiles. Without it, the app starts on the open-map fallback and AstroEye remains fully usable.
 2. Install and run:
 
 ```bash

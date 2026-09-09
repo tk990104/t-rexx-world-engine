@@ -5,7 +5,7 @@ import { createWorldPlatform } from '../../core/platform.js';
 import { createAstroEyeModule } from './index.js';
 
 test('AstroEye is the first activatable module on the shared platform', async () => {
-  const platform = createWorldPlatform();
+  const platform = createWorldPlatform({ recordStore: {} });
   const events = [];
   platform.eventBus.on('astroeye:status', (event) => events.push(event));
   platform.moduleRegistry.register(createAstroEyeModule());
@@ -30,9 +30,10 @@ test('AstroEye declares shared services instead of reaching into UI globals', ()
     'eventBus',
     'moduleState',
     'panelRegistry',
+    'recordStore',
     'sourceRegistry',
     'worldClock',
   ]);
-  assert.equal(astroEye.layers.length, 0);
-  assert.equal(astroEye.panels.length, 0);
+  assert.deepEqual(astroEye.layers, ['astroeye-event-marker']);
+  assert.deepEqual(astroEye.panels, ['astroeye-workspace']);
 });

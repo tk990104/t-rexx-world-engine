@@ -48,6 +48,12 @@ import {
 } from './renderGovernor.js';
 import { installScopeMask } from './scopeMask.js';
 import { initFirstRunExperience } from './firstRunExperience.js';
+import { createWorldPlatform } from './core/platform.js';
+import { createWorldRecordStore } from './core/worldRecordStore.js';
+import { createAstroEyeModule } from './modules/astroeye/index.js';
+import { createAstroEyeWorkspaceController } from './modules/astroeye/workspaceController.js';
+import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.js';
+import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js';
 
 initLogoGaze();
 
@@ -97,13 +103,13 @@ async function init() {
 
     // Set Google Maps API key for 3D Tiles
     const googleApiKey = import.meta.env.GOOGLE_MAPS_API_KEY;
-    if (!googleApiKey) {
-      throw new Error('GOOGLE_MAPS_API_KEY not found. Set it as an environment variable.');
+    if (googleApiKey) {
+      Cesium.GoogleMaps.defaultApiKey = googleApiKey;
+      // Expose the key only for the existing geocoder path when configured.
+      window.__GOOGLE_MAPS_API_KEY__ = googleApiKey;
+    } else {
+      console.info('[Init] GOOGLE_MAPS_API_KEY is not set; using the open-map fallback.');
     }
-    Cesium.GoogleMaps.defaultApiKey = googleApiKey;
-
-    // Expose API key globally for geocoding in locations.js
-    window.__GOOGLE_MAPS_API_KEY__ = googleApiKey;
 
     // Create the Cesium viewer with minimal chrome
     const cesiumContainer = document.getElementById('cesiumContainer');
@@ -218,23 +224,28 @@ async function init() {
     viewer.scene.skyAtmosphere.saturationShift = -0.12;
     viewer.scene.skyAtmosphere.brightnessShift = -0.08;
 
-    loaderStatus.textContent = 'Loading Google 3D Tiles...';
     let tileset = null;
-    try {
-      // Load Google Photorealistic 3D Tiles
-      tileset = await Cesium.createGooglePhotorealistic3DTileset({
-        onlyUsingWithGoogleGeocoder: true,
-      });
-      tuneTileStreaming(tileset);
-      viewer.scene.primitives.add(tileset);
-      // NOTE: Cesium World Terrain intentionally disabled — conflicts with Google 3D Tiles at high zoom.
-      // Google Photorealistic 3D Tiles provide their own terrain/elevation.
-      viewer.scene.globe.show = false;
-    } catch (tileError) {
-      console.warn('[Init] Google 3D Tiles unavailable, falling back to Cesium globe:', tileError);
-      const tileErrorDetail = describeError(tileError);
-      loaderStatus.textContent = `Google 3D Tiles unavailable (${tileErrorDetail}). Continuing in fallback mode...`;
-      // Keep Cesium globe visible as fallback instead of aborting the app.
+    if (googleApiKey) {
+      loaderStatus.textContent = 'Loading Google 3D Tiles...';
+      try {
+        // Load Google Photorealistic 3D Tiles
+        tileset = await Cesium.createGooglePhotorealistic3DTileset({
+          onlyUsingWithGoogleGeocoder: true,
+        });
+        tuneTileStreaming(tileset);
+        viewer.scene.primitives.add(tileset);
+        // NOTE: Cesium World Terrain intentionally disabled — conflicts with Google 3D Tiles at high zoom.
+        // Google Photorealistic 3D Tiles provide their own terrain/elevation.
+        viewer.scene.globe.show = false;
+      } catch (tileError) {
+        console.warn('[Init] Google 3D Tiles unavailable, falling back to Cesium globe:', tileError);
+        const tileErrorDetail = describeError(tileError);
+        loaderStatus.textContent = `Google 3D Tiles unavailable (${tileErrorDetail}). Continuing in fallback mode...`;
+        // Keep Cesium globe visible as fallback instead of aborting the app.
+        viewer.scene.globe.show = true;
+      }
+    } else {
+      loaderStatus.textContent = 'Loading open map fallback...';
       viewer.scene.globe.show = true;
     }
 
@@ -315,6 +326,53 @@ async function init() {
     }
     dataManager.buildTogglePanel(document.getElementById('data-toggles'));
     styleManager.attachDataManager(dataManager);
+
+    // T-Rexx product platform: AstroEye is the first module to use the shared
+    // clock, state, panel, source, and durable-record boundaries.
+    let worldRecordStore = null;
+    try {
+      worldRecordStore = createWorldRecordStore();
+    } catch (storageError) {
+      console.warn('[AstroEye] Durable browser storage is unavailable:', storageError);
+    }
+    const worldPlatform = createWorldPlatform({
+      recordStore: worldRecordStore,
+      context: { viewer, styleManager, dataManager, mapStackController },
+    });
+    worldPlatform.moduleRegistry.register(createAstroEyeModule());
+
+    let astroEyeWorkspace = null;
+    const astroEyeLauncher = document.getElementById('astroeye-entry-layers');
+    if (worldRecordStore) {
+      const astroEyeController = createAstroEyeWorkspaceController({
+        recordStore: worldRecordStore,
+        worldClock: worldPlatform.worldClock,
+        moduleState: worldPlatform.moduleState,
+        eventBus: worldPlatform.eventBus,
+        presentEvent: createAstroEyeWorldPresenter({ viewer }),
+      });
+      astroEyeWorkspace = mountAstroEyeWorkspace({
+        controller: astroEyeController,
+        onOpen: () => worldPlatform.moduleRegistry.activate('astroeye'),
+        onRequestClose: () => worldPlatform.panelRegistry.hide(),
+      });
+      worldPlatform.panelRegistry.register({
+        id: 'astroeye-workspace',
+        owner: 'astroeye',
+        title: 'AstroEye Event Workspace',
+        mount: async (_host, { trigger } = {}) => {
+          await astroEyeWorkspace.open(trigger);
+          return () => astroEyeWorkspace.close();
+        },
+      });
+      astroEyeLauncher?.addEventListener('click', (event) => {
+        void worldPlatform.panelRegistry.show('astroeye-workspace', document.body, { trigger: event.currentTarget });
+      });
+      window.addEventListener('pagehide', () => { void worldRecordStore.close(); }, { once: true });
+    } else if (astroEyeLauncher) {
+      astroEyeLauncher.disabled = true;
+      astroEyeLauncher.title = 'AstroEye needs browser storage, which is unavailable in this session.';
+    }
 
     // Initialize deterministic scene playback for social clip capture
     const sceneDirector = new SceneDirector(viewer, styleManager, dataManager);
@@ -536,6 +594,8 @@ async function init() {
       requestRender: governorRequestRender,
       flightSim,
       openFlightSim: () => { flightSim.openPlanner(); flightSimPanel.open(); },
+      worldPlatform,
+      astroEyeWorkspace,
     };
     window.__godsEyeView.voiceCommands = initGevVoiceCommands({ viewer, styleManager, dataManager, sceneDirector, annotations });
 

@@ -1,0 +1,355 @@
+import './astroeyeWorkspace.css';
+
+import { resolveZonedLocalTime } from '../../domain/events/eventSchema.js';
+
+function requireController(controller) {
+  const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords'];
+  if (!controller || methods.some((method) => typeof controller[method] !== 'function')) {
+    throw new TypeError(`AstroEye workspace controller must provide ${methods.join(', ')}`);
+  }
+}
+
+function field(form, name) {
+  return form.elements.namedItem(name);
+}
+
+function bodyPosition(chart, body) {
+  return chart.positions.find((position) => position.body === body);
+}
+
+function formatPosition(position) {
+  if (!position) return '—';
+  const motion = position.retrograde ? ' ℞' : '';
+  return `${position.sign} ${position.degreeInSign.toFixed(2)}° · H${position.house}${motion}`;
+}
+
+function downloadJson(text) {
+  const blob = new Blob([text], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 't-rexx-world-records.json';
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function defaultLocalValues(now = new Date()) {
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString();
+  return { date: local.slice(0, 10), time: local.slice(11, 16) };
+}
+
+/** Mount the first non-technical AstroEye event workspace. */
+export function mountAstroEyeWorkspace({
+  controller,
+  host = document.body,
+  onOpen = async () => {},
+  onRequestClose = null,
+} = {}) {
+  requireController(controller);
+  if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
+  if (typeof onOpen !== 'function') throw new TypeError('onOpen must be a function');
+  if (onRequestClose != null && typeof onRequestClose !== 'function') throw new TypeError('onRequestClose must be a function');
+
+  const root = document.createElement('aside');
+  root.id = 'astroeye-workspace';
+  root.className = 'astroeye-workspace';
+  root.hidden = true;
+  root.setAttribute('aria-label', 'AstroEye event workspace');
+  root.innerHTML = `
+    <header class="astroeye-header">
+      <div>
+        <span class="astroeye-kicker">T-REXX WORLD ENGINE</span>
+        <h2>AstroEye</h2>
+        <p>Build a verified event chart and place it on the living Earth.</p>
+      </div>
+      <button class="astroeye-icon-button" type="button" data-action="close" aria-label="Close AstroEye">×</button>
+    </header>
+    <div class="astroeye-body">
+      <section class="astroeye-entry" aria-labelledby="astroeye-event-heading">
+        <div class="astroeye-section-heading">
+          <div><span>01</span><h3 id="astroeye-event-heading">Event details</h3></div>
+          <button type="button" class="astroeye-text-button" data-action="new">Clear form</button>
+        </div>
+        <form class="astroeye-form">
+          <label class="astroeye-span-2">Event name<input name="title" required placeholder="Giants at Eagles" autocomplete="off" /></label>
+          <label>Sport<input name="sport" required value="American Football" autocomplete="off" /></label>
+          <label>Competition<input name="competition" required value="NFL" autocomplete="off" /></label>
+          <label>Away team<input name="away" required autocomplete="off" /></label>
+          <label>Home team<input name="home" required autocomplete="off" /></label>
+          <label>Local date<input name="localDate" type="date" required /></label>
+          <label>Local start time<input name="localTime" type="time" required /></label>
+          <label class="astroeye-span-2">Venue time zone<input name="timeZone" required list="astroeye-time-zones" placeholder="America/New_York" autocomplete="off" /></label>
+          <datalist id="astroeye-time-zones">
+            <option value="America/New_York"></option><option value="America/Chicago"></option>
+            <option value="America/Denver"></option><option value="America/Los_Angeles"></option>
+            <option value="Europe/London"></option><option value="Australia/Sydney"></option>
+          </datalist>
+          <label class="astroeye-span-2 astroeye-utc-choice" data-role="utc-choice" hidden>Repeated-hour choice<select name="utcStart"></select></label>
+          <label class="astroeye-span-2">Venue name<input name="venueName" required placeholder="Stadium or arena" autocomplete="off" /></label>
+          <label>Latitude<input name="latitude" type="number" min="-90" max="90" step="any" required placeholder="40.7505" /></label>
+          <label>Longitude<input name="longitude" type="number" min="-180" max="180" step="any" required placeholder="-73.9934" /></label>
+          <label>Duration, minutes<input name="durationMinutes" type="number" min="0" step="1" placeholder="Optional" /></label>
+          <label>House system<select name="houseSystem"><option value="whole-sign">Whole Sign</option><option value="equal">Equal House</option></select></label>
+          <button class="astroeye-primary astroeye-span-2" type="submit">Save and view on globe</button>
+        </form>
+        <p class="astroeye-help">Use the venue’s local time and IANA time zone. Ambiguous daylight-saving times will ask for correction rather than guessing.</p>
+      </section>
+      <section class="astroeye-results" aria-labelledby="astroeye-chart-heading">
+        <div class="astroeye-section-heading">
+          <div><span>02</span><h3 id="astroeye-chart-heading">Event chart</h3></div>
+          <span class="astroeye-status-dot">READY</span>
+        </div>
+        <div class="astroeye-empty">Save an event or choose one below to calculate its chart.</div>
+        <div class="astroeye-chart" hidden>
+          <div class="astroeye-chart-title"><strong data-chart="title"></strong><span data-chart="time"></span></div>
+          <div class="astroeye-angle-grid">
+            <div><span>ASCENDANT</span><strong data-chart="ascendant"></strong></div>
+            <div><span>MIDHEAVEN</span><strong data-chart="midheaven"></strong></div>
+            <div><span>PLANETARY HOUR</span><strong data-chart="planetary-hour"></strong></div>
+          </div>
+          <div class="astroeye-position-grid" data-chart="positions"></div>
+          <div class="astroeye-aspects"><span>MAJOR ASPECTS</span><p data-chart="aspects"></p></div>
+          <div class="astroeye-chart-actions">
+            <button type="button" data-action="refocus">View venue</button>
+            <button type="button" class="danger" data-action="delete">Delete event</button>
+          </div>
+          <p class="astroeye-provenance" data-chart="provenance"></p>
+        </div>
+        <div class="astroeye-saved-header"><h3>Saved events</h3><div><button type="button" data-action="export">Export</button><button type="button" data-action="import">Import</button></div></div>
+        <input type="file" data-role="import-file" accept="application/json,.json" hidden />
+        <div class="astroeye-event-list" data-role="event-list"></div>
+      </section>
+    </div>
+    <div class="astroeye-live-status" role="status" aria-live="polite">AstroEye ready.</div>
+  `;
+  host.append(root);
+
+  const form = root.querySelector('.astroeye-form');
+  const empty = root.querySelector('.astroeye-empty');
+  const chartRoot = root.querySelector('.astroeye-chart');
+  const status = root.querySelector('.astroeye-live-status');
+  const eventList = root.querySelector('[data-role="event-list"]');
+  const importFile = root.querySelector('[data-role="import-file"]');
+  const initial = defaultLocalValues();
+  field(form, 'localDate').value = initial.date;
+  field(form, 'localTime').value = initial.time;
+  field(form, 'timeZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  let selected = null;
+  let previouslyFocused = null;
+
+  function setStatus(message, tone = 'normal') {
+    status.textContent = message;
+    status.dataset.tone = tone;
+  }
+
+  function refreshTimeResolution() {
+    const choice = root.querySelector('[data-role="utc-choice"]');
+    const select = field(form, 'utcStart');
+    choice.hidden = true;
+    select.replaceChildren();
+    const localDate = field(form, 'localDate').value;
+    const localTime = field(form, 'localTime').value;
+    const timeZone = field(form, 'timeZone').value.trim();
+    if (!localDate || !localTime || !timeZone) return true;
+    try {
+      const resolution = resolveZonedLocalTime({ localDate, localTime, timeZone });
+      if (resolution.status === 'nonexistent') {
+        setStatus('That local time is skipped by daylight saving. Choose a different start time.', 'error');
+        return false;
+      }
+      if (resolution.status === 'ambiguous') {
+        for (const [index, instant] of resolution.candidates.entries()) {
+          const option = document.createElement('option');
+          option.value = instant;
+          option.textContent = `${index === 0 ? 'First' : 'Second'} occurrence · ${instant}`;
+          select.append(option);
+        }
+        choice.hidden = false;
+        setStatus('This hour occurs twice. Choose the first or second occurrence.');
+      }
+      return true;
+    } catch (error) {
+      setStatus(error?.message || 'Check the date, time, and venue time zone.', 'error');
+      return false;
+    }
+  }
+
+  for (const name of ['localDate', 'localTime', 'timeZone']) {
+    field(form, name).addEventListener('change', refreshTimeResolution);
+  }
+
+  function renderChart(event, chart) {
+    selected = { event, chart };
+    empty.hidden = true;
+    chartRoot.hidden = false;
+    root.querySelector('[data-chart="title"]').textContent = event.title;
+    root.querySelector('[data-chart="time"]').textContent = `${event.scheduledLocal.date} · ${event.scheduledLocal.time.slice(0, 5)} · ${event.scheduledLocal.timeZone}`;
+    const asc = chart.houses.angles.ascendant;
+    const mc = chart.houses.angles.midheaven;
+    root.querySelector('[data-chart="ascendant"]').textContent = `${asc.toFixed(2)}°`;
+    root.querySelector('[data-chart="midheaven"]').textContent = `${mc.toFixed(2)}°`;
+    root.querySelector('[data-chart="planetary-hour"]').textContent = chart.planetaryHour.status === 'exact'
+      ? `${chart.planetaryHour.ruler} · ${chart.planetaryHour.period} ${chart.planetaryHour.hourNumber}`
+      : 'Unavailable at this latitude';
+    const positions = root.querySelector('[data-chart="positions"]');
+    positions.replaceChildren();
+    for (const body of ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']) {
+      const row = document.createElement('div');
+      const name = document.createElement('span');
+      const value = document.createElement('strong');
+      name.textContent = body.toUpperCase();
+      value.textContent = formatPosition(bodyPosition(chart, body));
+      row.append(name, value);
+      positions.append(row);
+    }
+    root.querySelector('[data-chart="aspects"]').textContent = chart.aspects.length
+      ? chart.aspects.slice(0, 8).map((aspect) => `${aspect.left} ${aspect.aspect} ${aspect.right} (${aspect.orb.toFixed(2)}° ${aspect.phase})`).join(' · ')
+      : 'No major aspects within the current orbs.';
+    root.querySelector('[data-chart="provenance"]').textContent = `${chart.engine.id} ${chart.engine.version} · ${chart.options.zodiac} zodiac · ${chart.options.houseSystem} houses · ${event.utcStart}`;
+  }
+
+  async function refreshEvents() {
+    const events = await controller.listEvents();
+    events.sort((left, right) => right.utcStart.localeCompare(left.utcStart));
+    eventList.replaceChildren();
+    if (!events.length) {
+      const message = document.createElement('p');
+      message.className = 'astroeye-event-list-empty';
+      message.textContent = 'No saved events yet.';
+      eventList.append(message);
+      return;
+    }
+    for (const event of events) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.eventId = event.id;
+      if (selected?.event.id === event.id) button.classList.add('active');
+      const title = document.createElement('strong');
+      const detail = document.createElement('span');
+      title.textContent = event.title;
+      detail.textContent = `${event.scheduledLocal.date} · ${event.venue.name}`;
+      button.append(title, detail);
+      eventList.append(button);
+    }
+  }
+
+  async function busy(action, successMessage) {
+    root.dataset.busy = 'true';
+    setStatus('Working…');
+    try {
+      const result = await action();
+      setStatus(successMessage);
+      return result;
+    } catch (error) {
+      setStatus(error?.message || 'AstroEye could not complete that action.', 'error');
+      return null;
+    } finally {
+      delete root.dataset.busy;
+    }
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    if (!refreshTimeResolution()) return;
+    const draft = Object.fromEntries(new FormData(form).entries());
+    const result = await busy(() => controller.saveDraft(draft), 'Event saved and synchronized with the globe.');
+    if (!result) return;
+    renderChart(result.event, result.chart);
+    await refreshEvents();
+  });
+
+  eventList.addEventListener('click', async (event) => {
+    const button = event.target.closest('button[data-event-id]');
+    if (!button) return;
+    const houseSystem = field(form, 'houseSystem').value;
+    const result = await busy(
+      () => controller.selectEvent(button.dataset.eventId, { houseSystem }),
+      'Saved event synchronized with the globe.',
+    );
+    if (!result) return;
+    renderChart(result.event, result.chart);
+    await refreshEvents();
+  });
+
+  root.addEventListener('click', async (event) => {
+    const action = event.target.closest('[data-action]')?.dataset.action;
+    if (!action) return;
+    if (action === 'close') {
+      if (onRequestClose) await onRequestClose();
+      else {
+        root.hidden = true;
+        previouslyFocused?.focus?.();
+      }
+    } else if (action === 'new') {
+      form.reset();
+      field(form, 'localDate').value = defaultLocalValues().date;
+      field(form, 'localTime').value = defaultLocalValues().time;
+      field(form, 'timeZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      field(form, 'sport').value = 'American Football';
+      field(form, 'competition').value = 'NFL';
+      field(form, 'title').focus();
+    } else if (action === 'refocus' && selected) {
+      const result = await busy(
+        () => controller.selectEvent(selected.event.id, { houseSystem: selected.chart.options.houseSystem }),
+        'Venue centered on the globe.',
+      );
+      if (result) renderChart(result.event, result.chart);
+    } else if (action === 'delete' && selected) {
+      if (!globalThis.confirm(`Delete “${selected.event.title}” and its saved charts?`)) return;
+      const eventId = selected.event.id;
+      const removed = await busy(() => controller.deleteEvent(eventId), 'Event deleted.');
+      if (!removed) return;
+      selected = null;
+      chartRoot.hidden = true;
+      empty.hidden = false;
+      await refreshEvents();
+    } else if (action === 'export') {
+      const json = await busy(() => controller.serializeRecords(), 'World records exported.');
+      if (json) downloadJson(json);
+    } else if (action === 'import') {
+      importFile.click();
+    }
+  });
+
+  importFile.addEventListener('change', async () => {
+    const file = importFile.files?.[0];
+    importFile.value = '';
+    if (!file) return;
+    const result = await busy(
+      async () => controller.importRecords(await file.text(), { mode: 'merge' }),
+      'World records imported.',
+    );
+    if (result) await refreshEvents();
+  });
+
+  root.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    if (onRequestClose) void onRequestClose();
+    else {
+      root.hidden = true;
+      previouslyFocused?.focus?.();
+    }
+  });
+
+  return Object.freeze({
+    root,
+    async open(trigger = document.activeElement) {
+      previouslyFocused = trigger;
+      const opened = await busy(onOpen, 'AstroEye ready.');
+      if (opened === null) return false;
+      root.hidden = false;
+      await refreshEvents();
+      field(form, 'title').focus();
+      return true;
+    },
+    close() {
+      root.hidden = true;
+      previouslyFocused?.focus?.();
+    },
+    destroy() {
+      root.remove();
+    },
+  });
+}

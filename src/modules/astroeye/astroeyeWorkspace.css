@@ -1,0 +1,103 @@
+.astroeye-workspace {
+  --astro-violet: #d6a6ff;
+  --astro-cyan: #78e7ff;
+  position: fixed;
+  z-index: 1300;
+  top: 72px;
+  right: 22px;
+  bottom: 74px;
+  width: min(760px, calc(100vw - 44px));
+  overflow: auto;
+  color: #f8f2ff;
+  border: 1px solid rgba(214, 166, 255, 0.34);
+  border-radius: 16px;
+  background: linear-gradient(150deg, rgba(18, 8, 31, 0.97), rgba(5, 13, 28, 0.96));
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.62), inset 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(22px);
+  font-family: Inter, sans-serif;
+}
+
+.astroeye-workspace[hidden] { display: none; }
+.astroeye-workspace[data-busy="true"] { cursor: progress; }
+.astroeye-workspace button, .astroeye-workspace input, .astroeye-workspace select { font: inherit; }
+
+.astroeye-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid rgba(214, 166, 255, 0.16);
+}
+
+.astroeye-kicker { color: var(--astro-cyan); font: 600 10px/1.4 "JetBrains Mono", monospace; letter-spacing: 0.18em; }
+.astroeye-header h2 { margin: 4px 0; font: 600 30px/1.05 "JetBrains Mono", monospace; letter-spacing: -0.04em; }
+.astroeye-header p { margin: 0; color: rgba(248, 242, 255, 0.62); font-size: 13px; }
+.astroeye-icon-button { width: 36px; height: 36px; color: #fff; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; background: transparent; font-size: 24px; cursor: pointer; }
+.astroeye-icon-button:hover { border-color: var(--astro-violet); background: rgba(214, 166, 255, 0.1); }
+
+.astroeye-body { display: grid; grid-template-columns: minmax(280px, .9fr) minmax(330px, 1.1fr); }
+.astroeye-entry, .astroeye-results { padding: 22px 24px; }
+.astroeye-entry { border-right: 1px solid rgba(214, 166, 255, 0.14); }
+.astroeye-section-heading, .astroeye-saved-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.astroeye-section-heading > div { display: flex; align-items: center; gap: 9px; }
+.astroeye-section-heading span { color: var(--astro-cyan); font: 600 9px "JetBrains Mono", monospace; }
+.astroeye-section-heading h3, .astroeye-saved-header h3 { margin: 0; font: 600 13px "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .05em; }
+.astroeye-text-button, .astroeye-saved-header button { color: rgba(248,242,255,.68); border: 0; background: none; font-size: 11px; cursor: pointer; }
+.astroeye-text-button:hover, .astroeye-saved-header button:hover { color: var(--astro-cyan); }
+.astroeye-status-dot { padding: 4px 7px; border: 1px solid rgba(120,231,255,.25); border-radius: 999px; }
+
+.astroeye-form { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 18px; }
+.astroeye-form label { display: grid; gap: 5px; color: rgba(248,242,255,.62); font: 500 10px "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .04em; }
+.astroeye-form .astroeye-utc-choice[hidden] { display: none; }
+.astroeye-form input, .astroeye-form select {
+  width: 100%; box-sizing: border-box; color: #fff; border: 1px solid rgba(255,255,255,.13); border-radius: 7px;
+  outline: none; background: rgba(255,255,255,.055); padding: 9px 10px; font-size: 12px; text-transform: none;
+}
+.astroeye-form input:focus, .astroeye-form select:focus { border-color: var(--astro-violet); box-shadow: 0 0 0 2px rgba(214,166,255,.1); }
+.astroeye-form select option { color: #140b20; }
+.astroeye-span-2 { grid-column: 1 / -1; }
+.astroeye-primary { padding: 11px 14px; color: #15091f; border: 0; border-radius: 8px; background: linear-gradient(110deg, var(--astro-violet), var(--astro-cyan)); font-weight: 700; cursor: pointer; }
+.astroeye-primary:hover { filter: brightness(1.08); }
+.astroeye-help { margin: 12px 0 0; color: rgba(248,242,255,.45); font-size: 10px; line-height: 1.5; }
+
+.astroeye-empty { margin: 18px 0; padding: 24px 18px; color: rgba(248,242,255,.46); border: 1px dashed rgba(214,166,255,.2); border-radius: 9px; font-size: 12px; text-align: center; }
+.astroeye-chart { margin-top: 16px; }
+.astroeye-chart-title { display: grid; gap: 3px; padding-bottom: 12px; }
+.astroeye-chart-title strong { font-size: 16px; }
+.astroeye-chart-title span { color: rgba(248,242,255,.52); font: 10px "JetBrains Mono", monospace; }
+.astroeye-angle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.astroeye-angle-grid div { padding: 10px; border: 1px solid rgba(120,231,255,.14); border-radius: 7px; background: rgba(120,231,255,.035); }
+.astroeye-angle-grid span, .astroeye-aspects > span { display: block; color: rgba(248,242,255,.45); font: 8px "JetBrains Mono", monospace; letter-spacing: .07em; }
+.astroeye-angle-grid strong { display: block; margin-top: 4px; color: var(--astro-cyan); font: 600 11px "JetBrains Mono", monospace; }
+.astroeye-position-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 14px; margin-top: 13px; }
+.astroeye-position-grid div { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.065); }
+.astroeye-position-grid span { color: rgba(248,242,255,.48); font: 9px "JetBrains Mono", monospace; }
+.astroeye-position-grid strong { font: 500 10px "JetBrains Mono", monospace; text-align: right; }
+.astroeye-aspects { margin-top: 14px; }
+.astroeye-aspects p { margin: 5px 0 0; color: rgba(248,242,255,.68); font-size: 10px; line-height: 1.55; }
+.astroeye-chart-actions { display: flex; gap: 8px; margin-top: 14px; }
+.astroeye-chart-actions button { flex: 1; padding: 8px; color: #fff; border: 1px solid rgba(214,166,255,.24); border-radius: 6px; background: rgba(214,166,255,.08); cursor: pointer; }
+.astroeye-chart-actions button.danger { color: #ffafb9; border-color: rgba(255,90,110,.2); background: rgba(255,90,110,.05); }
+.astroeye-provenance { color: rgba(248,242,255,.35); font: 8px/1.5 "JetBrains Mono", monospace; overflow-wrap: anywhere; }
+
+.astroeye-saved-header { margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(214,166,255,.14); }
+.astroeye-saved-header > div { display: flex; gap: 7px; }
+.astroeye-event-list { display: grid; gap: 7px; margin-top: 9px; }
+.astroeye-event-list button { display: grid; gap: 3px; padding: 9px 10px; color: #fff; border: 1px solid rgba(255,255,255,.09); border-radius: 7px; background: rgba(255,255,255,.035); text-align: left; cursor: pointer; }
+.astroeye-event-list button:hover, .astroeye-event-list button.active { border-color: rgba(214,166,255,.4); background: rgba(214,166,255,.08); }
+.astroeye-event-list button strong { font-size: 11px; }
+.astroeye-event-list button span, .astroeye-event-list-empty { color: rgba(248,242,255,.42); font: 9px "JetBrains Mono", monospace; }
+.astroeye-live-status { position: sticky; bottom: 0; padding: 9px 24px; color: var(--astro-cyan); border-top: 1px solid rgba(120,231,255,.13); background: rgba(5,10,23,.94); font: 9px "JetBrains Mono", monospace; }
+.astroeye-live-status[data-tone="error"] { color: #ff9eaa; }
+
+@media (max-width: 720px) {
+  .astroeye-workspace { inset: 12px; width: auto; }
+  .astroeye-body { grid-template-columns: 1fr; }
+  .astroeye-entry { border-right: 0; border-bottom: 1px solid rgba(214,166,255,.14); }
+}
+
+@media (max-width: 460px) {
+  .astroeye-form, .astroeye-position-grid { grid-template-columns: 1fr; }
+  .astroeye-span-2 { grid-column: auto; }
+  .astroeye-angle-grid { grid-template-columns: 1fr; }
+}
