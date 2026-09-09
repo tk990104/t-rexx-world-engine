@@ -65,6 +65,27 @@
 .astroeye-chart-title { display: grid; gap: 3px; padding-bottom: 12px; }
 .astroeye-chart-title strong { font-size: 16px; }
 .astroeye-chart-title span { color: rgba(248,242,255,.52); font: 10px "JetBrains Mono", monospace; }
+.astroeye-wheel { width: min(100%, 390px); margin: 4px auto 14px; aspect-ratio: 1; }
+.astroeye-wheel svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.astro-wheel-ring { fill: none; stroke: rgba(214,166,255,.28); stroke-width: 1; }
+.astro-wheel-outer { stroke: rgba(214,166,255,.62); stroke-width: 1.5; }
+.astro-wheel-inner { stroke: rgba(120,231,255,.22); }
+.astro-wheel-core { fill: rgba(214,166,255,.05); stroke: rgba(214,166,255,.42); }
+.astro-wheel-sign-boundary { stroke: rgba(214,166,255,.25); stroke-width: 1; }
+.astro-wheel-sign { fill: #e7c9ff; font: 20px serif; text-anchor: middle; dominant-baseline: central; }
+.astro-wheel-house-line { stroke: rgba(255,255,255,.12); stroke-width: .8; }
+.astro-wheel-house { fill: rgba(248,242,255,.42); font: 8px "JetBrains Mono", monospace; text-anchor: middle; dominant-baseline: central; }
+.astro-wheel-aspect { stroke-width: 1; opacity: .55; }
+.astro-wheel-aspect.aspect-conjunction { stroke: #f6d365; }
+.astro-wheel-aspect.aspect-sextile, .astro-wheel-aspect.aspect-trine { stroke: #78e7ff; }
+.astro-wheel-aspect.aspect-square, .astro-wheel-aspect.aspect-opposition { stroke: #ff7486; }
+.astro-wheel-angle { stroke-width: 1.6; stroke-dasharray: 3 2; }
+.astro-wheel-asc { stroke: #78e7ff; }
+.astro-wheel-mc { stroke: #d6a6ff; }
+.astro-wheel-angle-label { fill: #78e7ff; font: 700 8px "JetBrains Mono", monospace; }
+.astro-wheel-body circle { fill: rgba(13,7,25,.94); stroke: #d6a6ff; stroke-width: 1; }
+.astro-wheel-body text { fill: #fff; font: 15px serif; text-anchor: middle; dominant-baseline: central; }
+.astro-wheel-body .astro-wheel-retrograde { fill: #ff9fad; font: 700 6px "JetBrains Mono", monospace; }
 .astroeye-angle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .astroeye-angle-grid div { padding: 10px; border: 1px solid rgba(120,231,255,.14); border-radius: 7px; background: rgba(120,231,255,.035); }
 .astroeye-angle-grid span, .astroeye-aspects > span { display: block; color: rgba(248,242,255,.45); font: 8px "JetBrains Mono", monospace; letter-spacing: .07em; }

@@ -1,6 +1,7 @@
 import './astroeyeWorkspace.css';
 
 import { resolveZonedLocalTime } from '../../domain/events/eventSchema.js';
+import { renderAstroEyeChartWheel } from './chartWheel.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords'];
@@ -102,6 +103,7 @@ export function mountAstroEyeWorkspace({
         <div class="astroeye-empty">Save an event or choose one below to calculate its chart.</div>
         <div class="astroeye-chart" hidden>
           <div class="astroeye-chart-title"><strong data-chart="title"></strong><span data-chart="time"></span></div>
+          <div class="astroeye-wheel" data-chart="wheel"></div>
           <div class="astroeye-angle-grid">
             <div><span>ASCENDANT</span><strong data-chart="ascendant"></strong></div>
             <div><span>MIDHEAVEN</span><strong data-chart="midheaven"></strong></div>
@@ -184,6 +186,7 @@ export function mountAstroEyeWorkspace({
     chartRoot.hidden = false;
     root.querySelector('[data-chart="title"]').textContent = event.title;
     root.querySelector('[data-chart="time"]').textContent = `${event.scheduledLocal.date} · ${event.scheduledLocal.time.slice(0, 5)} · ${event.scheduledLocal.timeZone}`;
+    renderAstroEyeChartWheel(root.querySelector('[data-chart="wheel"]'), chart);
     const asc = chart.houses.angles.ascendant;
     const mc = chart.houses.angles.midheaven;
     root.querySelector('[data-chart="ascendant"]').textContent = `${asc.toFixed(2)}°`;

@@ -33,7 +33,9 @@ The composition root will add the existing viewer, data manager, camera coordina
 
 AstroEye event records use `src/domain/events/eventSchema.js`. A record retains its original local date/time, IANA time zone, resolved UTC instant, verified venue coordinates, participants, competition, and source. Daylight-saving gaps fail closed; folds require an explicit matching UTC choice instead of silently selecting one occurrence.
 
-The first workspace is launched from the existing data rail and mounted through `PanelRegistry`. It supports manual entry, an explicit repeated-hour choice, saved-event selection, versioned JSON import/export, chart summaries, and a Cesium venue marker. Selecting an event changes `WorldClock` to event mode but deliberately leaves Cesium's live-feed clock untouched.
+The first workspace is launched from the existing data rail and mounted through `PanelRegistry`. It supports manual entry, an explicit repeated-hour choice, saved-event selection, versioned JSON import/export, an accessible SVG zodiac/house/aspect wheel, chart summaries, and a Cesium venue marker. Selecting an event changes `WorldClock` to event mode but deliberately leaves Cesium's live-feed clock untouched.
+
+The chart wheel is rendered from a deterministic geometry model, so zodiac, house, angle, body, retrograde, and aspect placement can be tested without relying on browser screenshots. A 20-case internal regression pack spans daylight-saving boundaries, a leap day, fractional UTC offsets, both hemispheres, and polar day/night. Its pinned values detect pipeline drift from Astronomy Engine 2.1.19; independent ephemeris comparison remains a separate validation milestone.
 
 The first calculation adapter uses Astronomy Engine under MIT. Results identify the exact engine version and reference frame. The calculation core produces tropical apparent geocentric true-ecliptic-of-date positions, Whole Sign or Equal houses, major aspects with applying/separating motion, and traditional unequal planetary hours. Placidus and other house systems remain absent until independently verified fixtures are available.
 
