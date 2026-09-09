@@ -1,12 +1,14 @@
 <div align="center">
 
-# 🌐 God's Eye View
+# 🌐 T-Rexx World Engine
 
-### A spy-satellite simulator in your browser — then you realize the sources are public and the data is real.
+### A modular command center for exploring Earth, events, and time.
 
-Photorealistic 3D globe. Live aircraft, ships, satellites, earthquakes, traffic, and public cameras, with clearly labeled modeled views where a live feed is unavailable. Hands-free voice control powered by a realtime AI agent.
+T-Rexx World Engine is a product fork of God's Eye View. It keeps the photorealistic 3D globe, live public-data layers, cinematic camera system, annotations, and voice control while adding a module platform. **AstroEye** is the first module; AstroTrace, Sound Radar, Cosmic Watch, Sports Command, RC Command, Collector Radar, Research Mode, and Director Mode follow on the same shared engine.
 
-*No place left behind.*
+The exact source lineage and third-party boundaries are recorded in [`NOTICE.md`](NOTICE.md). The initial T-Rexx baseline is [`uhrichsam4/gods-eye-view@5804ba8`](https://github.com/uhrichsam4/gods-eye-view/commit/5804ba8811235983505b676e02e855d8986de21e), which retains the original Bilawal Sidhu MIT notice and the provider-specific data and asset terms.
+
+*One world. Many lenses.*
 
 ![Orbital HUD, a tracked live globe, FLIR terrain — then OPEN SOURCED](docs/media/hero-open-source-reveal.gif)
 
@@ -30,7 +32,7 @@ Photorealistic 3D globe. Live aircraft, ships, satellites, earthquakes, traffic,
 
 ## 🌍 Why This Exists
 
-**You asked, so it's happening.** God's Eye View is open source. Track the world live. Talk to it. Break it. Extend it.
+**The world shell is already real.** T-Rexx World Engine turns it into a platform: each module contributes its own panels, commands, layers, sources, state, and Director recipes without expanding the core UI and server monoliths.
 
 Most open-source intelligence is a pile of browser tabs. The signals are abundant, but the *interface* is the bottleneck. God's Eye View turns those signals into a **place**: the world is already broadcasting — flight transponders, ship beacons, orbital elements, seismographs, public cameras — and this makes it visible on a photorealistic 3D Earth in real time. No classified clearance required; it's public signal all the way down, and the interface runs in your browser, under your control.
 
