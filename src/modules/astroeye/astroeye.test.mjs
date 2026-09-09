@@ -27,6 +27,8 @@ test('AstroEye declares shared services instead of reaching into UI globals', ()
   assert.deepEqual(astroEye.capabilitiesRequired, [
     'commandRegistry',
     'eventBus',
+    'moduleState',
+    'panelRegistry',
     'sourceRegistry',
     'worldClock',
   ]);

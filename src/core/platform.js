@@ -1,6 +1,8 @@
 import { CommandRegistry } from './commandRegistry.js';
 import { EventBus } from './eventBus.js';
 import { ModuleRegistry } from './moduleRegistry.js';
+import { ModuleStateCoordinator } from './moduleState.js';
+import { PanelRegistry } from './panelRegistry.js';
 import { SourceRegistry } from './sourceRegistry.js';
 import { WorldClock } from './worldClock.js';
 
@@ -10,7 +12,17 @@ export function createWorldPlatform({ now = Date.now, context = {} } = {}) {
   const commandRegistry = new CommandRegistry();
   const sourceRegistry = new SourceRegistry();
   const worldClock = new WorldClock({ now, eventBus });
-  const sharedContext = { ...context, eventBus, commandRegistry, sourceRegistry, worldClock };
+  const moduleState = new ModuleStateCoordinator({ eventBus });
+  const panelRegistry = new PanelRegistry({ eventBus });
+  const sharedContext = {
+    ...context,
+    eventBus,
+    commandRegistry,
+    sourceRegistry,
+    worldClock,
+    moduleState,
+    panelRegistry,
+  };
   const moduleRegistry = new ModuleRegistry({ context: sharedContext, eventBus });
 
   return Object.freeze({
@@ -18,6 +30,8 @@ export function createWorldPlatform({ now = Date.now, context = {} } = {}) {
     commandRegistry,
     sourceRegistry,
     worldClock,
+    moduleState,
+    panelRegistry,
     moduleRegistry,
   });
 }

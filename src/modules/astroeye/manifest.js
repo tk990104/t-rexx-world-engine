@@ -9,6 +9,8 @@ export const ASTROEYE_MANIFEST = Object.freeze({
   capabilitiesRequired: Object.freeze([
     'commandRegistry',
     'eventBus',
+    'moduleState',
+    'panelRegistry',
     'sourceRegistry',
     'worldClock',
   ]),

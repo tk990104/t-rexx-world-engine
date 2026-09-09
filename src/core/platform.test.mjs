@@ -4,6 +4,8 @@ import test from 'node:test';
 import { CommandRegistry } from './commandRegistry.js';
 import { EventBus } from './eventBus.js';
 import { ModuleRegistry } from './moduleRegistry.js';
+import { ModuleStateCoordinator } from './moduleState.js';
+import { PanelRegistry } from './panelRegistry.js';
 import { createWorldPlatform } from './platform.js';
 import { SourceRegistry } from './sourceRegistry.js';
 import { WorldClock } from './worldClock.js';
@@ -91,10 +93,47 @@ test('module registry validates capabilities and owns one active module', async 
   assert.deepEqual(lifecycle, ['astroeye:start', 'astroeye:stop', 'astrotrace:start']);
 });
 
+test('module state snapshots are isolated, deterministic, and restorable', () => {
+  const state = new ModuleStateCoordinator();
+  const source = { selectedEventId: 'event-1', filters: { league: 'NFL' } };
+  state.set('sports-command', { tab: 'schedule' });
+  state.set('astroeye', source);
+  state.setActiveModule('astroeye');
+  source.filters.league = 'changed outside';
+
+  const snapshot = state.snapshot();
+  assert.deepEqual(Object.keys(snapshot.modules), ['astroeye', 'sports-command']);
+  assert.equal(snapshot.modules.astroeye.filters.league, 'NFL');
+
+  const restored = new ModuleStateCoordinator();
+  restored.restore(snapshot);
+  assert.deepEqual(restored.snapshot(), snapshot);
+});
+
+test('panel registry mounts one module panel and cleans it before the next', async () => {
+  const calls = [];
+  const panels = new PanelRegistry();
+  panels.register({
+    id: 'astroeye-chart', owner: 'astroeye', title: 'Event Chart',
+    mount: () => { calls.push('chart:mount'); return () => calls.push('chart:cleanup'); },
+  });
+  panels.register({
+    id: 'research-notes', owner: 'research', title: 'Research Notes',
+    mount: () => { calls.push('notes:mount'); },
+  });
+  await panels.show('astroeye-chart', {});
+  await panels.show('research-notes', {});
+  assert.equal(panels.activePanelId, 'research-notes');
+  assert.deepEqual(calls, ['chart:mount', 'chart:cleanup', 'notes:mount']);
+  assert.deepEqual(panels.list({ owner: 'astroeye' }).map(({ id }) => id), ['astroeye-chart']);
+});
+
 test('world platform composes one shared context for future modules', () => {
   const platform = createWorldPlatform({ now: () => 1234, context: { viewer: 'later' } });
   assert.equal(platform.worldClock.nowMs(), 1234);
   assert.ok(platform.moduleRegistry);
   assert.ok(platform.commandRegistry);
   assert.ok(platform.sourceRegistry);
+  assert.ok(platform.moduleState);
+  assert.ok(platform.panelRegistry);
 });

@@ -23,6 +23,8 @@ The foundation currently provides:
 - `EventBus` for small synchronous domain notifications
 - `WorldClock` with live, event, and replay modes
 - `CommandRegistry` as the future single source for UI, free voice, and OpenAI Realtime commands
+- `ModuleStateCoordinator` for versioned active-module and module-owned state
+- `PanelRegistry` as the only mounting seam for module panels
 - `SourceRegistry` for license, attribution, and cache-policy metadata
 - `ModuleRegistry` for lifecycle and active-module state
 
