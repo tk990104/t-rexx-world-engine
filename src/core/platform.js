@@ -7,7 +7,7 @@ import { SourceRegistry } from './sourceRegistry.js';
 import { WorldClock } from './worldClock.js';
 
 /** Creates the shared, headless services before Cesium/UI integration. */
-export function createWorldPlatform({ now = Date.now, context = {} } = {}) {
+export function createWorldPlatform({ now = Date.now, context = {}, recordStore = null } = {}) {
   const eventBus = new EventBus();
   const commandRegistry = new CommandRegistry();
   const sourceRegistry = new SourceRegistry();
@@ -22,6 +22,7 @@ export function createWorldPlatform({ now = Date.now, context = {} } = {}) {
     worldClock,
     moduleState,
     panelRegistry,
+    recordStore,
   };
   const moduleRegistry = new ModuleRegistry({ context: sharedContext, eventBus });
 
@@ -32,6 +33,7 @@ export function createWorldPlatform({ now = Date.now, context = {} } = {}) {
     worldClock,
     moduleState,
     panelRegistry,
+    recordStore,
     moduleRegistry,
   });
 }

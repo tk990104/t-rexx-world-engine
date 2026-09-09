@@ -56,6 +56,7 @@
     "satellite.js": "^6.0.2"
   },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
     "puppeteer": "^24.37.5",
     "sharp": "^0.34.5",
     "vite": "^6.0.0",

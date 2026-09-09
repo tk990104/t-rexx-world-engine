@@ -27,6 +27,7 @@ The foundation currently provides:
 - `PanelRegistry` as the only mounting seam for module panels
 - `SourceRegistry` for license, attribution, and cache-policy metadata
 - `ModuleRegistry` for lifecycle and active-module state
+- `WorldRecordStore` for versioned IndexedDB events, charts, and research workspaces
 
 The composition root will add the existing viewer, data manager, camera coordinator, annotations, panel host, and scene director during the next integration slice.
 
@@ -41,4 +42,5 @@ The first calculation adapter uses Astronomy Engine under MIT. Results identify 
 - Every provider must register terms, attribution, and a cache policy before its data is displayed.
 - Reproducible time-sensitive work reads `WorldClock`; it must not call `Date.now()` directly.
 - Module state and existing layer state remain separate, versioned payloads.
+- Durable record imports are validated before one atomic IndexedDB transaction; invalid data cannot partially replace a workspace.
 - AstroEye business logic lives under `src/modules/astroeye/`, not the core UI file.

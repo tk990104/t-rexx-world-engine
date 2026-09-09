@@ -129,11 +129,13 @@ test('panel registry mounts one module panel and cleans it before the next', asy
 });
 
 test('world platform composes one shared context for future modules', () => {
-  const platform = createWorldPlatform({ now: () => 1234, context: { viewer: 'later' } });
+  const recordStore = { kind: 'test-record-store' };
+  const platform = createWorldPlatform({ now: () => 1234, context: { viewer: 'later' }, recordStore });
   assert.equal(platform.worldClock.nowMs(), 1234);
   assert.ok(platform.moduleRegistry);
   assert.ok(platform.commandRegistry);
   assert.ok(platform.sourceRegistry);
   assert.ok(platform.moduleState);
   assert.ok(platform.panelRegistry);
+  assert.equal(platform.recordStore, recordStore);
 });
