@@ -41,13 +41,14 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node scripts/run-unit-tests.mjs",
-    "test:platform": "node --test src/core/*.test.mjs src/domain/events/*.test.mjs src/modules/astroeye/*.test.mjs",
+    "test:platform": "node --test src/core/*.test.mjs src/domain/events/*.test.mjs src/modules/astroeye/*.test.mjs src/modules/astroeye/calculation/*.test.mjs",
     "test:track": "node scripts/track-regression.mjs",
     "qa:map-source-tray": "node scripts/qa-map-source-tray.mjs",
     "start": "vite preview --host 0.0.0.0 --port ${PORT:-4173}"
   },
   "dependencies": {
     "@mapbox/vector-tile": "^3.0.0",
+    "astronomy-engine": "^2.1.19",
     "cesium": "^1.124.0",
     "egm96-universal": "^1.1.1",
     "mgrs": "^2.1.0",

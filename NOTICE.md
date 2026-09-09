@@ -26,3 +26,7 @@ See:
 - the third-party carve-outs in `LICENSE`
 
 Commercial deployments must complete a fresh provider-by-provider review. In particular, the baseline includes or integrates data with NonCommercial, ODbL, proprietary, attribution, caching, and usage-limit requirements.
+
+## T-Rexx calculation dependency
+
+AstroEye uses [Astronomy Engine](https://github.com/cosinekitty/astronomy) by Don Cross under the MIT License. The calculation result records the engine name and exact package version. This dependency is not Swiss Ephemeris and does not grant rights to Swiss Ephemeris data or code.

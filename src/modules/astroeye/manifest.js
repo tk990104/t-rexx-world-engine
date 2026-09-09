@@ -18,5 +18,5 @@ export const ASTROEYE_MANIFEST = Object.freeze({
   panels: Object.freeze([]),
   commands: Object.freeze([]),
   sceneRecipes: Object.freeze([]),
-  credits: Object.freeze([]),
+  credits: Object.freeze(['astronomy-engine']),
 });

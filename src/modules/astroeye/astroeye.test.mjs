@@ -12,6 +12,7 @@ test('AstroEye is the first activatable module on the shared platform', async ()
 
   await platform.moduleRegistry.activate('astroeye');
   assert.equal(platform.moduleRegistry.activeId, 'astroeye');
+  assert.equal(platform.sourceRegistry.get('astronomy-engine').license, 'MIT');
   assert.deepEqual(platform.moduleRegistry.snapshot(), {
     version: 1,
     activeModuleId: 'astroeye',
