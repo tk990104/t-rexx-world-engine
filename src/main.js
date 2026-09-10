@@ -55,6 +55,7 @@ import { createAstroEyeWorkspaceController } from './modules/astroeye/workspaceC
 import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.js';
 import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js';
 import { readSharedViewHash } from './modules/astroeye/shareView.js';
+import { createEventSky } from './modules/astroeye/eventSky.js';
 
 initLogoGaze();
 
@@ -359,6 +360,8 @@ async function init() {
         onOpen: () => worldPlatform.moduleRegistry.activate('astroeye'),
         onRequestClose: () => worldPlatform.panelRegistry.hide(),
         createWorldLink: () => styleManager.shareLinkManager.createLink(),
+        eventSky: createEventSky({ ring: styleManager.celestialRing,
+          setRingEnabled: (enabled, options) => styleManager.setCelestialRingEnabled(enabled, options) }),
       });
       worldPlatform.panelRegistry.register({
         id: 'astroeye-workspace',

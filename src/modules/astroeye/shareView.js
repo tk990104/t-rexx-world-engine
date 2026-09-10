@@ -18,13 +18,15 @@ export function normalizeSharedView(input) {
     if (typeof input.event?.venue?.[key] !== 'number') throw new Error('Shared venue coordinates must be numbers.');
   }
   const event = normalizeEvent(input.event);
+  if (input.skyEnabled != null && typeof input.skyEnabled !== 'boolean') throw new Error('Invalid shared event-sky option.');
   function checkStrings(value) {
     if (typeof value === 'string' && value.length > 512) throw new Error('Shared event text is too long. Use a records export instead.');
     if (value && typeof value === 'object') Object.values(value).forEach(checkStrings);
   }
   checkStrings(event);
   return Object.freeze({ version: 1, calculationVersion: 1, engineVersion: ASTRONOMY_ENGINE_VERSION,
-    event, houseSystem: input.houseSystem, offsetMinutes: input.offsetMinutes });
+    event, houseSystem: input.houseSystem, offsetMinutes: input.offsetMinutes,
+    ...(input.skyEnabled === true ? { skyEnabled: true } : {}) });
 }
 
 export function createSharedView(event, { houseSystem = 'whole-sign', offsetMinutes = 0 } = {}) {

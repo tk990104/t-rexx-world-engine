@@ -1,0 +1,15 @@
+# AstroEye event sky
+
+Select a chart and choose **Show event sky** in the time explorer. In Normal style, the camera reveals the full globe and AstroEye becomes a compact time-control panel. Sun and Moon direction markers follow the chart's calculated UTC instant. **Full chart** returns to the expanded panel without changing the sky; **Leave event sky**, closing AstroEye, or zooming inside the full-globe boundary clears the event override.
+
+This is a geocentric direction overlay, not a planetarium, local horizon/visibility forecast, topocentric Moon model, or historical replay of feeds. The time badge identifies AstroEye's UTC instant. Map lighting and Cesium's live-feed clock are not changed. Only the existing ring's two direction vectors are overridden.
+
+`eventSky.js` converts the already-calculated Sun/Moon true-ecliptic-of-date chart coordinates to equator-of-date with Astronomy Engine's `Rotation_ECT_EQD`, then rotates by negative Greenwich apparent sidereal angle into Earth-fixed axes. It preserves the chart provider and reference frame rather than mixing the live ring's separate Cesium model into event charts. See the primary [Astronomy Engine coordinate-system documentation](https://github.com/cosinekitty/astronomy/blob/master/source/js/README.md#coordinate-transforms) and [rotation reference](https://github.com/cosinekitty/astronomy/blob/master/source/js/README.md#rotation_ect_eqdtime--rotationmatrix).
+
+`CelestialRing.setDirectionSnapshot()` validates both directions before accepting a snapshot, caches unit vectors, marks the overlay's time source, and requests a render through the existing governor. Camera frames only project cached vectors. The live one-minute ephemeris timer does no work while an event override exists. The existing render-rate, canvas-size, keyhole visibility and marker-collision limits remain in force.
+
+The module adapter remembers the prior ring enabled preference and restores it when explicitly leaving event sky. The ring itself clears an override when disabled by zoom/style/global controls, so later activation cannot silently reuse a hidden old event. No extra interval, animation loop, worker or service is added.
+
+AstroEye links may include optional `skyEnabled: true`. Older links leave it absent and retain existing behavior. Shared sky restoration supplies the event vectors without moving the already-restored camera. An unsupported style reports the unavailable sky while leaving the valid chart accessible. As before, links are explicit snapshots: anyone with the link can read its event data.
+
+Verification includes basis-vector rotation, unit magnitude, deterministic time changes, immutable chart input, atomic vector validation, frame-cache reuse, prior-preference restoration, and opt-in sharing. `node scripts/qa-astroeye-share.mjs --event-sky` checks the actual ring, preview updates, unchanged viewer clock, a fresh recipient, compact view and cleanup. Coordinate conversion tests are not a new independent astronomical accuracy certification; the existing chart validation limits still apply.

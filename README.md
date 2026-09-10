@@ -46,6 +46,7 @@ The live layers are grounded in public feeds: the airliner crossing your screen 
 
 - **🪐 AstroEye event workspace:** Look up NFL games, review their time and venue, save a reproducible chart, inspect its zodiac/house/aspect wheel, and fly to the event marker. [Schedule coverage and setup](docs/architecture/astroeye-sports-schedules.md).
 - **⏱️ AstroEye time explorer:** Move up to six hours before or after an event to explore its changing chart, without altering the saved schedule. [Preview behavior and safeguards](docs/architecture/astroeye-time-explorer.md).
+- **☀️ AstroEye event sky:** Reveal the full-globe Sun/Moon direction ring at the chart's time, with compact time controls and an explicit UTC label. [Event-sky behavior](docs/architecture/astroeye-event-sky.md).
 - **🔗 AstroEye view links:** Reopen an event chart, preview time and world view in another browser, with an explicit save-copy step and no automatic record imports. [Sharing and privacy](docs/architecture/astroeye-share-views.md).
 - **🛩️ Cockpit view:** Ride inside a tracked flight — the camera holds the terrain under you all the way down.
 - **📡 Contacts:** A 250 km roster of everything near your target — step through live aircraft and drop into any cockpit.

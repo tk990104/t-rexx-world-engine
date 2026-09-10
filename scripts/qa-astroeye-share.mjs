@@ -4,6 +4,7 @@ import puppeteer from 'puppeteer';
 
 // Sender and recipient both use fresh isolated profiles, never user records or clipboard.
 const base = process.env.QA_BASE_URL || 'http://127.0.0.1:5173';
+const eventSky = process.argv.includes('--event-sky');
 const browser = await puppeteer.launch({ headless: true,
   args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'] });
 const errors = [];
@@ -41,6 +42,23 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 3000));
   const senderRecords = await records(sender);
   const expectedWheel = await sender.$eval('[data-chart="wheel"]', (node) => node.innerHTML);
+  if (eventSky) {
+    const liveBefore = await sender.evaluate(() => window.__godsEyeView.viewer.clock.currentTime.toString());
+    await click(sender, '[data-action="event-sky"]');
+    await sender.waitForFunction(() => window.__godsEyeView.styleManager.celestialRing.visible, { timeout: 30000 });
+    const ringBefore = await sender.evaluate(() => window.__godsEyeView.styleManager.celestialRing.getDirectionSnapshot());
+    assert.equal(ringBefore.time, '2026-11-01T05:30:00.000Z');
+    const updates = await sender.evaluate(() => window.__godsEyeView.styleManager.celestialRing.getDebugState().ephemerisUpdates);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    assert.equal(await sender.evaluate(() => window.__godsEyeView.styleManager.celestialRing.getDebugState().ephemerisUpdates), updates);
+    await click(sender, '[data-action="time-forward"]');
+    const shifted = await sender.evaluate(() => window.__godsEyeView.styleManager.celestialRing.getDirectionSnapshot());
+    assert.equal(shifted.time, '2026-11-01T05:45:00.000Z');
+    assert.notDeepEqual(shifted.sun, ringBefore.sun);
+    assert.equal(await sender.evaluate(() => window.__godsEyeView.viewer.clock.currentTime.toString()), liveBefore);
+    await click(sender, '[data-action="time-back"]');
+    await click(sender, '[data-action="full-chart"]');
+  }
   await click(sender, '[data-action="share-view"]');
   const link = await sender.$eval('#astroeye-view-link', (input) => input.value);
   const expectedWorld = Object.fromEntries(new URLSearchParams(new URL(link).hash.slice(1)));
@@ -73,6 +91,13 @@ try {
   }
   assert.equal(await recipient.evaluate(() => window.__godsEyeView.dataManager.isEnabled('airports')), true);
   assert.equal(JSON.parse(await records(recipient)).events.length, 0);
+  if (eventSky) {
+    await recipient.waitForFunction(() => window.__godsEyeView.styleManager.celestialRing.visible);
+    assert.equal(await recipient.evaluate(() => window.__godsEyeView.styleManager.celestialRing.getDirectionSnapshot().time), clock.time);
+    mkdirSync('qa-shots/astroeye-sky', { recursive: true });
+    await recipient.screenshot({ path: 'qa-shots/astroeye-sky/desktop.png' });
+    await click(recipient, '[data-action="full-chart"]');
+  }
   await click(recipient, '[data-action="save-shared"]');
   await recipient.waitForFunction(() => document.querySelector('[data-role="share-notice"]').hidden);
   const saved = JSON.parse(await records(recipient));
@@ -107,6 +132,25 @@ try {
   await recipient.$eval('.astroeye-share-controls', (node) => node.scrollIntoView({ block: 'center' }));
   assert.ok(await recipient.$eval('#astroeye-workspace', (node) => node.scrollWidth <= node.clientWidth + 1));
   await recipient.screenshot({ path: 'qa-shots/astroeye-share/mobile.png' });
+  if (eventSky) {
+    await click(recipient, '[data-action="full-chart"]');
+    await click(recipient, '[data-action="close"]');
+    assert.equal(await recipient.evaluate(() => window.__godsEyeView.styleManager.celestialRing.getDirectionSnapshot()), null);
+    console.log('PASS: event sky directions, clock isolation, cached rendering, shared-sky restore and cleanup.');
+  }
   assert.deepEqual(errors, []);
   console.log('PASS: isolated recipient restores chart, DST preview, clock, camera and airports; explicit save-copy; malformed-link protection; Unicode; clipboard fallback; responsive layout.');
+} catch (error) {
+  for (const context of browser.browserContexts()) {
+    for (const page of await context.pages()) {
+      console.log('QA diagnostic', await page.evaluate(() => ({
+        loading: document.querySelector('.loader-status')?.textContent,
+        status: document.querySelector('.astroeye-live-status')?.textContent,
+        notice: document.querySelector('[data-role="share-notice"]')?.textContent,
+        chartHidden: document.querySelector('.astroeye-chart')?.hidden,
+        clock: window.__godsEyeView?.worldPlatform.worldClock.snapshot(),
+      })).catch(() => 'page unavailable'));
+    }
+  }
+  throw error;
 } finally { await browser.close(); }

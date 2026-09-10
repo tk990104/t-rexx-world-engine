@@ -18,6 +18,14 @@
 }
 
 .astroeye-workspace[hidden] { display: none; }
+.astroeye-workspace[data-sky-compact="true"] { top: auto; left: auto; right: 16px; bottom: 70px; width: min(340px, calc(100vw - 32px)); max-height: 370px; }
+.astroeye-workspace[data-sky-compact="true"] .astroeye-body { display: block; }
+.astroeye-workspace[data-sky-compact="true"] .astroeye-entry,
+.astroeye-workspace[data-sky-compact="true"] .astroeye-header,
+.astroeye-workspace[data-sky-compact="true"] .astroeye-results > :not(.astroeye-chart),
+.astroeye-workspace[data-sky-compact="true"] .astroeye-chart > :not(.astroeye-chart-title):not(.astroeye-time-explorer) { display: none; }
+.astroeye-workspace[data-sky-compact="true"] .astroeye-results { padding: 12px; }
+.astroeye-workspace[data-sky-compact="true"] .astroeye-chart { margin: 0; }
 .astroeye-workspace [hidden] { display: none !important; }
 .astroeye-share-notice { padding: 10px; border: 1px solid #68517f; border-radius: 7px; color: var(--astro-cyan); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .astroeye-share-controls { margin-top: 12px; }

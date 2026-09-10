@@ -39,6 +39,8 @@ The chart wheel is rendered from a deterministic geometry model, so zodiac, hous
 
 AstroEye now has an unsaved [time explorer](astroeye-time-explorer.md) and explicit [view links](astroeye-share-views.md). Links restore validated calculation inputs and preview time after the existing world-share restoration, without a second camera move or automatic record import. Shared selections use `shared: true` and `selectedChartId: null`; saving a copy creates a fresh local event ID. Event data is deliberately excluded from automatic URL updates and ordinary world-only links.
 
+The [event sky](astroeye-event-sky.md) supplies cached Earth-fixed Sun/Moon directions to the existing celestial ring. Its time source is visibly labeled, uses the chart's UTC instant, and never changes Cesium's clock or map lighting. The ring retains ownership of rendering and the full-globe visibility gate; the module owns the opt-in override and clears it on exit.
+
 The first calculation adapter uses Astronomy Engine under MIT. Results identify the exact engine version and reference frame. The calculation core produces tropical apparent geocentric true-ecliptic-of-date positions, Whole Sign or Equal houses, major aspects with applying/separating motion, and traditional unequal planetary hours. Placidus and other house systems remain absent until independently verified fixtures are available.
 
 ## Boundary rules

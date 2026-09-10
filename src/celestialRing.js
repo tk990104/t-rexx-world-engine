@@ -344,6 +344,7 @@ export class CelestialRing {
     this._focusInProgress = false;
     this._ephemerisDirty = true;
     this._ephemerisUpdateCount = 0;
+    this._directionSnapshot = null;
     this._sunAngle = 0;
     this._moonAngle = Math.PI;
     this._sunOpacity = 1;
@@ -370,7 +371,7 @@ export class CelestialRing {
     // sun/moon markers aged with the app. Resample real wall time each
     // minute and request the one frame that repaints the ring.
     this._ephemerisTimer = setInterval(() => {
-      if (!this.enabled) return;
+      if (!this.enabled || this._directionSnapshot) return;
       // Always mark dirty so a long-hidden interval can't serve stale
       // sun/moon vectors on return — but only request the repaint frame
       // while visible; the visibility-restore request (main.js) picks the
@@ -408,12 +409,17 @@ export class CelestialRing {
     this._moonMarker.className = 'celestial-marker celestial-moon material-symbols-outlined';
     this._moonMarker.textContent = 'dark_mode';
 
+    this._timeLabel = document.createElement('span');
+    this._timeLabel.style.cssText = 'position:absolute;left:50%;top:90px;transform:translateX(-50%);max-width:85vw;padding:8px 12px;border:1px solid #d6a6ff;border-radius:8px;background:#140b20;color:#e7c9ff;font:11px monospace;text-align:center;white-space:pre-line;';
+    this._timeLabel.hidden = true;
+
     this._root.append(
       this._ringOutline,
       this._sunCanvas,
       this._moonCanvas,
       this._sunMarker,
-      this._moonMarker
+      this._moonMarker,
+      this._timeLabel
     );
     this.viewer.container.appendChild(this._root);
   }
@@ -431,10 +437,46 @@ export class CelestialRing {
     if (this.enabled !== wasEnabled) governorRequestRender('celestial-ring');
     this._root.classList.toggle('disabled', !this.enabled);
     if (!this.enabled) {
+      this.setDirectionSnapshot(null);
       this.visible = false;
       this._root.classList.remove('visible');
       this._clear();
     }
+  }
+
+  /** Replace only ring directions; never change the viewer or live-feed clock. */
+  setDirectionSnapshot(snapshot) {
+    if (snapshot != null) {
+      const time = new Date(snapshot.time);
+      if (snapshot.owner !== 'astroeye' || !Number.isFinite(time.getTime())) throw new Error('Invalid celestial direction snapshot.');
+      const vectors = {};
+      for (const body of ['sun', 'moon']) {
+        const value = snapshot[body];
+        if (!value || ![value.x, value.y, value.z].every(Number.isFinite)
+          || Math.hypot(value.x, value.y, value.z) < 1e-8) throw new Error('Invalid celestial direction vector.');
+        vectors[body] = Cesium.Cartesian3.normalize(new Cesium.Cartesian3(value.x, value.y, value.z), new Cesium.Cartesian3());
+      }
+      this._directionSnapshot = { owner: 'astroeye', time: time.toISOString(), ...vectors };
+      Cesium.Cartesian3.clone(vectors.sun, this._sunFixed);
+      Cesium.Cartesian3.clone(vectors.moon, this._moonFixed);
+      this._ephemerisDirty = false;
+      this._ephemerisUpdateCount += 1;
+    } else {
+      if (!this._directionSnapshot) return;
+      this._directionSnapshot = null;
+      this._ephemerisDirty = true;
+    }
+    this._timeLabel.hidden = !this._directionSnapshot;
+    this._timeLabel.textContent = this._directionSnapshot
+      ? `ASTROEYE EVENT SKY · ${this._directionSnapshot.time.replace('T', ' ').replace('.000Z', ' UTC')}\nSun / Moon geocentric directions · live feeds unchanged` : '';
+    this._root.dataset.timeSource = this._directionSnapshot ? 'astroeye' : 'live';
+    this._root.dataset.eventTime = this._directionSnapshot?.time || '';
+    this._nextDrawAt = 0;
+    governorRequestRender('celestial-direction-snapshot');
+  }
+
+  getDirectionSnapshot() {
+    return this._directionSnapshot ? structuredClone(this._directionSnapshot) : null;
   }
 
   /** Whether the current camera already frames the complete globe inside the keyhole. */
@@ -534,6 +576,7 @@ export class CelestialRing {
    * re-projects these cached vectors; it never re-runs the planetary model.
    */
   _updateEphemeris(time) {
+    if (this._directionSnapshot) return true;
     if (!this._ephemerisDirty) return true;
 
     Cesium.Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(time, this._sunInertial);

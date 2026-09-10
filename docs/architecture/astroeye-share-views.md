@@ -42,6 +42,6 @@ Localhost links only work where the app is running at that same address. A publi
 
 `node scripts/qa-astroeye-share.mjs` uses separate isolated sender/recipient profiles. It checks matching chart geometry, repeated-hour preview, WorldClock, camera, map and a selected Airports layer; no automatic records; save-copy; malformed-link rejection without losing existing records; clipboard denial/success via isolated mocks; and desktop/mobile layout. No user records or system clipboard are touched.
 
-Remaining M3 work includes event-time celestial overlays and a module-aware Director recipe. This is not a full MVP-release sign-off.
+The optional `skyEnabled` flag now restores the [Sun/Moon event sky](astroeye-event-sky.md). Remaining M3 work includes a module-aware Director recipe and expanded event-marker interactions. This is not a full MVP-release sign-off.
 
 Milestone check: 101 platform tests, 32 world-share tests and 50 layer-state tests pass, plus the production build and isolated sharing/time-explorer browser checks. An additional run of the untouched `reasonableDefaults.test.mjs` still fails its source-text anchor check on this Windows checkout (CRLF-sensitive); the entire inherited suite is not claimed green.

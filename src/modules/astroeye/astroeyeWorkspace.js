@@ -49,6 +49,7 @@ export function mountAstroEyeWorkspace({
   onOpen = async () => {},
   onRequestClose = null,
   createWorldLink = null,
+  eventSky = null,
 } = {}) {
   requireController(controller);
   if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
@@ -123,6 +124,8 @@ export function mountAstroEyeWorkspace({
             <div class="astroeye-time-scale"><span>−6 hours</span><output for="astroeye-time-offset" data-time="offset">Event start</output><span>+6 hours</span></div>
             <div class="astroeye-time-actions"><button type="button" data-action="time-back">−15 min</button><button type="button" data-action="time-reset">Event start</button><button type="button" data-action="time-forward">+15 min</button></div>
             <p id="astroeye-time-help">Release the slider to update the chart. Preview only: saved records stay unchanged; live map feeds are not replayed.</p>
+            <div class="astroeye-time-actions"><button type="button" data-action="event-sky">Show event sky</button><button type="button" data-action="live-sky">Leave event sky</button><button type="button" data-action="full-chart">Full chart</button></div>
+            <p>Event sky shows Sun and Moon directions in Normal style at full-globe zoom. Closing AstroEye or zooming back in leaves event-sky mode.</p>
           </section>
           <div class="astroeye-wheel" data-chart="wheel"></div>
           <div class="astroeye-angle-grid">
@@ -257,6 +260,7 @@ export function mountAstroEyeWorkspace({
   });
 
   function renderChart(event, chart, offsetMinutes = 0, isShared = false) {
+    eventSky?.update(chart);
     selected = { event, chart, offsetMinutes, isShared };
     root.querySelector('[data-action="delete"]').hidden = isShared;
     root.querySelector('[data-action="save-shared"]').hidden = !isShared;
@@ -404,7 +408,19 @@ export function mountAstroEyeWorkspace({
   root.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;
-    if (action === 'close') {
+    if (action === 'event-sky' && selected) {
+      try {
+        eventSky?.setEnabled(true);
+        root.dataset.skyCompact = 'true';
+        setStatus('Event sky follows the chart time. Use Full chart to return to chart details.');
+      } catch (error) { setStatus(error.message, 'error'); }
+    } else if (action === 'live-sky') {
+      eventSky?.setEnabled(false);
+      delete root.dataset.skyCompact;
+      setStatus('Event-sky mode ended. The chart and live feeds are unchanged.');
+    } else if (action === 'full-chart') {
+      delete root.dataset.skyCompact;
+    } else if (action === 'close') {
       schedulePanel.cancel();
       if (onRequestClose) await onRequestClose();
       else {
@@ -434,7 +450,7 @@ export function mountAstroEyeWorkspace({
         selected.offsetMinutes + (action === 'time-back' ? -15 : 15))));
     } else if (action === 'share-view' && selected && !root.dataset.busy) {
       try {
-        const url = createSharedViewUrl(createWorldLink(), controller.shareSnapshot());
+        const url = createSharedViewUrl(createWorldLink(), { ...controller.shareSnapshot(), ...(eventSky?.isEnabled() ? { skyEnabled: true } : {}) });
         root.querySelector('#astroeye-view-link').value = url;
         root.querySelector('[data-role="share-output"]').hidden = false;
         const hostname = new URL(url).hostname;
@@ -465,6 +481,7 @@ export function mountAstroEyeWorkspace({
       const removed = await busy(() => controller.deleteEvent(eventId), 'Event deleted.');
       if (!removed) return;
       selected = null;
+      eventSky?.update(null);
       chartRoot.hidden = true;
       empty.hidden = false;
       await refreshEvents();
@@ -514,6 +531,10 @@ export function mountAstroEyeWorkspace({
       const result = await busy(() => controller.restoreSharedView(incoming.snapshot), 'Shared chart and time restored as an unsaved preview. Live map availability may differ.');
       if (!result) return false;
       renderChart(result.event, result.chart, result.offsetMinutes, result.isShared);
+      if (incoming.snapshot.skyEnabled) {
+        try { eventSky?.setEnabled(true, { focus: false }); root.dataset.skyCompact = 'true'; }
+        catch (error) { setStatus(`Chart restored; event sky unavailable: ${error.message}`, 'error'); }
+      }
       await refreshEvents();
       return true;
     },
@@ -527,11 +548,14 @@ export function mountAstroEyeWorkspace({
       return true;
     },
     close() {
+      eventSky?.setEnabled(false);
+      delete root.dataset.skyCompact;
       schedulePanel.cancel();
       root.hidden = true;
       previouslyFocused?.focus?.();
     },
     destroy() {
+      eventSky?.destroy();
       schedulePanel.destroy();
       root.remove();
     },
