@@ -45,6 +45,7 @@ The live layers are grounded in public feeds: the airliner crossing your screen 
 ## 🎛️ What This Thing Does
 
 - **🪐 AstroEye event workspace:** Look up NFL games, review their time and venue, save a reproducible chart, inspect its zodiac/house/aspect wheel, and fly to the event marker. [Schedule coverage and setup](docs/architecture/astroeye-sports-schedules.md).
+- **⏱️ AstroEye time explorer:** Move up to six hours before or after an event to explore its changing chart, without altering the saved schedule. [Preview behavior and safeguards](docs/architecture/astroeye-time-explorer.md).
 - **🛩️ Cockpit view:** Ride inside a tracked flight — the camera holds the terrain under you all the way down.
 - **📡 Contacts:** A 250 km roster of everything near your target — step through live aircraft and drop into any cockpit.
 - **🎯 Click-to-track anything:** Camera locks on, draws a fading trail, surfaces full metadata — and a tracked fire or vessel hands you off to the nearest live camera in one click.

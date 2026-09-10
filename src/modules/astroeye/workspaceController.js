@@ -1,5 +1,6 @@
 import { normalizeEvent } from '../../domain/events/eventSchema.js';
 import { calculateAstroEyeChart } from './calculation/chart.js';
+import { calculateTimePreview } from './timeExplorer.js';
 
 function requireService(service, name, methods) {
   if (!service || methods.some((method) => typeof service[method] !== 'function')) {
@@ -62,7 +63,10 @@ export function createAstroEyeWorkspaceController({
   if (typeof presentEvent !== 'function') throw new TypeError('presentEvent must be a function');
   if (typeof idFactory !== 'function') throw new TypeError('idFactory must be a function');
 
+  let activeSelection = null;
+
   async function activate(event, chart) {
+    activeSelection = Object.freeze({ event, chart });
     worldClock.setMode('event', { time: event.utcStart });
     moduleState.set('astroeye', {
       version: 1,
@@ -77,6 +81,26 @@ export function createAstroEyeWorkspaceController({
   }
 
   return Object.freeze({
+    previewTime(offsetMinutes) {
+      if (!activeSelection) throw new Error('Choose a saved event before exploring time.');
+      const { event, chart: savedChart } = activeSelection;
+      const chart = offsetMinutes === 0 ? savedChart : calculateTimePreview(event, offsetMinutes, {
+        houseSystem: savedChart.options.houseSystem,
+      });
+      worldClock.setMode(offsetMinutes === 0 ? 'event' : 'replay', { time: chart.calculatedFor });
+      // selectedChartId always refers to a persisted chart, not this transient preview.
+      moduleState.set('astroeye', {
+        version: 1, selectedEventId: event.id, selectedChartId: savedChart.chartId,
+        houseSystem: savedChart.options.houseSystem,
+        ...(offsetMinutes === 0 ? {} : { preview: { offsetMinutes, calculatedFor: chart.calculatedFor } }),
+      });
+      eventBus.emit('astroeye:time-preview', { eventId: event.id, offsetMinutes, calculatedFor: chart.calculatedFor });
+      return Object.freeze({ event, chart, offsetMinutes });
+    },
+    async refocusSelected() {
+      if (!activeSelection) throw new Error('Choose a saved event before viewing its venue.');
+      return presentEvent(activeSelection.event, activeSelection.chart);
+    },
     async saveDraft(draft) {
       const event = eventFromDraft(draft, idFactory);
       const chart = calculateAstroEyeChart(event, { houseSystem: draft.houseSystem || 'whole-sign' });
@@ -88,7 +112,7 @@ export function createAstroEyeWorkspaceController({
       const event = await recordStore.getEvent(eventId);
       if (!event) throw new Error(`Unknown AstroEye event: ${eventId}`);
       const charts = await recordStore.listCharts({ eventId });
-      let chart = charts.find((entry) => entry.options?.houseSystem === houseSystem);
+      let chart = charts.find((entry) => entry.options?.houseSystem === houseSystem && entry.calculatedFor === event.utcStart);
       if (!chart) chart = await recordStore.saveChart(calculateAstroEyeChart(event, { houseSystem }));
       return activate(event, chart);
     },
@@ -96,6 +120,7 @@ export function createAstroEyeWorkspaceController({
       const removed = await recordStore.deleteEvent(eventId);
       const selected = moduleState.get('astroeye');
       if (removed && selected?.selectedEventId === eventId) {
+        activeSelection = null;
         moduleState.clear('astroeye');
         moduleState.setActiveModule(null);
         worldClock.setMode('live');

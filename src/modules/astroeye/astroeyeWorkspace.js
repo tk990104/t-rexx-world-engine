@@ -6,7 +6,7 @@ import { mountSportsSchedulePanel } from './sportsSchedulePanel.js';
 import { scheduleLocalTime } from './sportsSchedule.js';
 
 function requireController(controller) {
-  const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords'];
+  const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected'];
   if (!controller || methods.some((method) => typeof controller[method] !== 'function')) {
     throw new TypeError(`AstroEye workspace controller must provide ${methods.join(', ')}`);
   }
@@ -112,6 +112,15 @@ export function mountAstroEyeWorkspace({
         <div class="astroeye-empty">Save an event or choose one below to calculate its chart.</div>
         <div class="astroeye-chart" hidden>
           <div class="astroeye-chart-title"><strong data-chart="title"></strong><span data-chart="time"></span></div>
+          <section class="astroeye-time-explorer" aria-labelledby="astroeye-time-heading">
+            <div class="astroeye-time-heading"><h4 id="astroeye-time-heading">Time explorer</h4><span data-time="mode">EVENT START</span></div>
+            <p data-time="instant"></p>
+            <label for="astroeye-time-offset">Minutes from event start</label>
+            <input id="astroeye-time-offset" type="range" min="-360" max="360" step="1" value="0" aria-describedby="astroeye-time-help" />
+            <div class="astroeye-time-scale"><span>−6 hours</span><output for="astroeye-time-offset" data-time="offset">Event start</output><span>+6 hours</span></div>
+            <div class="astroeye-time-actions"><button type="button" data-action="time-back">−15 min</button><button type="button" data-action="time-reset">Event start</button><button type="button" data-action="time-forward">+15 min</button></div>
+            <p id="astroeye-time-help">Release the slider to update the chart. Preview only: saved records stay unchanged; live map feeds are not replayed.</p>
+          </section>
           <div class="astroeye-wheel" data-chart="wheel"></div>
           <div class="astroeye-angle-grid">
             <div><span>ASCENDANT</span><strong data-chart="ascendant"></strong></div>
@@ -230,12 +239,25 @@ export function mountAstroEyeWorkspace({
     if (event.target.name !== 'scheduleReviewed') field(form, 'scheduleReviewed').checked = false;
   });
 
-  function renderChart(event, chart) {
-    selected = { event, chart };
+  function renderChart(event, chart, offsetMinutes = 0) {
+    selected = { event, chart, offsetMinutes };
     empty.hidden = true;
     chartRoot.hidden = false;
     root.querySelector('[data-chart="title"]').textContent = event.title;
     root.querySelector('[data-chart="time"]').textContent = `${event.scheduledLocal.date} · ${event.scheduledLocal.time.slice(0, 5)} · ${event.scheduledLocal.timeZone}`;
+    const slider = root.querySelector('#astroeye-time-offset');
+    slider.value = offsetMinutes;
+    const offsetLabel = offsetMinutes === 0 ? 'Event start' : `${offsetMinutes > 0 ? '+' : '−'}${Math.abs(offsetMinutes)} min`;
+    slider.setAttribute('aria-valuetext', offsetLabel);
+    root.querySelector('[data-time="offset"]').textContent = offsetLabel;
+    root.querySelector('[data-time="mode"]').textContent = offsetMinutes === 0 ? 'EVENT START' : 'UNSAVED PREVIEW';
+    root.querySelector('.astroeye-time-explorer').dataset.preview = String(offsetMinutes !== 0);
+    const local = new Intl.DateTimeFormat('en-US', {
+      timeZone: event.scheduledLocal.timeZone, dateStyle: 'medium', timeStyle: 'long', hourCycle: 'h23',
+    }).format(new Date(chart.calculatedFor));
+    root.querySelector('[data-time="instant"]').textContent = `${local} · ${event.scheduledLocal.timeZone}\n${chart.calculatedFor.replace('T', ' ').replace('.000Z', ' UTC')}`;
+    root.querySelector('[data-action="time-back"]').disabled = offsetMinutes <= -360;
+    root.querySelector('[data-action="time-forward"]').disabled = offsetMinutes >= 360;
     renderAstroEyeChartWheel(root.querySelector('[data-chart="wheel"]'), chart);
     const asc = chart.houses.angles.ascendant;
     const mc = chart.houses.angles.midheaven;
@@ -258,8 +280,28 @@ export function mountAstroEyeWorkspace({
     root.querySelector('[data-chart="aspects"]').textContent = chart.aspects.length
       ? chart.aspects.slice(0, 8).map((aspect) => `${aspect.left} ${aspect.aspect} ${aspect.right} (${aspect.orb.toFixed(2)}° ${aspect.phase})`).join(' · ')
       : 'No major aspects within the current orbs.';
-    root.querySelector('[data-chart="provenance"]').textContent = `${chart.engine.id} ${chart.engine.version} · ${chart.options.zodiac} zodiac · ${chart.options.houseSystem} houses · ${event.utcStart}${event.source.kind === 'provider' ? ` · ${event.source.provider} event ${event.source.sourceEventId} · fetched ${event.source.retrievedAt}` : ''}`;
+    root.querySelector('[data-chart="provenance"]').textContent = `${chart.engine.id} ${chart.engine.version} · ${chart.options.zodiac} zodiac · ${chart.options.houseSystem} houses · calculated for ${chart.calculatedFor}${offsetMinutes ? ` · unsaved preview; original event ${event.utcStart}` : ''}${event.source.kind === 'provider' ? ` · ${event.source.provider} event ${event.source.sourceEventId} · fetched ${event.source.retrievedAt}` : ''}`;
   }
+
+  function previewTime(offsetMinutes) {
+    if (!selected || root.dataset.busy) return;
+    try {
+      const result = controller.previewTime(offsetMinutes);
+      renderChart(result.event, result.chart, result.offsetMinutes);
+      setStatus(offsetMinutes === 0 ? 'Original event chart restored.' : 'Time preview updated. Your saved event is unchanged.');
+    } catch (error) {
+      renderChart(selected.event, selected.chart, selected.offsetMinutes);
+      setStatus(error?.message || 'Could not preview this time.', 'error');
+    }
+  }
+
+  root.querySelector('#astroeye-time-offset').addEventListener('input', (event) => {
+    const offset = Number(event.target.value);
+    const label = `${offset > 0 ? '+' : ''}${offset} min (release to update)`;
+    root.querySelector('[data-time="offset"]').textContent = label;
+    event.target.setAttribute('aria-valuetext', label);
+  });
+  root.querySelector('#astroeye-time-offset').addEventListener('change', (event) => previewTime(Number(event.target.value)));
 
   async function refreshEvents() {
     const events = await controller.listEvents();
@@ -287,7 +329,9 @@ export function mountAstroEyeWorkspace({
   }
 
   async function busy(action, successMessage) {
+    if (root.dataset.busy) return null;
     root.dataset.busy = 'true';
+    root.querySelector('#astroeye-time-offset').disabled = true;
     setStatus('Working…');
     try {
       const result = await action();
@@ -298,6 +342,7 @@ export function mountAstroEyeWorkspace({
       return null;
     } finally {
       delete root.dataset.busy;
+      root.querySelector('#astroeye-time-offset').disabled = false;
     }
   }
 
@@ -355,11 +400,13 @@ export function mountAstroEyeWorkspace({
       field(form, 'competition').value = 'NFL';
       field(form, 'title').focus();
     } else if (action === 'refocus' && selected) {
-      const result = await busy(
-        () => controller.selectEvent(selected.event.id, { houseSystem: selected.chart.options.houseSystem }),
+      await busy(
+        () => controller.refocusSelected(),
         'Venue centered on the globe.',
       );
-      if (result) renderChart(result.event, result.chart);
+    } else if (action.startsWith('time-') && selected) {
+      previewTime(action === 'time-reset' ? 0 : Math.max(-360, Math.min(360,
+        selected.offsetMinutes + (action === 'time-back' ? -15 : 15))));
     } else if (action === 'delete' && selected) {
       if (!globalThis.confirm(`Delete “${selected.event.title}” and its saved charts?`)) return;
       const eventId = selected.event.id;

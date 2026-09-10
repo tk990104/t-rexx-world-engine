@@ -71,6 +71,20 @@
 
 .astroeye-empty { margin: 18px 0; padding: 24px 18px; color: rgba(248,242,255,.46); border: 1px dashed rgba(214,166,255,.2); border-radius: 9px; font-size: 12px; text-align: center; }
 .astroeye-chart { margin-top: 16px; }
+.astroeye-time-explorer { margin-bottom: 14px; padding: 12px; border: 1px solid rgba(120,231,255,.24); border-radius: 9px; background: rgba(120,231,255,.035); }
+.astroeye-time-explorer[data-preview="true"] { border-color: rgba(214,166,255,.6); background: rgba(214,166,255,.07); }
+.astroeye-time-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px; }
+.astroeye-time-heading h4 { margin: 0; font-size: 12px; }
+.astroeye-time-heading span { color: var(--astro-cyan); font: 8px "JetBrains Mono", monospace; }
+.astroeye-time-explorer p { margin: 9px 0; color: #b9b0c9; font-size: 10px; line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere; }
+.astroeye-time-explorer label { display: block; color: #c9bdd6; font-size: 10px; }
+.astroeye-time-explorer input { width: 100%; margin: 8px 0; accent-color: var(--astro-violet); }
+.astroeye-time-scale { display: flex; justify-content: space-between; gap: 5px; color: #b9b0c9; font-size: 9px; }
+.astroeye-time-scale output { color: var(--astro-cyan); text-align: center; }
+.astroeye-time-actions { display: flex; gap: 6px; margin-top: 12px; }
+.astroeye-time-actions button { flex: 1; min-height: 34px; padding: 5px; border: 1px solid #68517f; border-radius: 6px; background: #20142f; color: #fff; font-size: 10px; cursor: pointer; }
+.astroeye-time-actions button:disabled { opacity: .45; cursor: default; }
+.astroeye-time-explorer :focus-visible { outline: 2px solid var(--astro-cyan); outline-offset: 3px; }
 .astroeye-chart-title { display: grid; gap: 3px; padding-bottom: 12px; }
 .astroeye-chart-title strong { font-size: 16px; }
 .astroeye-chart-title span { color: rgba(248,242,255,.52); font: 10px "JetBrains Mono", monospace; }
