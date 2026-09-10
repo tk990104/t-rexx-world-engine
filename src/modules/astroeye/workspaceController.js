@@ -15,6 +15,9 @@ function defaultIdFactory() {
 
 export function eventFromDraft(draft, idFactory = defaultIdFactory) {
   if (!draft || typeof draft !== 'object') throw new TypeError('Event draft is required');
+  if (draft.source?.kind === 'provider' && draft.scheduleReviewed !== true) {
+    throw new Error('Check the schedule time, venue, and coordinates before saving.');
+  }
   return normalizeEvent({
     id: draft.id || idFactory(),
     title: draft.title,
@@ -36,7 +39,7 @@ export function eventFromDraft(draft, idFactory = defaultIdFactory) {
       longitude: draft.longitude,
       coordinateSource: draft.coordinateSource || 'user-confirmed',
     },
-    source: { kind: 'manual' },
+    source: draft.source ?? { kind: 'manual' },
   });
 }
 

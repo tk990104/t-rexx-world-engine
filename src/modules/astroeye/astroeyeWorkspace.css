@@ -18,6 +18,15 @@
 }
 
 .astroeye-workspace[hidden] { display: none; }
+.astroeye-schedule { margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid rgba(214,166,255,.2); }
+.astroeye-schedule-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 12px; }
+.astroeye-schedule-controls label { display: grid; gap: 5px; color: #b9b0c9; font-size: 10px; }
+.astroeye-schedule-controls input, .astroeye-schedule-controls button { min-height: 34px; box-sizing: border-box; padding: 7px; border: 1px solid #68517f; border-radius: 6px; color: #fff; background: #20142f; font-size: 11px; }
+.astroeye-schedule button:disabled { opacity: .5; cursor: wait; }
+.astroeye-schedule a { color: var(--astro-cyan); }
+.astroeye-form .astroeye-schedule-review[hidden] { display: none; }
+.astroeye-form .astroeye-schedule-review label { display: flex; align-items: center; gap: 8px; margin-top: 10px; line-height: 1.5; text-transform: none; }
+.astroeye-form .astroeye-schedule-review input { width: 18px; flex-shrink: 0; }
 .astroeye-workspace[data-busy="true"] { cursor: progress; }
 .astroeye-workspace button, .astroeye-workspace input, .astroeye-workspace select { font: inherit; }
 

@@ -29,6 +29,8 @@ Commercial deployments must complete a fresh provider-by-provider review. In par
 
 ## T-Rexx calculation dependency
 
+AstroEye schedule discovery uses [TheSportsDB](https://www.thesportsdb.com/) official API. Schedule/venue data follow [provider terms](https://www.thesportsdb.com/docs_terms_of_use.php), not the MIT code license. The free development key has limited results; app-store publication requires a paid subscription. The implementation imports factual event/venue fields, not provider artwork. See [schedule documentation](docs/architecture/astroeye-sports-schedules.md).
+
 AstroEye uses [Astronomy Engine](https://github.com/cosinekitty/astronomy) by Don Cross under the MIT License. The calculation result records the engine name and exact package version. This dependency is not Swiss Ephemeris and does not grant rights to Swiss Ephemeris data or code.
 
 Development tests use [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) under the Apache License 2.0. It is a test-only dependency and is not part of the production browser bundle.

@@ -44,6 +44,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { defineConfig, loadEnv } from 'vite';
 import cesium from 'vite-plugin-cesium';
+import { sportsScheduleProxy } from './server/sportsScheduleProxy.js';
 import { normalizeRadioCountryInput } from './src/data/radioCountry.js';
 import {
   normalizeRegionalArticles,
@@ -9286,6 +9287,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       cesium(),
+      sportsScheduleProxy(),
       openSkyProxy(),
       celestrakProxy(),
       tomtomProxy(),

@@ -2,6 +2,8 @@ import './astroeyeWorkspace.css';
 
 import { resolveZonedLocalTime } from '../../domain/events/eventSchema.js';
 import { renderAstroEyeChartWheel } from './chartWheel.js';
+import { mountSportsSchedulePanel } from './sportsSchedulePanel.js';
+import { scheduleLocalTime } from './sportsSchedule.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords'];
@@ -67,6 +69,7 @@ export function mountAstroEyeWorkspace({
     </header>
     <div class="astroeye-body">
       <section class="astroeye-entry" aria-labelledby="astroeye-event-heading">
+        <div class="astroeye-schedule" data-role="schedule"></div>
         <div class="astroeye-section-heading">
           <div><span>01</span><h3 id="astroeye-event-heading">Event details</h3></div>
           <button type="button" class="astroeye-text-button" data-action="new">Clear form</button>
@@ -78,12 +81,14 @@ export function mountAstroEyeWorkspace({
           <label>Away team<input name="away" required autocomplete="off" /></label>
           <label>Home team<input name="home" required autocomplete="off" /></label>
           <label>Local date<input name="localDate" type="date" required /></label>
-          <label>Local start time<input name="localTime" type="time" required /></label>
+          <label>Local start time<input name="localTime" type="time" step="1" required /></label>
           <label class="astroeye-span-2">Venue time zone<input name="timeZone" required list="astroeye-time-zones" placeholder="America/New_York" autocomplete="off" /></label>
           <datalist id="astroeye-time-zones">
             <option value="America/New_York"></option><option value="America/Chicago"></option>
             <option value="America/Denver"></option><option value="America/Los_Angeles"></option>
             <option value="Europe/London"></option><option value="Australia/Sydney"></option>
+            <option value="Australia/Melbourne"></option><option value="Europe/Berlin"></option>
+            <option value="Europe/Madrid"></option><option value="America/Phoenix"></option>
           </datalist>
           <label class="astroeye-span-2 astroeye-utc-choice" data-role="utc-choice" hidden>Repeated-hour choice<select name="utcStart"></select></label>
           <label class="astroeye-span-2">Venue name<input name="venueName" required placeholder="Stadium or arena" autocomplete="off" /></label>
@@ -91,6 +96,10 @@ export function mountAstroEyeWorkspace({
           <label>Longitude<input name="longitude" type="number" min="-180" max="180" step="any" required placeholder="-73.9934" /></label>
           <label>Duration, minutes<input name="durationMinutes" type="number" min="0" step="1" placeholder="Optional" /></label>
           <label>House system<select name="houseSystem"><option value="whole-sign">Whole Sign</option><option value="equal">Equal House</option></select></label>
+          <div class="astroeye-span-2 astroeye-schedule-review" data-role="schedule-review" hidden>
+            <p class="astroeye-help" data-role="schedule-origin"></p>
+            <label><input type="checkbox" name="scheduleReviewed" />I checked the event time, venue and coordinates.</label>
+          </div>
           <button class="astroeye-primary astroeye-span-2" type="submit">Save and view on globe</button>
         </form>
         <p class="astroeye-help">Use the venue’s local time and IANA time zone. Ambiguous daylight-saving times will ask for correction rather than guessing.</p>
@@ -138,6 +147,25 @@ export function mountAstroEyeWorkspace({
   field(form, 'timeZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   let selected = null;
   let previouslyFocused = null;
+  let scheduleSelection = null;
+  const scheduleReview = root.querySelector('[data-role="schedule-review"]');
+  const schedulePanel = mountSportsSchedulePanel(root.querySelector('[data-role="schedule"]'), {
+    onSelect(game, venue) {
+      scheduleSelection = game;
+      form.reset();
+      for (const name of ['title', 'sport', 'competition', 'home', 'away']) field(form, name).value = game[name];
+      field(form, 'venueName').value = venue?.name || game.venueName;
+      field(form, 'latitude').value = venue?.coordinates?.latitude ?? '';
+      field(form, 'longitude').value = venue?.coordinates?.longitude ?? '';
+      for (const name of ['localDate', 'localTime', 'timeZone']) field(form, name).value = '';
+      field(form, 'scheduleReviewed').required = true;
+      scheduleReview.hidden = false;
+      root.querySelector('[data-role="schedule-origin"]').textContent = `TheSportsDB · ${game.city || game.country || game.venueName} · ${game.utcStart ? `Source time ${game.utcStart.replace('T', ' ').replace('.000Z', ' UTC')}. Choosing a venue time zone converts this time.` : game.timeNote}`;
+      refreshTimeResolution();
+      field(form, 'timeZone').focus();
+      setStatus('Schedule loaded. Choose the venue time zone and review the event details.');
+    },
+  });
 
   function setStatus(message, tone = 'normal') {
     status.textContent = message;
@@ -147,7 +175,9 @@ export function mountAstroEyeWorkspace({
   function refreshTimeResolution() {
     const choice = root.querySelector('[data-role="utc-choice"]');
     const select = field(form, 'utcStart');
+    const previousChoice = select.value;
     choice.hidden = true;
+    select.required = false;
     select.replaceChildren();
     const localDate = field(form, 'localDate').value;
     const localTime = field(form, 'localTime').value;
@@ -160,6 +190,10 @@ export function mountAstroEyeWorkspace({
         return false;
       }
       if (resolution.status === 'ambiguous') {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Choose an occurrence';
+        select.append(placeholder);
         for (const [index, instant] of resolution.candidates.entries()) {
           const option = document.createElement('option');
           option.value = instant;
@@ -167,6 +201,8 @@ export function mountAstroEyeWorkspace({
           select.append(option);
         }
         choice.hidden = false;
+        select.required = true;
+        if (resolution.candidates.includes(previousChoice)) select.value = previousChoice;
         setStatus('This hour occurs twice. Choose the first or second occurrence.');
       }
       return true;
@@ -177,8 +213,22 @@ export function mountAstroEyeWorkspace({
   }
 
   for (const name of ['localDate', 'localTime', 'timeZone']) {
-    field(form, name).addEventListener('change', refreshTimeResolution);
+    field(form, name).addEventListener('change', () => {
+      let converted;
+      if (name === 'timeZone' && scheduleSelection?.utcStart) {
+        try {
+          converted = scheduleLocalTime(scheduleSelection.utcStart, field(form, 'timeZone').value.trim());
+          field(form, 'localDate').value = converted.localDate;
+          field(form, 'localTime').value = converted.localTime;
+        } catch { /* Existing resolution check reports the invalid zone. */ }
+      }
+      refreshTimeResolution();
+      if (converted && !root.querySelector('[data-role="utc-choice"]').hidden) field(form, 'utcStart').value = converted.utcStart;
+    });
   }
+  form.addEventListener('input', (event) => {
+    if (event.target.name !== 'scheduleReviewed') field(form, 'scheduleReviewed').checked = false;
+  });
 
   function renderChart(event, chart) {
     selected = { event, chart };
@@ -208,7 +258,7 @@ export function mountAstroEyeWorkspace({
     root.querySelector('[data-chart="aspects"]').textContent = chart.aspects.length
       ? chart.aspects.slice(0, 8).map((aspect) => `${aspect.left} ${aspect.aspect} ${aspect.right} (${aspect.orb.toFixed(2)}° ${aspect.phase})`).join(' · ')
       : 'No major aspects within the current orbs.';
-    root.querySelector('[data-chart="provenance"]').textContent = `${chart.engine.id} ${chart.engine.version} · ${chart.options.zodiac} zodiac · ${chart.options.houseSystem} houses · ${event.utcStart}`;
+    root.querySelector('[data-chart="provenance"]').textContent = `${chart.engine.id} ${chart.engine.version} · ${chart.options.zodiac} zodiac · ${chart.options.houseSystem} houses · ${event.utcStart}${event.source.kind === 'provider' ? ` · ${event.source.provider} event ${event.source.sourceEventId} · fetched ${event.source.retrievedAt}` : ''}`;
   }
 
   async function refreshEvents() {
@@ -255,7 +305,13 @@ export function mountAstroEyeWorkspace({
     event.preventDefault();
     if (!form.reportValidity()) return;
     if (!refreshTimeResolution()) return;
+    if (!form.reportValidity()) return;
     const draft = Object.fromEntries(new FormData(form).entries());
+    if (scheduleSelection) {
+      draft.source = scheduleSelection.source;
+      draft.scheduleReviewed = field(form, 'scheduleReviewed').checked;
+      draft.coordinateSource = 'user-reviewed';
+    }
     const result = await busy(() => controller.saveDraft(draft), 'Event saved and synchronized with the globe.');
     if (!result) return;
     renderChart(result.event, result.chart);
@@ -279,13 +335,19 @@ export function mountAstroEyeWorkspace({
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;
     if (action === 'close') {
+      schedulePanel.cancel();
       if (onRequestClose) await onRequestClose();
       else {
         root.hidden = true;
         previouslyFocused?.focus?.();
       }
     } else if (action === 'new') {
+      schedulePanel.cancel();
+      scheduleSelection = null;
+      scheduleReview.hidden = true;
+      field(form, 'scheduleReviewed').required = false;
       form.reset();
+      refreshTimeResolution();
       field(form, 'localDate').value = defaultLocalValues().date;
       field(form, 'localTime').value = defaultLocalValues().time;
       field(form, 'timeZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -329,6 +391,7 @@ export function mountAstroEyeWorkspace({
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
     event.preventDefault();
+    schedulePanel.cancel();
     if (onRequestClose) void onRequestClose();
     else {
       root.hidden = true;
@@ -348,10 +411,12 @@ export function mountAstroEyeWorkspace({
       return true;
     },
     close() {
+      schedulePanel.cancel();
       root.hidden = true;
       previouslyFocused?.focus?.();
     },
     destroy() {
+      schedulePanel.destroy();
       root.remove();
     },
   });
