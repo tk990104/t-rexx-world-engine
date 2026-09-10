@@ -25,7 +25,7 @@ const DRAFT = {
 };
 
 let sequence = 0;
-function harness() {
+function harness({ idFactory = () => 'event-generated', presentEvent } = {}) {
   sequence += 1;
   const eventBus = new EventBus();
   const moduleState = new ModuleStateCoordinator({ eventBus });
@@ -37,8 +37,8 @@ function harness() {
     worldClock,
     moduleState,
     eventBus,
-    presentEvent: async (event, chart) => presented.push({ event, chart }),
-    idFactory: () => 'event-generated',
+    presentEvent: presentEvent ?? (async (event, chart) => presented.push({ event, chart })),
+    idFactory,
   });
   return { controller, eventBus, moduleState, worldClock, recordStore, presented };
 }
@@ -172,5 +172,73 @@ test('UTC offsets cross the spring clock gap and midnight without nonexistent lo
   await context.controller.saveDraft({ ...DRAFT, localDate: '2026-03-08', localTime: '01:45' });
   assert.equal(context.controller.previewTime(30).chart.calculatedFor, '2026-03-08T07:15:00.000Z');
   assert.equal(context.controller.previewTime(-360).chart.calculatedFor, '2026-03-08T00:45:00.000Z');
+  await context.recordStore.close();
+});
+
+test('shared view opens without writes, matches the original chart and saves only an explicit new copy', async () => {
+  let id = 0;
+  const sender = harness();
+  await sender.controller.saveDraft({ ...DRAFT, houseSystem: 'equal' });
+  const expected = sender.controller.previewTime(-45);
+  const recipient = harness({ idFactory: () => `local-copy-${++id}` });
+  // A local record with the incoming ID must survive the shared preview and save-copy.
+  const local = await recipient.controller.saveDraft({ ...DRAFT, id: expected.event.id, title: 'Existing local event' });
+  const before = await recipient.controller.serializeRecords();
+  const snapshot = sender.controller.shareSnapshot();
+  const restored = await recipient.controller.restoreSharedView(snapshot);
+  assert.deepEqual(restored.chart, expected.chart);
+  assert.equal(restored.isShared, true);
+  assert.equal(recipient.worldClock.now().toISOString(), expected.chart.calculatedFor);
+  assert.equal(recipient.controller.selectedState().selectedChartId, null);
+  assert.equal(recipient.controller.selectedState().shared, true);
+  assert.equal(await recipient.controller.serializeRecords(), before);
+  recipient.controller.previewTime(15);
+  assert.equal(recipient.controller.previewTime(-45).isShared, true);
+  const saved = await recipient.controller.saveSharedCopy();
+  assert.equal(saved.isShared, false);
+  assert.notEqual(saved.event.id, snapshot.event.id);
+  assert.equal(saved.offsetMinutes, -45);
+  assert.equal(saved.chart.calculatedFor, expected.chart.calculatedFor);
+  assert.deepEqual(await recipient.recordStore.getEvent(local.event.id), local.event);
+  assert.equal((await recipient.recordStore.listCharts({ eventId: saved.event.id })).length, 1);
+  assert.equal((await recipient.recordStore.listCharts({ eventId: saved.event.id }))[0].calculatedFor, saved.event.utcStart);
+  await assert.rejects(recipient.controller.saveSharedCopy(), /No unsaved shared event/);
+  await sender.recordStore.close(); await recipient.recordStore.close();
+});
+
+test('invalid shared state leaves current selection, time, records and presentation unchanged', async () => {
+  const context = harness();
+  await context.controller.saveDraft(DRAFT);
+  const before = await context.controller.serializeRecords();
+  const clock = context.worldClock.snapshot();
+  const state = context.controller.selectedState();
+  const snapshot = context.controller.shareSnapshot();
+  await assert.rejects(context.controller.restoreSharedView({ ...snapshot, offsetMinutes: 500 }), /outside/);
+  assert.deepEqual(context.controller.selectedState(), state);
+  assert.deepEqual(context.worldClock.snapshot(), clock);
+  assert.equal(await context.controller.serializeRecords(), before);
+  assert.equal(context.presented.length, 1);
+  await context.recordStore.close();
+});
+
+test('shared view presentation failure does not claim a successful module or clock restore', async () => {
+  const sender = harness();
+  await sender.controller.saveDraft(DRAFT);
+  const recipient = harness({ presentEvent: async () => { throw new Error('renderer unavailable'); } });
+  await assert.rejects(recipient.controller.restoreSharedView(sender.controller.shareSnapshot()), /renderer unavailable/);
+  assert.equal(recipient.worldClock.mode, 'live');
+  assert.equal(recipient.controller.selectedState(), null);
+  assert.equal((await recipient.controller.listEvents()).length, 0);
+  await sender.recordStore.close(); await recipient.recordStore.close();
+});
+
+test('save-copy refuses a colliding generated ID instead of overwriting an event', async () => {
+  const context = harness();
+  await context.controller.saveDraft(DRAFT);
+  const snapshot = context.controller.shareSnapshot();
+  const before = await context.controller.serializeRecords();
+  await context.controller.restoreSharedView(snapshot);
+  await assert.rejects(context.controller.saveSharedCopy(), /new event ID/);
+  assert.equal(await context.controller.serializeRecords(), before);
   await context.recordStore.close();
 });

@@ -54,6 +54,7 @@ import { createAstroEyeModule } from './modules/astroeye/index.js';
 import { createAstroEyeWorkspaceController } from './modules/astroeye/workspaceController.js';
 import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.js';
 import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js';
+import { readSharedViewHash } from './modules/astroeye/shareView.js';
 
 initLogoGaze();
 
@@ -89,6 +90,7 @@ function describeError(error) {
  * style system, intelligence HUD, location presets, and share links.
  */
 async function init() {
+  const incomingAstroEyeView = readSharedViewHash(window.location.hash);
   const loadingScreen = document.getElementById('loading-screen');
   const loaderStatus = loadingScreen.querySelector('.loader-status');
 
@@ -342,6 +344,7 @@ async function init() {
     worldPlatform.moduleRegistry.register(createAstroEyeModule());
 
     let astroEyeWorkspace = null;
+    let astroEyeRestorePromise = Promise.resolve();
     const astroEyeLauncher = document.getElementById('astroeye-entry-layers');
     if (worldRecordStore) {
       const astroEyeController = createAstroEyeWorkspaceController({
@@ -355,6 +358,7 @@ async function init() {
         controller: astroEyeController,
         onOpen: () => worldPlatform.moduleRegistry.activate('astroeye'),
         onRequestClose: () => worldPlatform.panelRegistry.hide(),
+        createWorldLink: () => styleManager.shareLinkManager.createLink(),
       });
       worldPlatform.panelRegistry.register({
         id: 'astroeye-workspace',
@@ -368,6 +372,17 @@ async function init() {
       astroEyeLauncher?.addEventListener('click', (event) => {
         void worldPlatform.panelRegistry.show('astroeye-workspace', document.body, { trigger: event.currentTarget });
       });
+      if (incomingAstroEyeView.status !== 'absent') {
+        astroEyeRestorePromise = Promise.resolve(styleManager.initialRestorePromise).then(async (worldRestore) => {
+          if (!astroEyeWorkspace.canRestoreSharedView()) return;
+          await worldPlatform.panelRegistry.show('astroeye-workspace', document.body);
+          await astroEyeWorkspace.restoreSharedView(worldRestore?.status === 'failed'
+            ? { status: 'invalid', message: 'The world view could not be restored. AstroEye was not applied and no records were imported.' }
+            : incomingAstroEyeView);
+        }).catch(() => {
+          console.warn('[AstroEye] Shared view could not be restored; saved records were not imported.');
+        });
+      }
       window.addEventListener('pagehide', () => { void worldRecordStore.close(); }, { once: true });
     } else if (astroEyeLauncher) {
       astroEyeLauncher.disabled = true;
@@ -519,7 +534,7 @@ async function init() {
     // least 1.8 s of pure wall clock added to an already 4-7 s first paint —
     // time spent looking at a cover for no reason. The restore promise alone is
     // the honest signal that the app is ready to be seen.
-    void Promise.resolve(styleManager.initialRestorePromise).finally(() => {
+    void Promise.all([styleManager.initialRestorePromise, astroEyeRestorePromise]).finally(() => {
       loadingScreen.classList.add('hidden');
       // Reveal only after the loading cover has yielded. transitionend can be
       // absent under reduced motion, so a bounded fallback makes this reliable.

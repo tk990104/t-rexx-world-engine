@@ -37,6 +37,8 @@ The first workspace is launched from the existing data rail and mounted through 
 
 The chart wheel is rendered from a deterministic geometry model, so zodiac, house, angle, body, retrograde, and aspect placement can be tested without relying on browser screenshots. A 20-case internal regression pack spans daylight-saving boundaries, a leap day, fractional UTC offsets, both hemispheres, and polar day/night. Its pinned values detect pipeline drift from Astronomy Engine 2.1.19. A separate [NASA/JPL Horizons comparison](astroeye-validation.md) now checks all ten bodies at 15 instants, plus motion at five central dates. External house and planetary-hour validation remains pending.
 
+AstroEye now has an unsaved [time explorer](astroeye-time-explorer.md) and explicit [view links](astroeye-share-views.md). Links restore validated calculation inputs and preview time after the existing world-share restoration, without a second camera move or automatic record import. Shared selections use `shared: true` and `selectedChartId: null`; saving a copy creates a fresh local event ID. Event data is deliberately excluded from automatic URL updates and ordinary world-only links.
+
 The first calculation adapter uses Astronomy Engine under MIT. Results identify the exact engine version and reference frame. The calculation core produces tropical apparent geocentric true-ecliptic-of-date positions, Whole Sign or Equal houses, major aspects with applying/separating motion, and traditional unequal planetary hours. Placidus and other house systems remain absent until independently verified fixtures are available.
 
 ## Boundary rules

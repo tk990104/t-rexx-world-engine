@@ -11,7 +11,7 @@ export function createAstroEyeWorldPresenter({ viewer, navigate = flyToLandmark 
   }
   if (typeof navigate !== 'function') throw new TypeError('navigate must be a function');
 
-  return async function presentEvent(event, chart) {
+  return async function presentEvent(event, chart, { navigate: shouldNavigate = true } = {}) {
     viewer.entities.removeById(ASTROEYE_EVENT_ENTITY_ID);
     if (!event) {
       viewer.scene?.requestRender?.();
@@ -50,7 +50,7 @@ export function createAstroEyeWorldPresenter({ viewer, navigate = flyToLandmark 
       },
     });
 
-    navigate(viewer, latitude, longitude, {
+    if (shouldNavigate) navigate(viewer, latitude, longitude, {
       range: 12000,
       pitch: -42,
       heading: 12,

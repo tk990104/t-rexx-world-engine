@@ -39,4 +39,8 @@ test('world presenter replaces one venue marker and navigates to exact coordinat
   await present(null, null);
   assert.deepEqual(removed, [ASTROEYE_EVENT_ENTITY_ID, ASTROEYE_EVENT_ENTITY_ID]);
   assert.equal(renders, 2);
+
+  await present(EVENT, { chartId: 'shared-chart' }, { navigate: false });
+  assert.equal(navigation.length, 1, 'shared module restoration must preserve the shell camera');
+  assert.equal(added.at(-1).properties.chartId, 'shared-chart');
 });

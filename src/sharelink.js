@@ -444,17 +444,24 @@ export class ShareLinkManager {
 
   /** Copy a current-state snapshot with a copy-time timestamp. Returns true on success. */
   async copyLink({ nowMs = Date.now() } = {}) {
-    const params = this._buildHashParams();
-    if (!params) return false;
-    params.set(SHARE_CREATED_AT_PARAM, String(Math.floor(nowMs / 1000)));
-    const copiedUrl = new URL(window.location.href);
-    copiedUrl.hash = params.toString();
+    const copiedUrl = this.createLink({ nowMs });
+    if (!copiedUrl) return false;
     try {
-      await navigator.clipboard.writeText(copiedUrl.href);
+      await navigator.clipboard.writeText(copiedUrl);
       return true;
     } catch {
       return false;
     }
+  }
+
+  /** Public snapshot seam for opt-in module links; never changes history or clipboard. */
+  createLink({ nowMs = Date.now() } = {}) {
+    const params = this._buildHashParams();
+    if (!params) return null;
+    params.set(SHARE_CREATED_AT_PARAM, String(Math.floor(nowMs / 1000)));
+    const copiedUrl = new URL(window.location.href);
+    copiedUrl.hash = params.toString();
+    return copiedUrl.href;
   }
 
   _scheduleUpdate() {

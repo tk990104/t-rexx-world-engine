@@ -4,9 +4,10 @@ import { resolveZonedLocalTime } from '../../domain/events/eventSchema.js';
 import { renderAstroEyeChartWheel } from './chartWheel.js';
 import { mountSportsSchedulePanel } from './sportsSchedulePanel.js';
 import { scheduleLocalTime } from './sportsSchedule.js';
+import { createSharedViewUrl } from './shareView.js';
 
 function requireController(controller) {
-  const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected'];
+  const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
   if (!controller || methods.some((method) => typeof controller[method] !== 'function')) {
     throw new TypeError(`AstroEye workspace controller must provide ${methods.join(', ')}`);
   }
@@ -47,6 +48,7 @@ export function mountAstroEyeWorkspace({
   host = document.body,
   onOpen = async () => {},
   onRequestClose = null,
+  createWorldLink = null,
 } = {}) {
   requireController(controller);
   if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
@@ -105,6 +107,7 @@ export function mountAstroEyeWorkspace({
         <p class="astroeye-help">Use the venue’s local time and IANA time zone. Ambiguous daylight-saving times will ask for correction rather than guessing.</p>
       </section>
       <section class="astroeye-results" aria-labelledby="astroeye-chart-heading">
+        <p class="astroeye-share-notice" data-role="share-notice" role="status" hidden></p>
         <div class="astroeye-section-heading">
           <div><span>02</span><h3 id="astroeye-chart-heading">Event chart</h3></div>
           <span class="astroeye-status-dot">READY</span>
@@ -132,7 +135,18 @@ export function mountAstroEyeWorkspace({
           <div class="astroeye-chart-actions">
             <button type="button" data-action="refocus">View venue</button>
             <button type="button" class="danger" data-action="delete">Delete event</button>
+            <button type="button" data-action="save-shared" hidden>Save a copy</button>
           </div>
+          <section class="astroeye-share-controls" aria-label="Share AstroEye view">
+            <p class="astroeye-help">A view link includes this event’s details, venue coordinates and preview time. Anyone with it can read them. Only share information you intend to disclose.</p>
+            <button type="button" data-action="share-view">Create view link</button>
+            <div data-role="share-output" hidden>
+              <label for="astroeye-view-link">View link (snapshot at creation)</label>
+              <textarea id="astroeye-view-link" readonly rows="3"></textarea>
+              <button type="button" data-action="copy-view">Copy link</button>
+              <p class="astroeye-help" data-role="share-host-note"></p>
+            </div>
+          </section>
           <p class="astroeye-provenance" data-chart="provenance"></p>
         </div>
         <div class="astroeye-saved-header"><h3>Saved events</h3><div><button type="button" data-action="export">Export</button><button type="button" data-action="import">Import</button></div></div>
@@ -155,6 +169,9 @@ export function mountAstroEyeWorkspace({
   field(form, 'localTime').value = initial.time;
   field(form, 'timeZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   let selected = null;
+  let userInteracted = false;
+  root.addEventListener('pointerdown', () => { userInteracted = true; });
+  root.addEventListener('keydown', () => { userInteracted = true; });
   let previouslyFocused = null;
   let scheduleSelection = null;
   const scheduleReview = root.querySelector('[data-role="schedule-review"]');
@@ -239,8 +256,16 @@ export function mountAstroEyeWorkspace({
     if (event.target.name !== 'scheduleReviewed') field(form, 'scheduleReviewed').checked = false;
   });
 
-  function renderChart(event, chart, offsetMinutes = 0) {
-    selected = { event, chart, offsetMinutes };
+  function renderChart(event, chart, offsetMinutes = 0, isShared = false) {
+    selected = { event, chart, offsetMinutes, isShared };
+    root.querySelector('[data-action="delete"]').hidden = isShared;
+    root.querySelector('[data-action="save-shared"]').hidden = !isShared;
+    root.querySelector('[data-action="share-view"]').disabled = typeof createWorldLink !== 'function';
+    root.querySelector('[data-role="share-output"]').hidden = true;
+    root.querySelector('#astroeye-view-link').value = '';
+    const notice = root.querySelector('[data-role="share-notice"]');
+    notice.hidden = !isShared;
+    notice.textContent = isShared ? `Shared event · not saved on this device. Venue: ${event.venue.name} (${event.venue.latitude}, ${event.venue.longitude}). Review the source details before saving a copy. Live layers show current data, not historical replay.` : '';
     empty.hidden = true;
     chartRoot.hidden = false;
     root.querySelector('[data-chart="title"]').textContent = event.title;
@@ -287,10 +312,10 @@ export function mountAstroEyeWorkspace({
     if (!selected || root.dataset.busy) return;
     try {
       const result = controller.previewTime(offsetMinutes);
-      renderChart(result.event, result.chart, result.offsetMinutes);
+      renderChart(result.event, result.chart, result.offsetMinutes, result.isShared);
       setStatus(offsetMinutes === 0 ? 'Original event chart restored.' : 'Time preview updated. Your saved event is unchanged.');
     } catch (error) {
-      renderChart(selected.event, selected.chart, selected.offsetMinutes);
+      renderChart(selected.event, selected.chart, selected.offsetMinutes, selected.isShared);
       setStatus(error?.message || 'Could not preview this time.', 'error');
     }
   }
@@ -318,7 +343,7 @@ export function mountAstroEyeWorkspace({
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.eventId = event.id;
-      if (selected?.event.id === event.id) button.classList.add('active');
+      if (!selected?.isShared && selected?.event.id === event.id) button.classList.add('active');
       const title = document.createElement('strong');
       const detail = document.createElement('span');
       title.textContent = event.title;
@@ -407,7 +432,34 @@ export function mountAstroEyeWorkspace({
     } else if (action.startsWith('time-') && selected) {
       previewTime(action === 'time-reset' ? 0 : Math.max(-360, Math.min(360,
         selected.offsetMinutes + (action === 'time-back' ? -15 : 15))));
-    } else if (action === 'delete' && selected) {
+    } else if (action === 'share-view' && selected && !root.dataset.busy) {
+      try {
+        const url = createSharedViewUrl(createWorldLink(), controller.shareSnapshot());
+        root.querySelector('#astroeye-view-link').value = url;
+        root.querySelector('[data-role="share-output"]').hidden = false;
+        const hostname = new URL(url).hostname;
+        root.querySelector('[data-role="share-host-note"]').textContent = 'Open in a new tab to restore. ' + (['localhost', '127.0.0.1', '[::1]'].includes(hostname)
+          ? 'Local preview address: this link only works on a device running this app at the same address. Public sharing requires a deployed app.'
+          : 'The recipient needs access to this app address. Map or live-data availability may differ on their device.');
+        setStatus('View link created. Review it, then copy when ready.');
+      } catch (error) { setStatus(error.message || 'Could not create a view link.', 'error'); }
+    } else if (action === 'copy-view') {
+      const input = root.querySelector('#astroeye-view-link');
+      if (!input.value) return;
+      try {
+        await navigator.clipboard.writeText(input.value);
+        setStatus('AstroEye view link copied.');
+      } catch {
+        input.focus(); input.select();
+        setStatus('Clipboard unavailable. The link is selected; copy it manually.');
+      }
+    } else if (action === 'save-shared' && selected?.isShared) {
+      const result = await busy(() => controller.saveSharedCopy(), 'Shared event saved as a new local copy.');
+      if (result) {
+        renderChart(result.event, result.chart, result.offsetMinutes, result.isShared);
+        await refreshEvents();
+      }
+    } else if (action === 'delete' && selected && !selected.isShared) {
       if (!globalThis.confirm(`Delete “${selected.event.title}” and its saved charts?`)) return;
       const eventId = selected.event.id;
       const removed = await busy(() => controller.deleteEvent(eventId), 'Event deleted.');
@@ -448,6 +500,23 @@ export function mountAstroEyeWorkspace({
 
   return Object.freeze({
     root,
+    canRestoreSharedView() { return !userInteracted && !selected; },
+    async restoreSharedView(incoming) {
+      // A newer deliberate interaction wins over delayed startup restoration.
+      if (userInteracted || selected) return false;
+      if (incoming.status === 'invalid') {
+        const notice = root.querySelector('[data-role="share-notice"]');
+        notice.hidden = false; notice.textContent = incoming.message;
+        setStatus('AstroEye link rejected. No saved records were changed.', 'error');
+        return false;
+      }
+      if (incoming.status !== 'ready') return false;
+      const result = await busy(() => controller.restoreSharedView(incoming.snapshot), 'Shared chart and time restored as an unsaved preview. Live map availability may differ.');
+      if (!result) return false;
+      renderChart(result.event, result.chart, result.offsetMinutes, result.isShared);
+      await refreshEvents();
+      return true;
+    },
     async open(trigger = document.activeElement) {
       previouslyFocused = trigger;
       const opened = await busy(onOpen, 'AstroEye ready.');
