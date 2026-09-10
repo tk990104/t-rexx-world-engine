@@ -32,3 +32,5 @@ Commercial deployments must complete a fresh provider-by-provider review. In par
 AstroEye uses [Astronomy Engine](https://github.com/cosinekitty/astronomy) by Don Cross under the MIT License. The calculation result records the engine name and exact package version. This dependency is not Swiss Ephemeris and does not grant rights to Swiss Ephemeris data or code.
 
 Development tests use [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) under the Apache License 2.0. It is a test-only dependency and is not part of the production browser bundle.
+
+Independent planetary-position tests retain reference responses from the NASA/JPL Solar System Dynamics Group's [Horizons service](https://ssd.jpl.nasa.gov/horizons/). Original responses, attribution, query parameters, and retrieval times are stored in `src/modules/astroeye/calculation/fixtures/horizons/`. These reference data are not relicensed by the MIT code license. The [SSD API policy](https://ssd-api.jpl.nasa.gov/doc/) applies to reference collection; the browser application does not call Horizons. See [the validation report](docs/architecture/astroeye-validation.md) for scope and measured agreement.
