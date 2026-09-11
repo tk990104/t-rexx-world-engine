@@ -45,6 +45,8 @@ The first calculation adapter uses Astronomy Engine under MIT. Results identify 
 
 ## Boundary rules
 
+The first [AstroEye Director tour](astroeye-director-tour.md) adds three deterministic camera shots with versioned calculation inputs. Director project v4 stores module context separately from layers; product adapters validate and restore it without saving records or competing for the camera. AstroEye is the first registered scene adapter; other modules can adopt the same boundary.
+
 - A module may depend only on capabilities it declares.
 - API keys never enter module state, share links, or browser logs.
 - Every provider must register terms, attribution, and a cache policy before its data is displayed.

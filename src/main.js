@@ -56,6 +56,7 @@ import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.
 import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js';
 import { readSharedViewHash } from './modules/astroeye/shareView.js';
 import { createEventSky } from './modules/astroeye/eventSky.js';
+import { createAstroEyeTour, normalizeAstroEyeSceneView } from './modules/astroeye/directorRecipe.js';
 
 initLogoGaze();
 
@@ -345,6 +346,7 @@ async function init() {
     worldPlatform.moduleRegistry.register(createAstroEyeModule());
 
     let astroEyeWorkspace = null;
+    const sceneDirector = new SceneDirector(viewer, styleManager, dataManager);
     let astroEyeRestorePromise = Promise.resolve();
     const astroEyeLauncher = document.getElementById('astroeye-entry-layers');
     if (worldRecordStore) {
@@ -360,6 +362,8 @@ async function init() {
         onOpen: () => worldPlatform.moduleRegistry.activate('astroeye'),
         onRequestClose: () => worldPlatform.panelRegistry.hide(),
         createWorldLink: () => styleManager.shareLinkManager.createLink(),
+        onCreateTour: (snapshot) => sceneDirector.addScene(createAstroEyeTour(snapshot)),
+        onPreviewTour: (id) => sceneDirector.startScene(id, { single: true }),
         eventSky: createEventSky({ ring: styleManager.celestialRing,
           setRingEnabled: (enabled, options) => styleManager.setCelestialRingEnabled(enabled, options) }),
       });
@@ -371,6 +375,11 @@ async function init() {
           await astroEyeWorkspace.open(trigger);
           return () => astroEyeWorkspace.close();
         },
+      });
+      sceneDirector.registerModuleAdapter('astroeye', {
+        normalize: normalizeAstroEyeSceneView,
+        capture: () => astroEyeWorkspace.sceneSnapshot(),
+        apply: (snapshot, options) => astroEyeWorkspace.applySceneView(snapshot, options),
       });
       astroEyeLauncher?.addEventListener('click', (event) => {
         void worldPlatform.panelRegistry.show('astroeye-workspace', document.body, { trigger: event.currentTarget });
@@ -391,9 +400,6 @@ async function init() {
       astroEyeLauncher.disabled = true;
       astroEyeLauncher.title = 'AstroEye needs browser storage, which is unavailable in this session.';
     }
-
-    // Initialize deterministic scene playback for social clip capture
-    const sceneDirector = new SceneDirector(viewer, styleManager, dataManager);
 
     // Initialize the voice "whiteboard" annotation engine (world-space renderer)
     const annotations = initAnnotations({ viewer, tileset });

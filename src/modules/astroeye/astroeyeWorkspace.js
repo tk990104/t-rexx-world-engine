@@ -50,6 +50,8 @@ export function mountAstroEyeWorkspace({
   onRequestClose = null,
   createWorldLink = null,
   eventSky = null,
+  onCreateTour = null,
+  onPreviewTour = null,
 } = {}) {
   requireController(controller);
   if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
@@ -140,6 +142,13 @@ export function mountAstroEyeWorkspace({
             <button type="button" class="danger" data-action="delete">Delete event</button>
             <button type="button" data-action="save-shared" hidden>Save a copy</button>
           </div>
+          <section class="astroeye-tour-controls" aria-label="AstroEye Director tour">
+            <h4>Event tour</h4>
+            <p class="astroeye-help">World → region → venue at this chart time. Adds three editable shots to Director without replacing existing scenes. Preview only: no video is recorded; live feeds stay live.</p>
+            <p class="astroeye-help">Scene storage and exports include this event’s details and venue coordinates. Review before sharing.</p>
+            <div class="astroeye-chart-actions"><button type="button" data-action="create-tour">Add event tour</button><button type="button" data-action="preview-tour" hidden>Preview saved tour</button></div>
+            <p class="astroeye-help" data-role="tour-result"></p>
+          </section>
           <section class="astroeye-share-controls" aria-label="Share AstroEye view">
             <p class="astroeye-help">A view link includes this event’s details, venue coordinates and preview time. Anyone with it can read them. Only share information you intend to disclose.</p>
             <button type="button" data-action="share-view">Create view link</button>
@@ -176,6 +185,7 @@ export function mountAstroEyeWorkspace({
   root.addEventListener('pointerdown', () => { userInteracted = true; });
   root.addEventListener('keydown', () => { userInteracted = true; });
   let previouslyFocused = null;
+  let lastTourId = null;
   let scheduleSelection = null;
   const scheduleReview = root.querySelector('[data-role="schedule-review"]');
   const schedulePanel = mountSportsSchedulePanel(root.querySelector('[data-role="schedule"]'), {
@@ -265,6 +275,7 @@ export function mountAstroEyeWorkspace({
     root.querySelector('[data-action="delete"]').hidden = isShared;
     root.querySelector('[data-action="save-shared"]').hidden = !isShared;
     root.querySelector('[data-action="share-view"]').disabled = typeof createWorldLink !== 'function';
+    root.querySelector('[data-action="create-tour"]').disabled = typeof onCreateTour !== 'function';
     root.querySelector('[data-role="share-output"]').hidden = true;
     root.querySelector('#astroeye-view-link').value = '';
     const notice = root.querySelector('[data-role="share-notice"]');
@@ -408,7 +419,18 @@ export function mountAstroEyeWorkspace({
   root.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;
-    if (action === 'event-sky' && selected) {
+    if (action === 'create-tour' && selected && onCreateTour) {
+      const result = await busy(() => onCreateTour(controller.shareSnapshot()), 'Event tour added.');
+      if (!result) return;
+      lastTourId = result.id;
+      root.querySelector('[data-action="preview-tour"]').hidden = typeof onPreviewTour !== 'function';
+      root.querySelector('[data-role="tour-result"]').textContent = `${selected.event.title} · ${selected.chart.calculatedFor} · ${result.persisted ? 'Saved in Director.' : 'Session only — browser storage unavailable.'} Use Preview saved tour; Stop or Escape ends playback.`;
+      if (!result.persisted) setStatus('Tour added for this session only. Browser storage is unavailable.', 'error');
+    } else if (action === 'preview-tour' && lastTourId && onPreviewTour) {
+      const result = await busy(() => onPreviewTour(lastTourId), 'Tour preview finished.');
+      if (result?.started === false || result?.error) setStatus(result.reason || result.error, 'error');
+      else if (result?.cancelled) setStatus('Tour stopped. You can replay it from Director.');
+    } else if (action === 'event-sky' && selected) {
       try {
         eventSky?.setEnabled(true);
         root.dataset.skyCompact = 'true';
@@ -517,6 +539,17 @@ export function mountAstroEyeWorkspace({
 
   return Object.freeze({
     root,
+    sceneSnapshot() { return selected ? controller.shareSnapshot() : null; },
+    async applySceneView(snapshot, { isCurrent = () => true } = {}) {
+      if (!isCurrent()) return false;
+      const result = await controller.restoreSharedView(snapshot, { isCurrent });
+      if (!result || !isCurrent()) return false;
+      eventSky?.setEnabled(false);
+      delete root.dataset.skyCompact;
+      renderChart(result.event, result.chart, result.offsetMinutes, result.isShared);
+      root.querySelector('[data-role="share-notice"]').textContent = 'Scene preview · calculation inputs restored without changing saved event records. Live feeds remain current.';
+      return true;
+    },
     canRestoreSharedView() { return !userInteracted && !selected; },
     async restoreSharedView(incoming) {
       // A newer deliberate interaction wins over delayed startup restoration.

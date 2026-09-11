@@ -18,6 +18,128 @@ import { SceneDirector } from './director.js';
 import { SCENE_TRACKING_PARAM_KEYS } from './scenePolicy.js';
 import { SCENE_RECIPES } from './recipes.js';
 
+test('module scenes append without replacing scenes, survive reload and keep version 3 bloom', () => {
+  const { director, restore } = makeDirector();
+  try {
+    const original = structuredClone(director._project.scenes);
+    director.registerModuleAdapter('astroeye', { normalize: (value) => value, apply() {} });
+    const raw = { id: 'tour', title: 'Tour', shots: [{ ...PROJECT_FIXTURE.scenes[0].shots[0], modules: { astroeye: { version: 1, time: 'example' } } }] };
+    const result = director.addScene(raw);
+    assert.deepEqual(result, { id: 'tour', persisted: true });
+    assert.deepEqual(director._project.scenes.slice(0, -1), original);
+    raw.shots[0].modules.astroeye.time = 'mutated';
+    assert.equal(director._project.scenes.at(-1).shots[0].modules.astroeye.time, 'example');
+    assert.throws(() => director.addScene(raw), /already exists/);
+    const saved = structuredClone(director._project);
+    globalThis.localStorage.getItem = () => JSON.stringify(saved);
+    const reopened = new SceneDirector(fakeViewer(), fakeStyleManager(), fakeDataManager());
+    assert.deepEqual(reopened._project.scenes, saved.scenes);
+    assert.equal(reopened._project.version, 4);
+    const legacy = structuredClone(PROJECT_FIXTURE);
+    legacy.scenes[0].shots[0].visual.bloom = { intensity: 120, enabled: true };
+    globalThis.localStorage.getItem = () => JSON.stringify(legacy);
+    const migrated = new SceneDirector(fakeViewer(), fakeStyleManager(), fakeDataManager());
+    assert.equal(migrated._project.scenes[0].shots[0].visual.bloom.intensity, 120);
+  } finally { restore(); }
+});
+
+test('unknown or invalid module context refuses the entire run before scene side effects', async () => {
+  const project = structuredClone(PROJECT_FIXTURE);
+  project.scenes[0].shots[1].modules = { astroeye: { version: 99 } };
+  const { director, viewer, styleManager, dataManager, restore } = makeDirector({ project });
+  try {
+    assert.equal((await director.startScene('scene-1')).started, false);
+    director.registerModuleAdapter('astroeye', { normalize() { throw new Error('Unsupported version'); }, apply() {} });
+    assert.match((await director.startScene('scene-1')).reason, /Unsupported/);
+    assert.equal(await director.loadShot('scene-1', 'shot-b'), false);
+    assert.equal(styleManager.visualStates.length, 0);
+    assert.equal(dataManager.committed.length, 0);
+    assert.equal(viewer.flights.length, 0);
+    assert.equal(director.running, false);
+  } finally { restore(); }
+});
+
+test('STOP during module restoration prevents a stale commit and the camera flight', async () => {
+  const project = structuredClone(PROJECT_FIXTURE);
+  project.scenes[0].shots[0].modules = { astroeye: { version: 1 } };
+  const { director, viewer, restore } = makeDirector({ project });
+  let resume, entered, committed = false;
+  const ready = new Promise((resolve) => { entered = resolve; });
+  director.registerModuleAdapter('astroeye', { normalize: (value) => value,
+    async apply(_value, { isCurrent, signal }) {
+      entered();
+      await new Promise((resolve) => { resume = resolve; });
+      assert.equal(signal.aborted, true);
+      if (isCurrent()) committed = true;
+    } });
+  try {
+    const run = director.startScene('scene-1');
+    await ready;
+    director.stopScene(); resume();
+    assert.equal((await run).cancelled, true);
+    assert.equal(committed, false);
+    assert.equal(viewer.flights.length, 0);
+    assert.equal(director.running, false);
+  } finally { restore(); }
+});
+
+test('newer LOAD disowns an older module restoration', async () => {
+  const project = structuredClone(PROJECT_FIXTURE);
+  project.scenes[0].shots[0].modules = { astroeye: { version: 1 } };
+  const { director, viewer, restore } = makeDirector({ project });
+  let resume, entered, committed = false;
+  const ready = new Promise((resolve) => { entered = resolve; });
+  director.registerModuleAdapter('astroeye', { normalize: (value) => value,
+    async apply(_value, { isCurrent }) {
+      entered(); await new Promise((resolve) => { resume = resolve; });
+      if (isCurrent()) committed = true;
+    } });
+  try {
+    const first = director.loadShot('scene-1', 'shot-a'); await ready;
+    await director.loadShot('scene-1', 'shot-b'); resume(); await first;
+    assert.equal(committed, false);
+    assert.equal(viewer.flights.length, 1);
+  } finally { restore(); }
+});
+
+test('capture stores module context and a missing tour never falls back to another scene', async () => {
+  const { director, viewer, restore } = makeDirector();
+  try {
+    director.registerModuleAdapter('astroeye', { normalize: (value) => value, apply() {}, capture: () => ({ version: 1, time: 'test' }) });
+    director.captureShot();
+    assert.deepEqual(director._project.scenes[0].shots.at(-1).modules, { astroeye: { version: 1, time: 'test' } });
+    assert.equal((await director.startScene('deleted-tour', { single: true })).started, false);
+    assert.equal(viewer.flights.length, 0);
+  } finally { restore(); }
+});
+
+test('a module load failure reports failure and releases its cancellation handle', async () => {
+  const project = structuredClone(PROJECT_FIXTURE);
+  project.scenes[0].shots[0].modules = { astroeye: { version: 1 } };
+  const { director, viewer, restore } = makeDirector({ project });
+  try {
+    director.registerModuleAdapter('astroeye', { normalize: (value) => value, apply() { throw new Error('Unavailable'); } });
+    assert.equal(await director.loadShot('scene-1', 'shot-a'), false);
+    assert.equal(director._loadAbort, null);
+    assert.equal(viewer.flights.length, 0);
+  } finally { restore(); }
+});
+
+test('scene append reports session-only availability when browser storage rejects the write', () => {
+  const { director, restore } = makeDirector();
+  const previousWarn = console.warn;
+  try {
+    console.warn = () => {};
+    let warned = false;
+    director._toastStorageError = () => { warned = true; };
+    globalThis.localStorage.setItem = () => { throw new Error('Quota exceeded'); };
+    const result = director.addScene({ id: 'session-tour', shots: PROJECT_FIXTURE.scenes[0].shots });
+    assert.equal(result.persisted, false);
+    assert.equal(warned, true);
+    assert.equal(director.listScenes().at(-1).id, 'session-tour');
+  } finally { console.warn = previousWarn; restore(); }
+});
+
 /** The layer registry as main.js builds it (src/main.js dataManager.register calls). */
 const REGISTERED = [
   'flights', 'military', 'earthquakes', 'satellites', 'rocket-launches', 'traffic',
@@ -483,7 +605,7 @@ test('applyVisualState gates the map-stack switch on both sides of its await', (
   // another setStack() arrives, and a winning state that omits `mapStack`
   // never issues one — every normalized scene shot omits it — so a stale
   // switch would otherwise stand on the globe.
-  const source = fs.readFileSync(new URL('../ui.js', import.meta.url), 'utf8');
+  const source = fs.readFileSync(new URL('../ui.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
   const method = source.match(/\n {2}async applyVisualState\([\s\S]*?\n {2}\}\n/);
   assert.ok(method, 'applyVisualState is missing from ui.js');
   assert.match(method[0], /async applyVisualState\(state = \{\}, \{ isCurrent = null \} = \{\}\)/);

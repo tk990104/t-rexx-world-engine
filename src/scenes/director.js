@@ -14,6 +14,7 @@
 
 import * as Cesium from 'cesium';
 import { SCENE_RECIPES } from './recipes.js';
+import { normalizeSceneModules } from './moduleState.js';
 import { sceneLayerPlan, sceneRequiresContextModeExit } from './scenePolicy.js';
 import {
   BLOOM_INTENSITY_DEFAULT,
@@ -26,7 +27,7 @@ const ESCAPE_KEY = 'Escape';
 /** @constant {string} localStorage key for the serialized project */
 const STORAGE_KEY = 'godsEyeView.sceneProject.v2';
 /** @constant {number} Current schema version for project migration */
-const PROJECT_VERSION = 3;
+const PROJECT_VERSION = 4;
 /** @constant {number} Fallback camera flight duration per shot (seconds) */
 const DEFAULT_SHOT_DURATION_SEC = 4;
 /** @constant {number} Default hold/pause after a shot completes (seconds) */
@@ -86,11 +87,11 @@ function normalizeLayerEntry(entry) {
  */
 function normalizeBloomState(rawBloom = {}, { projectVersion = PROJECT_VERSION, fallbackIntensity = 50 } = {}) {
   // Determine which bloom scale the stored value was encoded under.
-  // Older projects (version < PROJECT_VERSION) used scale version 1.
+  // Scale version 2 began at project version 3, independently of later schemas.
   const explicitVersion = Number(rawBloom.version);
   const bloomVersion = Number.isFinite(explicitVersion)
     ? explicitVersion
-    : (projectVersion >= PROJECT_VERSION ? BLOOM_SCALE_VERSION : 1);
+    : (projectVersion >= 3 ? BLOOM_SCALE_VERSION : 1);
 
   const rawIntensity = Number.isFinite(Number(rawBloom.intensity))
     ? Number(rawBloom.intensity)
@@ -240,6 +241,7 @@ function normalizeShot(rawShot, index = 0, { projectVersion = PROJECT_VERSION } 
     layers: Object.fromEntries(
       Object.entries(rawShot?.layers || {}).map(([layerId, value]) => [layerId, normalizeLayerEntry(value)])
     ),
+    ...(rawShot?.modules == null ? {} : { modules: normalizeSceneModules(rawShot.modules) }),
   };
 }
 
@@ -299,6 +301,7 @@ export class SceneDirector {
     this.viewer = viewer;
     this.styleManager = styleManager;
     this.dataManager = dataManager;
+    this._moduleAdapters = new Map();
 
     /** @type {boolean} True while a scene run is in progress */
     this._running = false;
@@ -334,6 +337,7 @@ export class SceneDirector {
     this._sceneShotList = document.getElementById('scene-shot-list');
     this._sceneStartBtn = document.getElementById('scene-start-btn');
     this._sceneStopBtn = document.getElementById('scene-stop-btn');
+    this._playbackStopBtn = document.getElementById('scene-playback-stop');
     this._sceneNextBtn = document.getElementById('scene-next-btn');
     this._sceneExportBtn = document.getElementById('scene-export-btn');
     this._sceneImportBtn = document.getElementById('scene-import-btn');
@@ -366,13 +370,64 @@ export class SceneDirector {
     this._project.updatedAt = new Date().toISOString();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this._project));
+      return true;
     } catch (e) {
       // Private browsing / block-all-cookies / quota-exceeded throws here. The
       // in-memory project stays usable this session, but persistence failed —
       // tell the user instead of crashing the caller (M11).
       console.warn('[Scenes] Could not persist project (storage unavailable):', e);
       this._toastStorageError();
+      return false;
     }
+  }
+
+  /** Product validators/restorers must never move the camera or save records. */
+  registerModuleAdapter(id, adapter) {
+    normalizeSceneModules({ [id]: { version: 1 } });
+    if (this._moduleAdapters.has(id)) throw new Error(`Scene module already registered: ${id}`);
+    if (typeof adapter?.normalize !== 'function' || typeof adapter?.apply !== 'function') throw new Error('Scene module needs normalize and apply');
+    this._moduleAdapters.set(id, adapter);
+  }
+
+  _prepareModuleStates(raw) {
+    return Object.entries(normalizeSceneModules(raw)).map(([id, value]) => {
+      const adapter = this._moduleAdapters.get(id);
+      if (!adapter) throw new Error(`Scene needs unavailable module: ${id}`);
+      return { adapter, value: adapter.normalize(value) };
+    });
+  }
+
+  async _applyModuleStates(prepared, token) {
+    for (const { adapter, value } of prepared) {
+      if (token.cancelled) return;
+      const applied = await adapter.apply(value, { isCurrent: () => !token.cancelled, signal: token.signal });
+      if (token.cancelled) return;
+      if (applied === false) throw new Error('Scene module context could not be restored');
+    }
+  }
+
+  _captureModuleStates() {
+    return Object.fromEntries([...this._moduleAdapters].flatMap(([id, adapter]) => {
+      const value = adapter.capture?.();
+      return value == null ? [] : [[id, adapter.normalize(value)]];
+    }));
+  }
+
+  /** Append, never replace, a generated scene. Persistence failure stays visible. */
+  addScene(raw) {
+    if (this._running) throw new Error('Stop the current tour before adding a scene.');
+    if (!raw?.id || !Array.isArray(raw.shots) || !raw.shots.length) throw new Error('A scene needs an ID and shots');
+    if (this._project.scenes.some((scene) => scene.id === raw.id)) throw new Error('Scene ID already exists');
+    const scene = { id: raw.id, title: String(raw.title || 'Untitled Scene'), shots: raw.shots.map((shot, index) => normalizeShot(shot, index)) };
+    for (const shot of scene.shots) this._prepareModuleStates(shot.modules);
+    this._project.scenes.push(scene);
+    this._selectedSceneId = scene.id;
+    this._selectedShotId = scene.shots[0].id;
+    const persisted = this._saveProject();
+    this._renderSceneSelect();
+    this._renderShotList();
+    if (persisted) this._updateStatus(`Added ${scene.title}`);
+    return { id: scene.id, persisted };
   }
 
   /** Surface a "scene not saved" notice via the global toast + scene status line. */
@@ -421,6 +476,7 @@ export class SceneDirector {
     this._sceneStopBtn?.addEventListener('click', () => {
       this.stopScene('Stopped');
     });
+    this._playbackStopBtn?.addEventListener('click', () => this.stopScene('Stopped'));
 
     this._sceneNextBtn?.addEventListener('click', () => {
       this.runNextScene();
@@ -651,6 +707,7 @@ export class SceneDirector {
       camera,
       visual: this.styleManager.getVisualState(),
       layers: this._captureLayerStates(),
+      modules: this._captureModuleStates(),
     }, scene.shots.length);
 
     scene.shots.push(shot);
@@ -680,6 +737,7 @@ export class SceneDirector {
     shot.camera = camera;
     shot.visual = this.styleManager.getVisualState();
     shot.layers = this._captureLayerStates();
+    shot.modules = this._captureModuleStates();
 
     this._saveProject();
     this._renderShotList();
@@ -724,6 +782,10 @@ export class SceneDirector {
     const { scene, shot } = this._getShot(sceneId, shotId);
     if (!scene || !shot) return;
 
+    let preparedModules;
+    try { preparedModules = this._prepareModuleStates(shot.modules); }
+    catch (error) { this._updateStatus(error.message); return false; }
+
     if (!this._claimCameraOwnership()) return;
 
     // Supersede the previous LOAD before reserving this one: aborting first
@@ -739,16 +801,23 @@ export class SceneDirector {
     this._renderSceneSelect();
     this._renderShotList();
 
-    await this.styleManager.applyVisualState(shot.visual, { isCurrent: () => !token.cancelled });
-    if (token.cancelled) return;
-    await this._applyLayerStates(shot.layers || {}, token);
-    if (token.cancelled) return;
-    await this._flyCamera(shot.camera, flyDuration, token);
-    if (token.cancelled) return;
-
-    if (this._loadAbort === controller) this._loadAbort = null;
-    this._updateStatus(`Loaded: ${scene.title} / ${shot.title}`);
-    this._updateRuntime('');
+    try {
+      await this.styleManager.applyVisualState(shot.visual, { isCurrent: () => !token.cancelled });
+      if (token.cancelled) return;
+      await this._applyLayerStates(shot.layers || {}, token);
+      if (token.cancelled) return;
+      await this._applyModuleStates(preparedModules, token);
+      if (token.cancelled) return;
+      await this._flyCamera(shot.camera, flyDuration, token);
+      if (token.cancelled) return;
+      this._updateStatus(`Loaded: ${scene.title} / ${shot.title}`);
+      this._updateRuntime('');
+    } catch (error) {
+      if (!token.cancelled) this._updateStatus(`Load failed: ${error.message || 'unknown error'}`);
+      return false;
+    } finally {
+      if (this._loadAbort === controller) this._loadAbort = null;
+    }
   }
 
   /**
@@ -877,11 +946,20 @@ export class SceneDirector {
    */
   async startScene(sceneId, { single = false } = {}) {
     if (this._running) return { started: false, reason: 'already-running' };
+    if (sceneId && !this._project.scenes.some((scene) => scene.id === sceneId)) return { started: false, reason: 'This scene is no longer in Director. Add a new event tour.' };
 
     const queue = this._buildPlaybackQueue(sceneId || this._selectedSceneId || this._project.scenes[0]?.id, { single });
     if (!queue.length) {
       this._updateStatus('No shots to run');
       return { started: false, reason: 'no-shots' };
+    }
+
+    // Validate the entire run before any camera, style, or layer mutation.
+    let moduleSteps;
+    try { moduleSteps = queue.map(({ shot }) => this._prepareModuleStates(shot.modules)); }
+    catch (error) {
+      this._updateStatus(error.message);
+      return { started: false, reason: error.message };
     }
 
     // Playback owns the camera for the whole run, so claim it the way every
@@ -902,8 +980,10 @@ export class SceneDirector {
 
     // Transition to running state
     this._running = true;
+    this._playbackFocus = document.activeElement;
     document.body.classList.add('scene-playback-mode');
     this._setButtons(true);
+    this._playbackStopBtn?.focus();
     this._setProgress(0);
 
     // Create a cancellation token shared across async steps. Held in a local
@@ -939,6 +1019,7 @@ export class SceneDirector {
     this._logEvent('scene_run_start', { count: queue.length });
     document.addEventListener('keydown', this._onKeyDown);
 
+    let failure = null;
     try {
       // Main shot sequencing loop
       for (let idx = 0; idx < queue.length; idx++) {
@@ -976,6 +1057,8 @@ export class SceneDirector {
         if (token.cancelled) break;
         await this._applyLayerStates(shot.layers || {}, token);
         if (token.cancelled) break;
+        await this._applyModuleStates(moduleSteps[idx], token);
+        if (token.cancelled) break;
         await this._flyCamera(shot.camera, shot.durationSec || DEFAULT_SHOT_DURATION_SEC, token);
         if (token.cancelled) break;
         // Hold on the final frame before transitioning to the next shot
@@ -995,11 +1078,13 @@ export class SceneDirector {
         this._logEvent('scene_run_complete', {});
       }
     } catch (error) {
+      failure = error.message || 'run failed';
       this._updateStatus(`Error: ${error.message || 'run failed'}`);
       this._logEvent('scene_run_error', { message: error.message || 'unknown error' });
     } finally {
       this._finishRun();
     }
+    return { started: true, completed: !token.cancelled && !failure, cancelled: token.cancelled, error: failure };
   }
 
   /**
@@ -1301,6 +1386,9 @@ export class SceneDirector {
     this._updateRuntime('');
     this._running = false;
 
+    if (this._playbackFocus?.isConnected) this._playbackFocus.focus?.();
+    this._playbackFocus = null;
+
     // Finalize telemetry and archive it for download
     if (this._activeRun) {
       this._activeRun.endedAt = new Date().toISOString();
@@ -1332,6 +1420,7 @@ export class SceneDirector {
     if (this._sceneImportBtn) this._sceneImportBtn.disabled = isRunning;
 
     if (this._sceneStopBtn) this._sceneStopBtn.disabled = !isRunning;
+    if (this._playbackStopBtn) this._playbackStopBtn.disabled = !isRunning;
     if (this._sceneDownloadBtn) this._sceneDownloadBtn.disabled = !this._lastRunJson;
     if (this._scenePanel) this._scenePanel.classList.toggle('running', isRunning);
   }

@@ -77,10 +77,12 @@ export function createAstroEyeWorkspaceController({
     });
   }
 
-  async function activate(event, chart, { isShared = false, offsetMinutes = 0, navigate = true } = {}) {
+  async function activate(event, chart, { isShared = false, offsetMinutes = 0, navigate = true, isCurrent = () => true } = {}) {
     const displayedChart = offsetMinutes === 0 ? chart : calculateTimePreview(event, offsetMinutes, { houseSystem: chart.options.houseSystem });
     // Validate and calculate everything before presentation or shared-state mutation.
-    await presentEvent(event, chart, { navigate });
+    if (!isCurrent()) return null;
+    await presentEvent(event, chart, { navigate, isCurrent });
+    if (!isCurrent()) return null;
     activeSelection = Object.freeze({ event, chart, isShared });
     applySelectionTime(displayedChart, offsetMinutes);
     moduleState.setActiveModule('astroeye');
@@ -96,11 +98,11 @@ export function createAstroEyeWorkspaceController({
         offsetMinutes: moduleState.get('astroeye')?.preview?.offsetMinutes ?? 0,
       });
     },
-    async restoreSharedView(input) {
+    async restoreSharedView(input, { isCurrent = () => true } = {}) {
       const snapshot = normalizeSharedView(input);
       const chart = calculateAstroEyeChart(snapshot.event, { houseSystem: snapshot.houseSystem });
       // No IndexedDB writes and no camera move: the shell owns the shared camera pose.
-      return activate(snapshot.event, chart, { isShared: true, offsetMinutes: snapshot.offsetMinutes, navigate: false });
+      return activate(snapshot.event, chart, { isShared: true, offsetMinutes: snapshot.offsetMinutes, navigate: false, isCurrent });
     },
     async saveSharedCopy() {
       if (!activeSelection?.isShared) throw new Error('No unsaved shared event is selected.');

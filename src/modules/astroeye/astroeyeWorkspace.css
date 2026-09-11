@@ -135,6 +135,9 @@
 .astroeye-aspects { margin-top: 14px; }
 .astroeye-aspects p { margin: 5px 0 0; color: rgba(248,242,255,.68); font-size: 10px; line-height: 1.55; }
 .astroeye-chart-actions { display: flex; gap: 8px; margin-top: 14px; }
+.astroeye-tour-controls { margin-top: 18px; padding: 14px; border: 1px solid rgba(214,166,255,.24); border-radius: 8px; background: rgba(214,166,255,.045); }
+.astroeye-tour-controls h4 { margin: 0 0 7px; color: var(--astro-cyan); font-size: 12px; }
+.astroeye-tour-controls [data-role="tour-result"] { overflow-wrap: anywhere; }
 .astroeye-chart-actions button { flex: 1; padding: 8px; color: #fff; border: 1px solid rgba(214,166,255,.24); border-radius: 6px; background: rgba(214,166,255,.08); cursor: pointer; }
 .astroeye-chart-actions button.danger { color: #ffafb9; border-color: rgba(255,90,110,.2); background: rgba(255,90,110,.05); }
 .astroeye-provenance { color: rgba(248,242,255,.35); font: 8px/1.5 "JetBrains Mono", monospace; overflow-wrap: anywhere; }

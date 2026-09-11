@@ -18,6 +18,6 @@ export const ASTROEYE_MANIFEST = Object.freeze({
   layers: Object.freeze(['astroeye-event-marker']),
   panels: Object.freeze(['astroeye-workspace']),
   commands: Object.freeze([]),
-  sceneRecipes: Object.freeze([]),
+  sceneRecipes: Object.freeze(['astroeye-event-tour']),
   credits: Object.freeze(['astronomy-engine', 'thesportsdb']),
 });

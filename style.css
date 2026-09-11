@@ -6863,6 +6863,13 @@ body.recording-mode #scene-runtime.active {
 }
 
 /* Scene playback owns layer and camera sequencing until Stop or completion. */
+#scene-playback-stop { display: none; }
+body.scene-playback-mode #scene-playback-stop {
+  display: block; position: fixed; right: 20px; bottom: 48px; z-index: 10010;
+  min-height: 44px; padding: 10px 18px; border: 1px solid #d6a6ff; border-radius: 8px;
+  color: #fff; background: #160d28; font: 600 12px sans-serif; cursor: pointer;
+}
+body.scene-playback-mode #astroeye-workspace { visibility: hidden; pointer-events: none; }
 body.scene-playback-mode :is(#clear-selected-layers, #reset-globe-view) {
   display: none !important;
 }

@@ -25,6 +25,26 @@ const DRAFT = {
 };
 
 let sequence = 0;
+
+test('cancelled scene restoration cannot update selection or world time after an await', async () => {
+  let release, entered, current = true;
+  const ready = new Promise((resolve) => { entered = resolve; });
+  const context = harness({ presentEvent: async (_event, _chart, options) => {
+    assert.equal(options.navigate, false);
+    entered(); await new Promise((resolve) => { release = resolve; });
+  } });
+  const event = eventFromDraft(DRAFT, () => 'scene-event');
+  const { createSharedView } = await import('./shareView.js');
+  try {
+    const before = context.worldClock.now().toISOString();
+    const task = context.controller.restoreSharedView(createSharedView(event), { isCurrent: () => current });
+    await ready; current = false; release();
+    assert.equal(await task, null);
+    assert.equal(context.worldClock.now().toISOString(), before);
+    assert.equal(context.controller.selectedState(), null);
+    assert.deepEqual(await context.recordStore.listEvents(), []);
+  } finally { await context.recordStore.close(); }
+});
 function harness({ idFactory = () => 'event-generated', presentEvent } = {}) {
   sequence += 1;
   const eventBus = new EventBus();
