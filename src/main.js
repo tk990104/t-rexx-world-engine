@@ -57,6 +57,8 @@ import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js'
 import { readSharedViewHash } from './modules/astroeye/shareView.js';
 import { createEventSky } from './modules/astroeye/eventSky.js';
 import { createAstroEyeTour, normalizeAstroEyeSceneView } from './modules/astroeye/directorRecipe.js';
+import { mountVenueContextPanel } from './modules/astroeye/venueContextPanel.js';
+import { installAstroEyeVenueInteraction } from './modules/astroeye/venueInteraction.js';
 
 initLogoGaze();
 
@@ -357,6 +359,11 @@ async function init() {
         eventBus: worldPlatform.eventBus,
         presentEvent: createAstroEyeWorldPresenter({ viewer }),
       });
+      const canOpenVenue = () => !sceneDirector.running && !astroEyeWorkspace?.root.dataset.busy;
+      const openVenueContext = async () => {
+        if (!canOpenVenue() || !astroEyeController.selectionSnapshot()) return;
+        await worldPlatform.panelRegistry.show('astroeye-venue-context', document.body);
+      };
       astroEyeWorkspace = mountAstroEyeWorkspace({
         controller: astroEyeController,
         onOpen: () => worldPlatform.moduleRegistry.activate('astroeye'),
@@ -364,6 +371,7 @@ async function init() {
         createWorldLink: () => styleManager.shareLinkManager.createLink(),
         onCreateTour: (snapshot) => sceneDirector.addScene(createAstroEyeTour(snapshot)),
         onPreviewTour: (id) => sceneDirector.startScene(id, { single: true }),
+        onVenueContext: openVenueContext,
         eventSky: createEventSky({ ring: styleManager.celestialRing,
           setRingEnabled: (enabled, options) => styleManager.setCelestialRingEnabled(enabled, options) }),
       });
@@ -381,6 +389,30 @@ async function init() {
         capture: () => astroEyeWorkspace.sceneSnapshot(),
         apply: (snapshot, options) => astroEyeWorkspace.applySceneView(snapshot, options),
       });
+      const venueContext = mountVenueContextPanel({
+        getSelection: () => astroEyeController.selectionSnapshot(),
+        eventBus: worldPlatform.eventBus,
+        canInteract: canOpenVenue,
+        onOpen: openVenueContext,
+        onClose: () => worldPlatform.panelRegistry.hide(),
+        onChart: async () => {
+          await worldPlatform.panelRegistry.show('astroeye-workspace', document.body);
+          astroEyeWorkspace.focusChart();
+        },
+        onVenue: () => astroEyeController.refocusSelected(),
+      });
+      worldPlatform.panelRegistry.register({
+        id: 'astroeye-venue-context', owner: 'astroeye', title: 'AstroEye Venue Context',
+        mount: () => { venueContext.open(); return () => venueContext.close(); },
+      });
+      const removeVenueInteraction = installAstroEyeVenueInteraction({
+        viewer, onOpen: openVenueContext, canInteract: canOpenVenue,
+        hasSelection: () => Boolean(astroEyeController.selectedState()),
+      });
+      window.addEventListener('pagehide', () => {
+        removeVenueInteraction();
+        venueContext.destroy();
+      }, { once: true });
       astroEyeLauncher?.addEventListener('click', (event) => {
         void worldPlatform.panelRegistry.show('astroeye-workspace', document.body, { trigger: event.currentTarget });
       });

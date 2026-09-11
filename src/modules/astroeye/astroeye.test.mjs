@@ -35,5 +35,5 @@ test('AstroEye declares shared services instead of reaching into UI globals', ()
     'worldClock',
   ]);
   assert.deepEqual(astroEye.layers, ['astroeye-event-marker']);
-  assert.deepEqual(astroEye.panels, ['astroeye-workspace']);
+  assert.deepEqual(astroEye.panels, ['astroeye-workspace', 'astroeye-venue-context']);
 });

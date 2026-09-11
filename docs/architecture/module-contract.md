@@ -45,6 +45,8 @@ The first calculation adapter uses Astronomy Engine under MIT. Results identify 
 
 ## Boundary rules
 
+The [venue context card](astroeye-venue-context.md) reads defensive current-selection snapshots and is hosted through PanelRegistry. Marker clicks use shared pick ownership and gesture classification; reopening the chart preserves preview time and camera pose without reselecting or rewriting its event. The saved-event roster still refreshes when the workspace opens.
+
 The first [AstroEye Director tour](astroeye-director-tour.md) adds three deterministic camera shots with versioned calculation inputs. Director project v4 stores module context separately from layers; product adapters validate and restore it without saving records or competing for the camera. AstroEye is the first registered scene adapter; other modules can adopt the same boundary.
 
 - A module may depend only on capabilities it declares.

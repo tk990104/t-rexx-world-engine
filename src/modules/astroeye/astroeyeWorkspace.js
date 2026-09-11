@@ -52,6 +52,7 @@ export function mountAstroEyeWorkspace({
   eventSky = null,
   onCreateTour = null,
   onPreviewTour = null,
+  onVenueContext = null,
 } = {}) {
   requireController(controller);
   if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
@@ -139,6 +140,7 @@ export function mountAstroEyeWorkspace({
           <div class="astroeye-aspects"><span>MAJOR ASPECTS</span><p data-chart="aspects"></p></div>
           <div class="astroeye-chart-actions">
             <button type="button" data-action="refocus">View venue</button>
+            <button type="button" data-action="venue-context">Venue details</button>
             <button type="button" class="danger" data-action="delete">Delete event</button>
             <button type="button" data-action="save-shared" hidden>Save a copy</button>
           </div>
@@ -276,6 +278,7 @@ export function mountAstroEyeWorkspace({
     root.querySelector('[data-action="save-shared"]').hidden = !isShared;
     root.querySelector('[data-action="share-view"]').disabled = typeof createWorldLink !== 'function';
     root.querySelector('[data-action="create-tour"]').disabled = typeof onCreateTour !== 'function';
+    root.querySelector('[data-action="venue-context"]').disabled = typeof onVenueContext !== 'function';
     root.querySelector('[data-role="share-output"]').hidden = true;
     root.querySelector('#astroeye-view-link').value = '';
     const notice = root.querySelector('[data-role="share-notice"]');
@@ -419,7 +422,10 @@ export function mountAstroEyeWorkspace({
   root.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;
-    if (action === 'create-tour' && selected && onCreateTour) {
+    if (action === 'venue-context' && selected && onVenueContext) {
+      try { await onVenueContext(); }
+      catch (error) { setStatus(error.message || 'Could not open venue details.', 'error'); }
+    } else if (action === 'create-tour' && selected && onCreateTour) {
       const result = await busy(() => onCreateTour(controller.shareSnapshot()), 'Event tour added.');
       if (!result) return;
       lastTourId = result.id;
@@ -539,6 +545,12 @@ export function mountAstroEyeWorkspace({
 
   return Object.freeze({
     root,
+    focusChart() {
+      const title = root.querySelector('[data-chart="title"]');
+      title.tabIndex = -1;
+      title.scrollIntoView({ block: 'start' });
+      title.focus({ preventScroll: true });
+    },
     sceneSnapshot() { return selected ? controller.shareSnapshot() : null; },
     async applySceneView(snapshot, { isCurrent = () => true } = {}) {
       if (!isCurrent()) return false;

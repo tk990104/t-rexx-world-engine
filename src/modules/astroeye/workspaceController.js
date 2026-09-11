@@ -65,6 +65,7 @@ export function createAstroEyeWorkspaceController({
   if (typeof idFactory !== 'function') throw new TypeError('idFactory must be a function');
 
   let activeSelection = null;
+  let currentView = null;
 
   function applySelectionTime(chart, offsetMinutes) {
     const { event, chart: originalChart, isShared } = activeSelection;
@@ -85,12 +86,14 @@ export function createAstroEyeWorkspaceController({
     if (!isCurrent()) return null;
     activeSelection = Object.freeze({ event, chart, isShared });
     applySelectionTime(displayedChart, offsetMinutes);
+    currentView = Object.freeze({ event, chart: displayedChart, offsetMinutes, isShared });
     moduleState.setActiveModule('astroeye');
     eventBus.emit('astroeye:event-selected', { eventId: event.id, chartId: chart.chartId });
-    return Object.freeze({ event, chart: displayedChart, offsetMinutes, isShared });
+    return currentView;
   }
 
   return Object.freeze({
+    selectionSnapshot() { return currentView ? structuredClone(currentView) : null; },
     shareSnapshot() {
       if (!activeSelection) throw new Error('Choose an event before creating a view link.');
       return createSharedView(activeSelection.event, {
@@ -122,8 +125,9 @@ export function createAstroEyeWorkspaceController({
         houseSystem: savedChart.options.houseSystem,
       });
       applySelectionTime(chart, offsetMinutes);
+      currentView = Object.freeze({ event, chart, offsetMinutes, isShared: activeSelection.isShared });
       eventBus.emit('astroeye:time-preview', { eventId: event.id, offsetMinutes, calculatedFor: chart.calculatedFor });
-      return Object.freeze({ event, chart, offsetMinutes, isShared: activeSelection.isShared });
+      return currentView;
     },
     async refocusSelected() {
       if (!activeSelection) throw new Error('Choose a saved event before viewing its venue.');
@@ -149,6 +153,7 @@ export function createAstroEyeWorkspaceController({
       const selected = moduleState.get('astroeye');
       if (removed && selected?.selectedEventId === eventId) {
         activeSelection = null;
+        currentView = null;
         moduleState.clear('astroeye');
         moduleState.setActiveModule(null);
         worldClock.setMode('live');

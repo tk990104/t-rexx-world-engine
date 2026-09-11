@@ -32,7 +32,7 @@ export function createAstroEyeWorldPresenter({ viewer, navigate = flyToLandmark 
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       },
       label: {
-        text: `${event.title}\n${event.scheduledLocal.date} ${event.scheduledLocal.time.slice(0, 5)} ${event.scheduledLocal.timeZone}`,
+        text: `${event.title}\nEvent start · ${event.scheduledLocal.date} ${event.scheduledLocal.time.slice(0, 5)} ${event.scheduledLocal.timeZone}`,
         font: '600 13px JetBrains Mono',
         fillColor: Cesium.Color.WHITE,
         outlineColor: Cesium.Color.fromCssColorString('#160523'),

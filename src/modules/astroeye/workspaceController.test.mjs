@@ -26,6 +26,29 @@ const DRAFT = {
 
 let sequence = 0;
 
+test('selection snapshots expose the committed preview before notifications and never share mutable records', async () => {
+  const context = harness();
+  try {
+    assert.equal(context.controller.selectionSnapshot(), null);
+    let seen;
+    context.eventBus.on('astroeye:event-selected', () => { seen = context.controller.selectionSnapshot(); });
+    await context.controller.saveDraft(DRAFT);
+    assert.equal(seen.event.id, 'event-generated');
+    const before = await context.recordStore.serializeRecords();
+    context.eventBus.on('astroeye:time-preview', () => { seen = context.controller.selectionSnapshot(); });
+    context.controller.previewTime(15);
+    assert.equal(seen.offsetMinutes, 15);
+    assert.equal(seen.chart.calculatedFor, '2026-09-10T00:30:00.000Z');
+    seen.event.title = 'mutated';
+    seen.chart.positions[0].longitude = 999;
+    assert.equal(context.controller.selectionSnapshot().event.title, DRAFT.title);
+    assert.notEqual(context.controller.selectionSnapshot().chart.positions[0].longitude, 999);
+    assert.equal(await context.recordStore.serializeRecords(), before);
+    await context.controller.deleteEvent('event-generated');
+    assert.equal(context.controller.selectionSnapshot(), null);
+  } finally { await context.recordStore.close(); }
+});
+
 test('cancelled scene restoration cannot update selection or world time after an await', async () => {
   let release, entered, current = true;
   const ready = new Promise((resolve) => { entered = resolve; });

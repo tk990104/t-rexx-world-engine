@@ -1,0 +1,27 @@
+#astroeye-venue-context {
+  position: fixed; right: 22px; bottom: 86px; z-index: 1300; width: min(380px, calc(100vw - 32px));
+  max-height: calc(100dvh - 160px); overflow: auto; box-sizing: border-box; padding: 20px;
+  color: #f8f2ff; background: rgba(14, 10, 27, .97); border: 1px solid #68517f; border-radius: 14px;
+  box-shadow: 0 16px 44px #0008; font: 12px/1.5 Inter, sans-serif;
+}
+#astroeye-venue-context[hidden], #astroeye-selected-event[hidden] { display: none; }
+#astroeye-venue-context header { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+#astroeye-venue-context header span { color: #78e7ff; font-size: 10px; letter-spacing: .1em; }
+#astroeye-venue-context h2 { font-size: 18px; margin: 5px 0 12px; overflow-wrap: anywhere; }
+#astroeye-venue-context p { color: #b9b0c9; font-size: 11px; }
+#astroeye-venue-context dt { color: #d6a6ff; margin-top: 12px; font-size: 10px; text-transform: uppercase; }
+#astroeye-venue-context dd { margin: 3px 0 0; white-space: pre-line; overflow-wrap: anywhere; }
+#astroeye-venue-context button, #astroeye-selected-event {
+  min-height: 44px; padding: 9px 12px; border: 1px solid #68517f; border-radius: 7px;
+  color: #fff; background: #261736; cursor: pointer; font: inherit;
+}
+#astroeye-venue-context :focus-visible, #astroeye-selected-event:focus-visible { outline: 2px solid #78e7ff; outline-offset: 3px; }
+.astroeye-venue-actions { display: flex; gap: 8px; margin-top: 18px; }
+.astroeye-venue-actions button { flex: 1; }
+#astroeye-selected-event { position: fixed; right: 22px; bottom: 86px; z-index: 1250; max-width: min(310px, calc(100vw - 32px)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 12px Inter, sans-serif; }
+body:has(#astroeye-workspace:not([hidden])) #astroeye-selected-event,
+body:has(#astroeye-venue-context:not([hidden])) #astroeye-selected-event,
+body.scene-playback-mode #astroeye-selected-event, body.scene-playback-mode #astroeye-venue-context { display: none; }
+@media (max-width: 460px) {
+  #astroeye-venue-context, #astroeye-selected-event { right: 16px; bottom: 80px; }
+}
