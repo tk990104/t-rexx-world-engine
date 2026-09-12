@@ -7,6 +7,7 @@ import { scheduleLocalTime } from './sportsSchedule.js';
 import { createSharedViewUrl } from './shareView.js';
 import { filterSavedEvents, normalizeSavedEventFilters, sortSavedEvents, pageSavedEvents } from './savedEventFilters.js';
 import { MAX_IMPORT_FILE_BYTES } from './recordImportReview.js';
+import { eventTemplateDraft } from './eventTemplate.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -145,10 +146,12 @@ export function mountAstroEyeWorkspace({
           <div class="astroeye-aspects"><span>MAJOR ASPECTS</span><p data-chart="aspects"></p></div>
           <div class="astroeye-chart-actions">
             <button type="button" data-action="refocus">View venue</button>
+            <button type="button" data-action="use-template">Use as template</button>
             <button type="button" data-action="venue-context">Venue details</button>
             <button type="button" class="danger" data-action="delete">Delete event</button>
             <button type="button" data-action="save-shared" hidden>Save a copy</button>
           </div>
+          <p class="astroeye-help">Use as template replaces unsaved form entries with the event’s original start and venue details. It does not change saved records until you review and save a new event.</p>
           <section class="astroeye-tour-controls" aria-label="AstroEye Director tour">
             <h4>Event tour</h4>
             <p class="astroeye-help">World → region → venue at this chart time. Adds three editable shots to Director without replacing existing scenes. Preview only: no video is recorded; live feeds stay live.</p>
@@ -584,6 +587,24 @@ export function mountAstroEyeWorkspace({
         root.hidden = true;
         previouslyFocused?.focus?.();
       }
+    } else if (action === 'use-template' && selected && !root.dataset.busy) {
+      try {
+        const draft = eventTemplateDraft(selected.event, selected.chart.options.houseSystem);
+        schedulePanel.cancel();
+        scheduleSelection = null;
+        form.reset();
+        for (const [name, value] of Object.entries(draft)) {
+          if (name !== 'utcStart') field(form, name).value = value;
+        }
+        field(form, 'scheduleReviewed').required = true;
+        field(form, 'scheduleReviewed').checked = false;
+        scheduleReview.hidden = false;
+        root.querySelector('[data-role="schedule-origin"]').textContent = 'New manual draft from the selected event. Uses the original event start, not the time-explorer preview. Review all details before saving; the original saved event stays unchanged.';
+        refreshTimeResolution();
+        if (!root.querySelector('[data-role="utc-choice"]').hidden) field(form, 'utcStart').value = draft.utcStart;
+        field(form, 'title').focus();
+        setStatus('Template copied into the event form, replacing unsaved entries. Review and edit it, then Save to create a new event. No records or globe view were changed.');
+      } catch (error) { setStatus(error.message || 'Could not prepare an event template.', 'error'); }
     } else if (action === 'new') {
       schedulePanel.cancel();
       scheduleSelection = null;

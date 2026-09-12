@@ -118,6 +118,49 @@ try {
   assert.equal(await page.$eval('[data-role="import-review"]', (node) => node.hidden), true);
   assert.equal(await saved(), changed);
   assert.deepEqual(errors, []);
+  await page.evaluate(async () => {
+    const { controller, workspace } = window.importQA;
+    await workspace.open();
+    await controller.saveDraft({ id: 'template-original', title: 'Original repeated-hour game', sport: 'Demo', competition: 'Cup', home: 'Home', away: 'Away',
+      localDate: '2026-11-01', localTime: '01:30:15', utcStart: '2026-11-01T06:30:15Z', timeZone: 'America/New_York',
+      venueName: 'Arena', latitude: 40.75, longitude: -73.99, durationMinutes: 120, houseSystem: 'equal',
+      source: { kind: 'provider', provider: 'Example', sourceEventId: 'external-id' }, scheduleReviewed: true });
+    document.querySelector('.astroeye-form [name="houseSystem"]').value = 'equal';
+    await workspace.selectSavedEvent('template-original');
+  });
+  await click('time-forward');
+  const beforeTemplate = await saved();
+  const selectedBefore = await page.evaluate(() => window.importQA.controller.selectionSnapshot());
+  await click('use-template');
+  assert.equal(await saved(), beforeTemplate);
+  assert.deepEqual(await page.evaluate(() => window.importQA.controller.selectionSnapshot()), selectedBefore);
+  assert.equal(await page.evaluate(() => document.activeElement.name), 'title');
+  const draftValues = await page.$eval('.astroeye-form', (form) => Object.fromEntries(new FormData(form)));
+  assert.equal(draftValues.utcStart, '2026-11-01T06:30:15.000Z');
+  assert.equal(draftValues.localTime, '01:30:15');
+  assert.equal(draftValues.houseSystem, 'equal');
+  assert.equal(draftValues.id, undefined);
+  assert.equal(await page.$eval('.astroeye-form', (form) => form.checkValidity()), false);
+  assert.ok(await page.$eval('[data-action="use-template"]', (button) => button.parentElement.scrollWidth <= button.parentElement.clientWidth + 1));
+  await page.$eval('.astroeye-form', (form) => {
+    form.elements.namedItem('scheduleReviewed').checked = true;
+    form.elements.namedItem('title').value = 'New template game';
+    form.elements.namedItem('title').dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  assert.equal(await page.$eval('.astroeye-form [name="scheduleReviewed"]', (input) => input.checked), false);
+  await page.$eval('.astroeye-form', (form) => { form.elements.namedItem('scheduleReviewed').checked = true; form.requestSubmit(); });
+  await idle();
+  const copiedRecords = JSON.parse(await saved());
+  const newEvent = copiedRecords.events.find((event) => event.title === 'New template game');
+  assert.ok(newEvent);
+  assert.notEqual(newEvent.id, 'template-original');
+  assert.equal(newEvent.source.kind, 'manual');
+  assert.equal(newEvent.source.provider, null);
+  assert.equal(newEvent.utcStart, '2026-11-01T06:30:15.000Z');
+  assert.deepEqual(copiedRecords.events.find((event) => event.id === 'template-original'), JSON.parse(beforeTemplate).events.find((event) => event.id === 'template-original'));
+  assert.equal(copiedRecords.events.length, JSON.parse(beforeTemplate).events.length + 1);
+  assert.deepEqual(errors, []);
+  console.log('PASS: event template makes no writes or selection changes, preserves repeated-hour kickoff instead of preview time, copies house system, requires review, resets review after edits and saves a new manual ID without changing the original.');
   await page.evaluate(async () => { window.importQA.workspace.destroy(); await window.importQA.recordStore.close(); });
   console.log('PASS: real IndexedDB preview/no writes, add/change/identical counts, overwrite acknowledgment and reset, identical-only refusal, cancel, confirmation, stale rejection, invalid/oversized files, escaped filename, mobile width/focus, Escape and delayed-read close.');
 } finally {
