@@ -10,8 +10,16 @@ export function createSavedEventLayer({ viewer, listEvents, getSelection, eventB
   let generation = 0, records = [], error = '';
   let filters = normalizeSavedEventFilters();
   const entities = new Map(), listeners = new Set();
+  function framePoints() {
+    if (!enabled || suspended || disposed || loading || error) return [];
+    const selected = getSelection();
+    const events = records.filter((event) => entities.has(savedEventEntityId(event.id)));
+    if (selected && !selected.isShared && records.some((event) => event.id === selected.event.id)
+      && filterSavedEvents([selected.event], filters).length) events.push(selected.event);
+    return events.map((event) => ({ latitude: event.venue.latitude, longitude: event.venue.longitude }));
+  }
   const state = () => ({ enabled, suspended, loading, error, shown: entities.size, total: records.length,
-    matched: filterSavedEvents(records, filters).length, limit: SAVED_EVENT_LIMIT });
+    matched: filterSavedEvents(records, filters).length, frameable: framePoints().length, limit: SAVED_EVENT_LIMIT });
   const notify = () => { for (const listener of listeners) listener(state()); };
   function clear() {
     for (const id of entities.keys()) viewer.entities.removeById(id);
@@ -69,6 +77,7 @@ export function createSavedEventLayer({ viewer, listEvents, getSelection, eventB
   unsubscribes.push(eventBus.on('astroeye:event-selected', render));
   return Object.freeze({
     state,
+    framePoints,
     subscribe(listener) { listeners.add(listener); listener(state()); return () => listeners.delete(listener); },
     eventIdForEntity: (id) => entities.get(id) ?? null,
     refresh,

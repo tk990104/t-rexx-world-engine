@@ -49,6 +49,27 @@ test('selected local event is excluded; shared ID collisions do not hide local r
   } finally { h.layer.destroy(); }
 });
 
+test('frame points contain only displayed matches plus a matching selected saved event', async () => {
+  const h = harness();
+  try {
+    assert.deepEqual(h.layer.framePoints(), []);
+    await h.layer.setEnabled(true);
+    h.select({ event: event('a'), isShared: false });
+    assert.equal(h.layer.state().shown, 1);
+    assert.equal(h.layer.state().frameable, 2);
+    h.layer.setFilters({ query: 'Event a' });
+    assert.equal(h.layer.state().shown, 0);
+    assert.equal(h.layer.framePoints().length, 1, 'selected-only match can still be framed');
+    h.layer.setFilters({ query: 'Event b' });
+    assert.equal(h.layer.framePoints().length, 1, 'out-of-filter selection is not framed');
+    const copy = h.layer.framePoints(); copy[0].latitude = 999;
+    assert.equal(h.layer.framePoints()[0].latitude, 40);
+    h.layer.setSuspended(true); assert.deepEqual(h.layer.framePoints(), []);
+    h.layer.setSuspended(false);
+    await h.layer.setEnabled(false); assert.deepEqual(h.layer.framePoints(), []);
+  } finally { h.layer.destroy(); }
+});
+
 test('filters apply before the marker cap and do not reread records or remove the selected marker', async () => {
   const h = harness(async () => Array.from({ length: 103 }, (_, i) => event(String(i).padStart(3, '0'))));
   h.entities.add({ id: 't-rexx-astroeye-selected-event' });

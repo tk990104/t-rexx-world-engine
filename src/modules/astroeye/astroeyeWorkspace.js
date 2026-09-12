@@ -55,6 +55,7 @@ export function mountAstroEyeWorkspace({
   onPreviewTour = null,
   onVenueContext = null,
   savedEventLayer = null,
+  onViewSavedEvents = null,
 } = {}) {
   requireController(controller);
   if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
@@ -178,6 +179,8 @@ export function mountAstroEyeWorkspace({
         </form>
         <section class="astroeye-saved-map" aria-label="Saved-event map" hidden>
           <button type="button" data-action="saved-map" aria-pressed="false">Show saved events on map</button>
+          <button type="button" data-action="frame-saved-map" disabled>View matching markers</button>
+          <p class="astroeye-help">View matching markers closes this panel and moves the camera to the displayed matches (up to 100 cyan markers plus a matching selected event). Widely spread events use a globe overview; rotate it to see the far side.</p>
           <p class="astroeye-help" data-role="saved-map-status" role="status"></p>
           <p class="astroeye-help">Cyan = saved events; purple = selected event. Click a marker to open its chart without moving the camera. Overlapping venues can be chosen from the list below. Shows up to 100 additional events, newest first. Local session only; not included in links or tours. Hidden during Director playback.</p>
         </section>
@@ -193,6 +196,7 @@ export function mountAstroEyeWorkspace({
     const button = root.querySelector('[data-action="saved-map"]');
     button.textContent = state.enabled ? 'Hide saved events from map' : 'Show saved events on map';
     button.setAttribute('aria-pressed', String(state.enabled));
+    root.querySelector('[data-action="frame-saved-map"]').disabled = !onViewSavedEvents || !state.frameable;
     root.querySelector('[data-role="saved-map-status"]').textContent = state.error || (state.loading ? 'Reading saved events…' : !state.enabled ? 'Saved-event map is off.' : state.suspended ? 'Saved-event map paused for Director.' : `${state.shown} additional markers · ${state.matched} matching / ${state.total} saved events. Selected event stays purple.`);
   });
 
@@ -482,6 +486,12 @@ export function mountAstroEyeWorkspace({
     if (!action) return;
     if (action === 'saved-map' && savedEventLayer && !root.dataset.busy) {
       await savedEventLayer.setEnabled(!savedEventLayer.state().enabled);
+    } else if (action === 'frame-saved-map' && onViewSavedEvents && !root.dataset.busy) {
+      try {
+        onViewSavedEvents();
+        if (onRequestClose) await onRequestClose();
+        else { root.hidden = true; previouslyFocused?.focus?.(); }
+      } catch (error) { setStatus(error.message || 'Could not frame these markers.', 'error'); }
     } else if (action === 'venue-context' && selected && onVenueContext) {
       try { await onVenueContext(); }
       catch (error) { setStatus(error.message || 'Could not open venue details.', 'error'); }

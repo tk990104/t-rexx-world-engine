@@ -152,6 +152,8 @@
 .astroeye-saved-map { margin-top: 12px; padding: 12px; border: 1px solid rgba(120,231,255,.25); border-radius: 8px; }
 .astroeye-saved-map button { min-height: 44px; padding: 8px 12px; color: #fff; border: 1px solid rgba(120,231,255,.4); border-radius: 6px; background: rgba(120,231,255,.08); cursor: pointer; }
 .astroeye-saved-map button[aria-pressed="true"] { border-color: var(--astro-cyan); }
+.astroeye-saved-map [data-action="frame-saved-map"] { display: block; margin-top: 8px; }
+.astroeye-saved-map button:disabled { opacity: .45; cursor: not-allowed; }
 .astroeye-event-list { display: grid; gap: 7px; margin-top: 9px; }
 .astroeye-event-list button { display: grid; gap: 3px; padding: 9px 10px; color: #fff; border: 1px solid rgba(255,255,255,.09); border-radius: 7px; background: rgba(255,255,255,.035); text-align: left; cursor: pointer; }
 .astroeye-event-list button:hover, .astroeye-event-list button.active { border-color: rgba(214,166,255,.4); background: rgba(214,166,255,.08); }

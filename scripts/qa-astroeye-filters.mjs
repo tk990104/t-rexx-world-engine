@@ -27,19 +27,24 @@ try {
   await page.evaluate(async () => {
     const { mountAstroEyeWorkspace } = await import('/src/modules/astroeye/astroeyeWorkspace.js');
     const { createSavedEventLayer } = await import('/src/modules/astroeye/savedEventLayer.js');
+    const { createSavedEventFramer } = await import('/src/modules/astroeye/savedEventFrame.js');
     const { EventBus } = await import('/src/core/eventBus.js');
     const records = ['West', 'East', 'North'].map((name, i) => ({ id: name, title: `${name} <b>event</b>`, sport: 'Demo', competition: 'Cup',
       venue: { name: `${name} Arena`, latitude: 40, longitude: -74 }, scheduledLocal: { date: `2026-09-${12 + i}`, time: '12:00', timeZone: 'UTC' }, utcStart: `2026-09-${12 + i}T12:00:00Z` }));
     const entities = new Map();
     let reads = 0;
+    let flights = 0, allowed = true;
     const listEvents = async () => { reads++; return structuredClone(records); };
     const forbidden = () => { throw new Error('Filtering must not change chart, camera or records'); };
     const controller = Object.fromEntries(['saveDraft', 'selectEvent', 'deleteEvent', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'].map((key) => [key, forbidden]));
-    const layer = createSavedEventLayer({ viewer: { entities: { add: (entity) => entities.set(entity.id, entity), removeById: (id) => entities.delete(id) }, scene: { requestRender() {} }, get camera() { return forbidden(); } },
+    const viewer = { entities: { add: (entity) => entities.set(entity.id, entity), removeById: (id) => entities.delete(id) }, scene: { requestRender() {} },
+      camera: { cancelFlight() {}, flyTo() { flights++; } } };
+    const layer = createSavedEventLayer({ viewer,
       listEvents, getSelection: () => null, eventBus: new EventBus() });
-    const workspace = mountAstroEyeWorkspace({ controller: { ...controller, listEvents }, savedEventLayer: layer });
+    const workspace = mountAstroEyeWorkspace({ controller: { ...controller, listEvents }, savedEventLayer: layer,
+      onViewSavedEvents: createSavedEventFramer({ viewer, getPoints: layer.framePoints, canInteract: () => allowed, runNavigation: (_noun, navigate) => navigate() }) });
     await workspace.open(); await layer.setEnabled(true);
-    window.filterQA = { layer, workspace, reads: () => reads };
+    window.filterQA = { layer, workspace, reads: () => reads, flights: () => flights, allow: (value) => { allowed = value; } };
   });
   const ids = () => page.$$eval('[data-role="event-list"] [data-event-id]', (nodes) => nodes.map((node) => node.dataset.eventId));
   const apply = (values) => page.$eval('.astroeye-event-filters', (form, fields) => {
@@ -58,6 +63,7 @@ try {
   await apply({ query: 'missing', dateFrom: '', dateTo: '' });
   assert.deepEqual(await ids(), []);
   assert.equal(await page.evaluate(() => window.filterQA.layer.state().shown), 0);
+  assert.equal(await page.$eval('[data-action="frame-saved-map"]', (button) => button.disabled), true);
   await page.$eval('[data-filter-reset]', (button) => button.click());
   assert.equal((await ids()).length, 3);
   await page.focus('.astroeye-event-filters [name="query"]');
@@ -70,6 +76,18 @@ try {
   assert.ok(await page.$eval('.astroeye-event-filters', (node) => node.scrollWidth <= node.clientWidth + 1));
   mkdirSync('qa-shots/astroeye-filters', { recursive: true });
   await page.screenshot({ path: 'qa-shots/astroeye-filters/mobile.png' });
+  assert.equal(await page.evaluate(() => window.filterQA.flights()), 0, 'filtering never moves the camera');
+  await page.evaluate(() => window.filterQA.allow(false));
+  await page.$eval('[data-action="frame-saved-map"]', (button) => button.click());
+  assert.equal(await page.evaluate(() => window.filterQA.flights()), 0);
+  assert.equal(await page.$eval('#astroeye-workspace', (node) => node.hidden), false);
+  await page.evaluate(() => window.filterQA.allow(true));
+  await page.$eval('[data-action="frame-saved-map"]', (button) => button.click());
+  assert.equal(await page.evaluate(() => window.filterQA.flights()), 1);
+  assert.equal(await page.$eval('#astroeye-workspace', (node) => node.hidden), true);
+  assert.equal(await page.evaluate(() => window.filterQA.reads()), reads);
+  assert.deepEqual(errors, []);
+  console.log('PASS: explicit framing only, empty-state disable, playback refusal and panel close after one camera request.');
   console.log('PASS: list/map parity, inclusive dates, invalid-range rollback, empty/reset, keyboard submit, no reads/writes/navigation on filtering, mobile width and no page errors.');
 } finally {
   await browser?.close();

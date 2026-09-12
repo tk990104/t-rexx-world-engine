@@ -61,6 +61,7 @@ import { mountVenueContextPanel } from './modules/astroeye/venueContextPanel.js'
 import { installAstroEyeVenueInteraction } from './modules/astroeye/venueInteraction.js';
 import { createEventCallouts } from './modules/astroeye/eventCallouts.js';
 import { createSavedEventLayer } from './modules/astroeye/savedEventLayer.js';
+import { createSavedEventFramer } from './modules/astroeye/savedEventFrame.js';
 
 initLogoGaze();
 
@@ -385,6 +386,8 @@ async function init() {
         onPreviewTour: (id) => sceneDirector.startScene(id, { single: true }),
         onVenueContext: openVenueContext,
         savedEventLayer,
+        onViewSavedEvents: createSavedEventFramer({ viewer, getPoints: savedEventLayer.framePoints, canInteract: canOpenVenue,
+          runNavigation: (noun, navigate) => styleManager.runImmediateNavigation(noun, navigate) }),
         eventSky: createEventSky({ ring: styleManager.celestialRing,
           setRingEnabled: (enabled, options) => styleManager.setCelestialRingEnabled(enabled, options) }),
       });
