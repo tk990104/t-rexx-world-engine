@@ -59,6 +59,7 @@ import { createEventSky } from './modules/astroeye/eventSky.js';
 import { createAstroEyeTour, normalizeAstroEyeSceneView } from './modules/astroeye/directorRecipe.js';
 import { mountVenueContextPanel } from './modules/astroeye/venueContextPanel.js';
 import { installAstroEyeVenueInteraction } from './modules/astroeye/venueInteraction.js';
+import { createEventCallouts } from './modules/astroeye/eventCallouts.js';
 
 initLogoGaze();
 
@@ -349,6 +350,7 @@ async function init() {
 
     let astroEyeWorkspace = null;
     const sceneDirector = new SceneDirector(viewer, styleManager, dataManager);
+    const annotations = initAnnotations({ viewer, tileset });
     let astroEyeRestorePromise = Promise.resolve();
     const astroEyeLauncher = document.getElementById('astroeye-entry-layers');
     if (worldRecordStore) {
@@ -360,8 +362,9 @@ async function init() {
         presentEvent: createAstroEyeWorldPresenter({ viewer }),
       });
       const canOpenVenue = () => !sceneDirector.running && !astroEyeWorkspace?.root.dataset.busy;
+      const eventCallouts = createEventCallouts({ annotations, getSelection: () => astroEyeController.selectionSnapshot(), canInteract: canOpenVenue });
       const openVenueContext = async () => {
-        if (!canOpenVenue() || !astroEyeController.selectionSnapshot()) return;
+        if (!canOpenVenue() || (!astroEyeController.selectionSnapshot() && !eventCallouts.count())) return;
         await worldPlatform.panelRegistry.show('astroeye-venue-context', document.body);
       };
       astroEyeWorkspace = mountAstroEyeWorkspace({
@@ -400,6 +403,7 @@ async function init() {
           astroEyeWorkspace.focusChart();
         },
         onVenue: () => astroEyeController.refocusSelected(),
+        callouts: eventCallouts,
       });
       worldPlatform.panelRegistry.register({
         id: 'astroeye-venue-context', owner: 'astroeye', title: 'AstroEye Venue Context',
@@ -432,9 +436,6 @@ async function init() {
       astroEyeLauncher.disabled = true;
       astroEyeLauncher.title = 'AstroEye needs browser storage, which is unavailable in this session.';
     }
-
-    // Initialize the voice "whiteboard" annotation engine (world-space renderer)
-    const annotations = initAnnotations({ viewer, tileset });
 
     // Flight Sim — a self-contained simulator mode. It owns the camera and the
     // render loop only while ACTIVE, and hands both back on exit. Camera

@@ -219,6 +219,8 @@ export function createAnnotationEngine({
    * @param {boolean} [opts.clearPrevious]
    * @param {boolean} [opts.persist]  Keep until cleared (default true).
    * @param {boolean} [opts.flyTo]    Frame the first resolved annotation.
+   * @param {boolean} [opts.ensureVisible=true] Allow off-screen camera assist.
+   * @param {string} [opts.owner] Optional module namespace for dedup and scoped removal.
    * @returns {Promise<{ok, drawn, failed, ids, results}>}
    */
   async function annotate(requests, opts = {}) {
@@ -256,7 +258,7 @@ export function createAnnotationEngine({
             results.push(failResult(spec, 'could not resolve location'));
             continue;
           }
-          const anno = buildAnnotation(spec, resolved, persist);
+          const anno = buildAnnotation(spec, resolved, persist, opts.owner);
           // De-dup: the voice model re-narrates the same places across turns, and
           // annotations now accumulate by default — so without this, "Presidio" / "Marina"
           // pile up into duplicate stacked labels. A live mark that is semantically the SAME
@@ -368,7 +370,7 @@ export function createAnnotationEngine({
       ensureTicking();
     }
     if (opts.flyTo && firstAnchor) frameAnnotation(firstAnchor);
-    else if (ids.length) ensureMarksVisible(ids);
+    else if (ids.length && opts.ensureVisible !== false) ensureMarksVisible(ids);
 
     const drawn = results.filter((r) => r.ok).length;
     return {
@@ -561,6 +563,7 @@ export function createAnnotationEngine({
         // wins, exactly like the add-time replace path). Not an auto-clear — it removes
         // a second representation of the same mark, never a distinct one.
         for (const other of annotations.values()) {
+          if (other.owner !== anno.owner) continue;
           if (other.id === anno.id || other.type !== 'area' || other.pendingOutline) continue;
           if (!other.anchor || Math.abs(other.anchor.lon - anno.anchor.lon) >= 5e-4
             || Math.abs(other.anchor.lat - anno.anchor.lat) >= 5e-4) continue;
@@ -639,6 +642,7 @@ export function createAnnotationEngine({
       return true;
     };
     for (const ex of annotations.values()) {
+      if (ex.owner !== anno.owner) continue;
       if (ex.type !== anno.type || !ex.anchor) continue;
       // Identity is GEOMETRY, not label: "Marina" and "Marina District" resolve to the SAME
       // polygon/anchor and must collapse to one mark (the caller replaces label/color in place
@@ -683,7 +687,7 @@ export function createAnnotationEngine({
     return null;
   }
 
-  function buildAnnotation(spec, resolved, persist) {
+  function buildAnnotation(spec, resolved, persist, owner) {
     const type = normalizeType(spec?.type);
     const id = `anno-${++_seq}`;
     const color = COLORS.has(spec?.color) ? spec.color : 'primary';
@@ -692,6 +696,7 @@ export function createAnnotationEngine({
 
     const base = {
       id,
+      owner: typeof owner === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(owner) ? owner : null,
       type,
       color,
       label,
@@ -864,6 +869,16 @@ export function createAnnotationEngine({
 
   const engine = {
     annotate,
+    /** Remove only a matching owner's mark; never clears siblings or pending calls. */
+    remove(id, { owner } = {}) {
+      const annotation = annotations.get(id);
+      if (!annotation || !owner || annotation.owner !== owner) return false;
+      renderer.remove(annotation);
+      annotations.delete(id);
+      renderer.sync(annotations);
+      syncAnnotationHold();
+      return true;
+    },
     clear,
     fadeOutAll,
     count: () => annotations.size,

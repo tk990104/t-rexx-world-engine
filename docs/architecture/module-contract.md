@@ -47,6 +47,8 @@ The first calculation adapter uses Astronomy Engine under MIT. Results identify 
 
 The [venue context card](astroeye-venue-context.md) reads defensive current-selection snapshots and is hosted through PanelRegistry. Marker clicks use shared pick ownership and gesture classification; reopening the chart preserves preview time and camera pose without reselecting or rewriting its event. The saved-event roster still refreshes when the workspace opens.
 
+[Event callouts](astroeye-event-callouts.md) reuse the annotation engine with module-owned deduplication and scoped removal. Up to five session-only venue labels capture chart time and a short note without camera assistance, geocoding, record writes or shared-state changes. They remain fixed snapshots when the chart clock moves; persistent research annotations are a separate future record capability.
+
 The first [AstroEye Director tour](astroeye-director-tour.md) adds three deterministic camera shots with versioned calculation inputs. Director project v4 stores module context separately from layers; product adapters validate and restore it without saving records or competing for the camera. AstroEye is the first registered scene adapter; other modules can adopt the same boundary.
 
 - A module may depend only on capabilities it declares.

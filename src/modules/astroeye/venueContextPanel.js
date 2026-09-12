@@ -2,7 +2,7 @@ import './venueContextPanel.css';
 import { createVenueContextModel } from './venueContext.js';
 
 /** Compact context panel and keyboard-accessible selected-event shortcut. */
-export function mountVenueContextPanel({ getSelection, eventBus, onOpen, onClose, onChart, onVenue, canInteract = () => true, host = document.body }) {
+export function mountVenueContextPanel({ getSelection, eventBus, onOpen, onClose, onChart, onVenue, callouts = null, canInteract = () => true, host = document.body }) {
   const root = document.createElement('aside');
   root.id = 'astroeye-venue-context';
   root.hidden = true;
@@ -24,6 +24,12 @@ export function mountVenueContextPanel({ getSelection, eventBus, onOpen, onClose
     </dl>
     <p>Live map feeds and lighting are not historical replay. Source details are provided for review, not independently verified here.</p>
     <div class="astroeye-venue-actions"><button type="button" data-venue-action="chart">Open event chart</button><button type="button" data-venue-action="venue">View venue</button></div>
+    <section class="astroeye-callouts">
+      <label for="astroeye-callout-note">Map callout · optional note</label>
+      <input id="astroeye-callout-note" maxlength="40" placeholder="Up to 40 characters" autocomplete="off" />
+      <p>Labels capture this chart time. On-screen only: not saved or included in exports/links. They stay at their original time when you move the slider. Maximum five.</p>
+      <div class="astroeye-venue-actions"><button type="button" data-venue-action="callout">Add callout</button><button type="button" data-venue-action="clear-callouts">Clear AstroEye callouts</button></div>
+    </section>
     <p data-venue-status role="status" aria-live="polite"></p>`;
   const launcher = document.createElement('button');
   launcher.id = 'astroeye-selected-event';
@@ -35,14 +41,20 @@ export function mountVenueContextPanel({ getSelection, eventBus, onOpen, onClose
   const status = root.querySelector('[data-venue-status]');
   let disposed = false;
   let busy = false;
+  let lastEventId = null;
   function render() {
-    const model = createVenueContextModel(getSelection());
-    launcher.hidden = !model;
-    launcher.textContent = model ? `Selected event · ${model.title}` : '';
-    launcher.setAttribute('aria-label', model ? `Open venue details for ${model.title}` : 'No selected event');
+    const selection = getSelection();
+    const model = createVenueContextModel(selection);
+    if (selection?.event.id !== lastEventId) root.querySelector('#astroeye-callout-note').value = '';
+    lastEventId = selection?.event.id ?? null;
+    launcher.hidden = !model && !callouts?.count();
+    launcher.textContent = model ? `Selected event · ${model.title}` : 'AstroEye callouts';
+    launcher.setAttribute('aria-label', model ? `Open venue details for ${model.title}` : 'Manage AstroEye callouts');
     root.querySelector('h2').textContent = model?.title || 'No event selected';
     for (const node of root.querySelectorAll('[data-venue]')) node.textContent = model?.[node.dataset.venue] || '';
     for (const button of root.querySelectorAll('.astroeye-venue-actions button')) button.disabled = !model;
+    root.querySelector('.astroeye-callouts').hidden = !callouts;
+    root.querySelector('[data-venue-action="clear-callouts"]').disabled = !callouts;
   }
   async function action(callback) {
     if (busy || disposed || !canInteract()) return;
@@ -57,6 +69,16 @@ export function mountVenueContextPanel({ getSelection, eventBus, onOpen, onClose
     if (kind === 'close') void action(onClose);
     else if (kind === 'chart') void action(onChart);
     else if (kind === 'venue') void action(onVenue);
+    else if (kind === 'callout' && callouts) void action(async () => {
+      const result = await callouts.add(root.querySelector('#astroeye-callout-note').value);
+      render();
+      status.textContent = result.cancelled ? 'Callout cancelled.' : `Callout added · ${result.label}. Close this card to view the map. Saved records are unchanged.`;
+    });
+    else if (kind === 'clear-callouts' && callouts) void action(() => {
+      const removed = callouts.clear();
+      render();
+      status.textContent = `Removed ${removed} AstroEye callout(s). Other map annotations were left alone.`;
+    });
   });
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;

@@ -18,6 +18,9 @@
 #astroeye-venue-context :focus-visible, #astroeye-selected-event:focus-visible { outline: 2px solid #78e7ff; outline-offset: 3px; }
 .astroeye-venue-actions { display: flex; gap: 8px; margin-top: 18px; }
 .astroeye-venue-actions button { flex: 1; }
+.astroeye-callouts { margin-top: 18px; padding-top: 14px; border-top: 1px solid #68517f; }
+.astroeye-callouts label { display: block; color: #d6a6ff; font-size: 12px; }
+.astroeye-callouts input { box-sizing: border-box; width: 100%; min-height: 40px; margin-top: 6px; padding: 8px; border: 1px solid #68517f; border-radius: 6px; background: #160d28; color: #fff; }
 #astroeye-selected-event { position: fixed; right: 22px; bottom: 86px; z-index: 1250; max-width: min(310px, calc(100vw - 32px)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 12px Inter, sans-serif; }
 body:has(#astroeye-workspace:not([hidden])) #astroeye-selected-event,
 body:has(#astroeye-venue-context:not([hidden])) #astroeye-selected-event,

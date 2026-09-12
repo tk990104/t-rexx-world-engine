@@ -37,7 +37,8 @@ try {
   });
   await page.waitForSelector('.astroeye-chart:not([hidden]) svg');
   await page.$eval('#astroeye-time-offset', (slider) => { slider.value = '-60'; slider.dispatchEvent(new Event('change', { bubbles: true })); });
-  await new Promise((resolve) => setTimeout(resolve, 3000)); // Finish the explicit venue flight.
+  // Software-rendered frames can stretch a flight beyond its nominal wall time.
+  await page.waitForFunction(() => window.__godsEyeView.viewer.scene.tweens.length === 0, { timeout: 60000 });
   const before = await records();
   const pose = await camera();
   const wheel = await page.$eval('[data-chart="wheel"]', (node) => node.innerHTML);
@@ -82,10 +83,56 @@ try {
   assert.match(await text('[data-venue="chartTime"]'), /05:30:00 UTC/);
   assert.equal(await records(), before);
   console.log('PASS: actual map marker click opens current context without losing the preview.');
+  const testCallouts = process.argv.includes('--callouts');
+  if (testCallouts) {
+    await page.evaluate(() => window.__gevAnnotations.annotate([{ type: 'label', latitude: 40.713, longitude: -74.005, label: 'Unrelated QA mark' }], { ensureVisible: false }));
+    const calloutCamera = await camera();
+    await page.$eval('#astroeye-callout-note', (input) => { input.value = '<b>Preview note</b>'; });
+    await click('[data-venue-action="callout"]');
+    await page.waitForFunction(() => document.querySelector('[data-venue-status]').textContent.startsWith('Callout added'));
+    const ownMarks = () => page.evaluate(() => window.__gevAnnotations.list().filter((mark) => mark.owner === 'astroeye'));
+    let own = await ownMarks();
+    assert.equal(own.length, 1);
+    assert.equal(own[0].label, 'AstroEye 2026-11-01 05:30:00 UTC · <b>Preview note</b>');
+    assert.deepEqual(await camera(), calloutCamera);
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#astroeye-venue-context[hidden]');
+    await page.waitForFunction(() => [...document.querySelectorAll('svg text')].some((node) => node.textContent.includes('Preview note')));
+    await page.screenshot({ path: 'qa-shots/astroeye-venue/callout.png' });
+    await click('#astroeye-selected-event');
+    await page.waitForSelector('#astroeye-venue-context:not([hidden])');
+    await click('[data-venue-action="chart"]');
+    await page.waitForSelector('#astroeye-workspace:not([hidden])');
+    await click('[data-action="time-forward"]');
+    await click('[data-action="venue-context"]');
+    await page.waitForSelector('#astroeye-venue-context:not([hidden])');
+    assert.match((await ownMarks())[0].label, /05:30:00 UTC/);
+    await click('[data-venue-action="callout"]');
+    await page.waitForFunction(() => window.__gevAnnotations.list().filter((mark) => mark.owner === 'astroeye').length === 2);
+    own = await ownMarks();
+    assert.match(own[1].label, /05:45:00 UTC/);
+    await click('[data-venue-action="clear-callouts"]');
+    await page.waitForFunction(() => window.__gevAnnotations.list().every((mark) => mark.owner !== 'astroeye'));
+    assert.equal(await page.evaluate(() => window.__gevAnnotations.list().some((mark) => mark.label === 'Unrelated QA mark')), true);
+    assert.equal(await records(), before);
+    // Keep one snapshot across deletion to prove its cleanup remains reachable.
+    await click('[data-venue-action="callout"]');
+    await page.waitForFunction(() => window.__gevAnnotations.list().some((mark) => mark.owner === 'astroeye'));
+    console.log('PASS: callout text, exact UTC snapshot, unchanged camera/records and owner-only clearing.');
+  }
   await click('[data-venue-action="chart"]');
   await page.waitForSelector('#astroeye-workspace:not([hidden])');
   page.once('dialog', (dialog) => dialog.accept());
   await click('[data-action="delete"]');
+  if (testCallouts) {
+    await page.waitForFunction(() => !window.__godsEyeView.viewer.entities.getById('t-rexx-astroeye-selected-event'));
+    await click('[data-action="close"]');
+    await click('#astroeye-selected-event');
+    await page.waitForSelector('#astroeye-venue-context:not([hidden])');
+    assert.equal(await text('#astroeye-venue-title'), 'No event selected');
+    await click('[data-venue-action="clear-callouts"]');
+    console.log('PASS: session callouts can still be cleared after deleting the source event.');
+  }
   await page.waitForFunction(() => document.querySelector('#astroeye-selected-event').hidden);
   assert.equal(await page.evaluate(() => Boolean(window.__godsEyeView.viewer.entities.getById('t-rexx-astroeye-selected-event'))), false);
   assert.deepEqual(errors, []);
