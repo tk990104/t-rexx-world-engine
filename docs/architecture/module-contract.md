@@ -37,6 +37,8 @@ The first workspace is launched from the existing data rail and mounted through 
 
 The [event-template action](astroeye-event-templates.md) prepares a reviewed manual draft from the selected event without reusing its record ID or provider attribution. It does not change selection, time, camera or storage until the separate Save action.
 
+The [chart-comparison panel](astroeye-chart-comparison.md) owns one immutable session-only chart snapshot. It compares longitudes with the current chart without owning storage, clock or camera capabilities; pins are excluded from shared and durable module state.
+
 The chart wheel is rendered from a deterministic geometry model, so zodiac, house, angle, body, retrograde, and aspect placement can be tested without relying on browser screenshots. A 20-case internal regression pack spans daylight-saving boundaries, a leap day, fractional UTC offsets, both hemispheres, and polar day/night. Its pinned values detect pipeline drift from Astronomy Engine 2.1.19. A separate [NASA/JPL Horizons comparison](astroeye-validation.md) now checks all ten bodies at 15 instants, plus motion at five central dates. External house and planetary-hour validation remains pending.
 
 AstroEye now has an unsaved [time explorer](astroeye-time-explorer.md) and explicit [view links](astroeye-share-views.md). Links restore validated calculation inputs and preview time after the existing world-share restoration, without a second camera move or automatic record import. Shared selections use `shared: true` and `selectedChartId: null`; saving a copy creates a fresh local event ID. Event data is deliberately excluded from automatic URL updates and ordinary world-only links.

@@ -8,6 +8,7 @@ import { createSharedViewUrl } from './shareView.js';
 import { filterSavedEvents, normalizeSavedEventFilters, sortSavedEvents, pageSavedEvents } from './savedEventFilters.js';
 import { MAX_IMPORT_FILE_BYTES } from './recordImportReview.js';
 import { eventTemplateDraft } from './eventTemplate.js';
+import { mountChartComparison } from './chartComparisonPanel.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -153,6 +154,7 @@ export function mountAstroEyeWorkspace({
             <button type="button" data-action="save-shared" hidden>Save a copy</button>
           </div>
           <p class="astroeye-help">Use as template replaces unsaved form entries with the event’s original start and venue details. It does not change saved records until you review and save a new event.</p>
+          <section class="astroeye-comparison" data-role="chart-comparison" aria-label="Chart comparison"></section>
           <section class="astroeye-tour-controls" aria-label="AstroEye Director tour">
             <h4>Event tour</h4>
             <p class="astroeye-help">World → region → venue at this chart time. Adds three editable shots to Director without replacing existing scenes. Preview only: no video is recorded; live feeds stay live.</p>
@@ -291,6 +293,7 @@ export function mountAstroEyeWorkspace({
   field(form, 'localTime').value = initial.time;
   field(form, 'timeZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   let selected = null;
+  const comparison = mountChartComparison(root.querySelector('[data-role="chart-comparison"]'));
   let userInteracted = false;
   root.addEventListener('pointerdown', () => { userInteracted = true; });
   root.addEventListener('keydown', () => { userInteracted = true; });
@@ -397,6 +400,7 @@ export function mountAstroEyeWorkspace({
   function renderChart(event, chart, offsetMinutes = 0, isShared = false) {
     eventSky?.update(chart);
     selected = { event, chart, offsetMinutes, isShared };
+    comparison.update(event, chart);
     root.querySelector('[data-action="delete"]').hidden = isShared;
     root.querySelector('[data-action="save-shared"]').hidden = !isShared;
     root.querySelector('[data-action="share-view"]').disabled = typeof createWorldLink !== 'function';
@@ -689,6 +693,7 @@ export function mountAstroEyeWorkspace({
       refreshDeletionUndo();
       if (!removed) return;
       selected = null;
+      comparison.update(null, null);
       eventSky?.update(null);
       chartRoot.hidden = true;
       empty.hidden = false;
@@ -835,6 +840,7 @@ export function mountAstroEyeWorkspace({
     },
     destroy() {
       resetImportReview();
+      comparison.destroy();
       eventRefresh++;
       unsubscribeSavedMap?.();
       eventSky?.destroy();

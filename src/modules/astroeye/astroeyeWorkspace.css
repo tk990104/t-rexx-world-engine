@@ -157,6 +157,14 @@
 .astroeye-saved-map [data-action="frame-saved-map"] { display: block; margin-top: 8px; }
 .astroeye-saved-map button:disabled { opacity: .45; cursor: not-allowed; }
 .astroeye-event-list { display: grid; gap: 7px; margin-top: 9px; }
+.astroeye-comparison { margin-top: 14px; padding: 12px; border: 1px solid rgba(120,231,255,.3); border-radius: 8px; overflow-wrap: anywhere; }
+.astroeye-comparison h4 { margin: 0; color: var(--astro-cyan); }
+.astroeye-comparison table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 10px; }
+.astroeye-comparison th, .astroeye-comparison td { padding: 7px 2px; text-align: right; border-bottom: 1px solid rgba(255,255,255,.12); }
+.astroeye-comparison th:first-child { text-align: left; }
+.astroeye-comparison caption { margin: 10px 0; text-align: left; font-size: 11px; }
+.astroeye-comparison button { min-height: 44px; }
+.astroeye-comparison button:disabled { opacity: .45; cursor: not-allowed; }
 .astroeye-deletion-undo { margin-top: 12px; padding: 12px; border: 1px solid var(--astro-cyan); border-radius: 8px; overflow-wrap: anywhere; }
 .astroeye-deletion-undo button { min-height: 44px; }
 .astroeye-import-review { margin-top: 12px; padding: 12px; border: 1px solid var(--astro-cyan); border-radius: 8px; overflow-wrap: anywhere; }
