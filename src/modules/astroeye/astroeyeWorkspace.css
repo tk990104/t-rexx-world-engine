@@ -157,6 +157,8 @@
 .astroeye-saved-map [data-action="frame-saved-map"] { display: block; margin-top: 8px; }
 .astroeye-saved-map button:disabled { opacity: .45; cursor: not-allowed; }
 .astroeye-event-list { display: grid; gap: 7px; margin-top: 9px; }
+.astroeye-deletion-undo { margin-top: 12px; padding: 12px; border: 1px solid var(--astro-cyan); border-radius: 8px; overflow-wrap: anywhere; }
+.astroeye-deletion-undo button { min-height: 44px; }
 .astroeye-import-review { margin-top: 12px; padding: 12px; border: 1px solid var(--astro-cyan); border-radius: 8px; overflow-wrap: anywhere; }
 .astroeye-import-review h4 { margin: 0 0 8px; color: var(--astro-cyan); }
 .astroeye-import-review [data-role="import-summary"] { font-size: 12px; }

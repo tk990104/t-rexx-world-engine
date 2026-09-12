@@ -203,17 +203,38 @@ export function createWorldRecordStore({
     async listEvents() {
       return list(STORE_EVENTS, 'id');
     },
-    async deleteEvent(eventId) {
+    async deleteEvent(eventId, { capture = false } = {}) {
       const id = requireText(eventId, 'eventId');
       return transact([STORE_EVENTS, STORE_CHARTS], 'readwrite', async (transaction) => {
         const events = transaction.objectStore(STORE_EVENTS);
         const charts = transaction.objectStore(STORE_CHARTS);
-        const existed = await requestResult(events.getKey(id));
-        if (existed == null) return false;
-        const chartIds = await requestResult(charts.index('eventId').getAllKeys(id));
-        for (const chartId of chartIds) await requestResult(charts.delete(chartId));
+        const event = await requestResult(events.get(id));
+        if (event == null) return capture ? null : false;
+        const savedCharts = await requestResult(charts.index('eventId').getAll(id));
+        for (const chart of savedCharts) await requestResult(charts.delete(chart.chartId));
         await requestResult(events.delete(id));
-        return true;
+        return capture ? { event: copy(event), charts: copy(savedCharts) } : true;
+      });
+    },
+    async restoreDeletedEvent(snapshot) {
+      const records = normalizeWorkspace({ schemaVersion: WORLD_RECORD_SCHEMA_VERSION,
+        events: [snapshot?.event], charts: snapshot?.charts, workspaces: [] });
+      const event = records.events[0];
+      if (records.charts.some((chart) => chart.eventId !== event.id)) throw new Error('Deleted charts must belong to the restored event.');
+      return transact([STORE_EVENTS, STORE_CHARTS], 'readwrite', async (transaction) => {
+        const events = transaction.objectStore(STORE_EVENTS);
+        const charts = transaction.objectStore(STORE_CHARTS);
+        if (await requestResult(events.getKey(event.id)) != null) {
+          throw new Error('Cannot undo: this event ID is already in use. Newer records were left unchanged.');
+        }
+        for (const chart of records.charts) {
+          if (await requestResult(charts.getKey(chart.chartId)) != null) {
+            throw new Error('Cannot undo: a saved chart ID is already in use. Newer records were left unchanged.');
+          }
+        }
+        await requestResult(events.add(copy(event)));
+        for (const chart of records.charts) await requestResult(charts.add(copy(chart)));
+        return { eventId: event.id, charts: records.charts.length };
       });
     },
     async saveChart(chart) {

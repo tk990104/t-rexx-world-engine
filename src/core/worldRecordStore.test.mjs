@@ -106,3 +106,53 @@ test('records validate before writes and storage unavailability fails explicitly
   assert.deepEqual(await records.exportRecords(), { schemaVersion: 1, events: [], charts: [], workspaces: [] });
   await records.close();
 });
+
+test('captured deletion restores the exact event and all stored charts without changing research workspaces', async () => {
+  const records = store();
+  try {
+    const event = await records.saveEvent(EVENT);
+    await records.saveChart(calculateAstroEyeChart(event));
+    await records.saveChart(calculateAstroEyeChart(event, { houseSystem: 'equal' }));
+    await records.saveWorkspace({ id: 'notes', eventIds: [event.id] });
+    const before = await records.serializeRecords();
+    const snapshot = await records.deleteEvent(event.id, { capture: true });
+    assert.equal(snapshot.charts.length, 2);
+    assert.equal(await records.getEvent(event.id), null);
+    assert.deepEqual(await records.listCharts(), []);
+    assert.deepEqual(await records.restoreDeletedEvent(snapshot), { eventId: event.id, charts: 2 });
+    assert.equal(await records.serializeRecords(), before);
+    assert.equal(await records.deleteEvent('missing', { capture: true }), null);
+  } finally { await records.close(); }
+});
+
+for (const conflict of ['event', 'chart']) {
+  test(`undo rejects a newer ${conflict} ID atomically without changing any records`, async () => {
+    const records = store();
+    try {
+      const event = await records.saveEvent(EVENT);
+      const chart = await records.saveChart(calculateAstroEyeChart(event));
+      const snapshot = await records.deleteEvent(event.id, { capture: true });
+      if (conflict === 'event') await records.saveEvent({ ...EVENT, title: 'Newer event' });
+      else {
+        await records.saveEvent({ ...EVENT, id: 'other-event' });
+        await records.saveChart({ ...chart, eventId: 'other-event' });
+      }
+      const before = await records.serializeRecords();
+      await assert.rejects(records.restoreDeletedEvent(snapshot), /already in use/);
+      assert.equal(await records.serializeRecords(), before);
+    } finally { await records.close(); }
+  });
+}
+
+test('undo validates chart ownership and supports an event without saved charts', async () => {
+  const records = store();
+  try {
+    const event = await records.saveEvent(EVENT);
+    const snapshot = await records.deleteEvent(event.id, { capture: true });
+    const chart = calculateAstroEyeChart(event);
+    await assert.rejects(records.restoreDeletedEvent({ event, charts: [{ ...chart, eventId: 'other' }] }), /must belong/);
+    await assert.rejects(records.restoreDeletedEvent({ event, charts: [chart, chart] }), /duplicate/);
+    assert.deepEqual(await records.listEvents(), []);
+    assert.deepEqual(await records.restoreDeletedEvent(snapshot), { eventId: event.id, charts: 0 });
+  } finally { await records.close(); }
+});

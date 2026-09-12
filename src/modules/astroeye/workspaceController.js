@@ -69,6 +69,8 @@ export function createAstroEyeWorkspaceController({
 
   let activeSelection = null;
   let currentView = null;
+  let deletedEvent = null;
+  let deletionBusy = false;
 
   function applySelectionTime(chart, offsetMinutes) {
     const { event, chart: originalChart, isShared, chartIsSaved } = activeSelection;
@@ -157,18 +159,37 @@ export function createAstroEyeWorkspaceController({
       return activate(event, chart, { navigate, isCurrent, chartIsSaved });
     },
     async deleteEvent(eventId) {
-      const removed = await recordStore.deleteEvent(eventId);
-      const selected = moduleState.get('astroeye');
-      if (removed && selected?.selectedEventId === eventId) {
-        activeSelection = null;
-        currentView = null;
-        moduleState.clear('astroeye');
-        moduleState.setActiveModule(null);
-        worldClock.setMode('live');
-        await presentEvent(null, null);
-      }
-      if (removed) eventBus.emit('astroeye:event-deleted', { eventId });
-      return removed;
+      if (deletionBusy) throw new Error('Wait for the current delete or undo operation to finish.');
+      deletionBusy = true;
+      try {
+        const removed = await recordStore.deleteEvent(eventId, { capture: true });
+        if (removed) deletedEvent = removed;
+        const selected = moduleState.get('astroeye');
+        if (removed && selected?.selectedEventId === eventId) {
+          activeSelection = null;
+          currentView = null;
+          moduleState.clear('astroeye');
+          moduleState.setActiveModule(null);
+          worldClock.setMode('live');
+          await presentEvent(null, null);
+        }
+        if (removed) eventBus.emit('astroeye:event-deleted', { eventId });
+        return Boolean(removed);
+      } finally { deletionBusy = false; }
+    },
+    deletionUndoState() {
+      return deletedEvent ? { eventId: deletedEvent.event.id, title: deletedEvent.event.title, charts: deletedEvent.charts.length } : null;
+    },
+    async undoDeleteEvent() {
+      if (deletionBusy) throw new Error('Wait for the current delete or undo operation to finish.');
+      if (!deletedEvent) throw new Error('No deleted event is available to undo in this session.');
+      deletionBusy = true;
+      try {
+        const result = await recordStore.restoreDeletedEvent(deletedEvent);
+        deletedEvent = null;
+        eventBus.emit('astroeye:event-saved', { eventId: result.eventId, restored: true });
+        return result;
+      } finally { deletionBusy = false; }
     },
     listEvents() {
       return recordStore.listEvents();

@@ -24,6 +24,68 @@ const DRAFT = {
   houseSystem: 'whole-sign',
 };
 
+test('undo restores stored records without changing the current selection, time or presentation', async () => {
+  const context = harness();
+  try {
+    await context.controller.saveDraft({ ...DRAFT, id: 'first' });
+    const source = await context.recordStore.getEvent('first');
+    await context.controller.deleteEvent('first');
+    const summary = context.controller.deletionUndoState();
+    assert.equal(summary.charts, 1);
+    summary.title = 'not the original';
+    await context.controller.saveDraft({ ...DRAFT, id: 'second' });
+    context.controller.previewTime(15);
+    const selection = context.controller.selectionSnapshot();
+    const time = context.worldClock.now().toISOString();
+    const presentations = context.presented.length;
+    let restored;
+    context.eventBus.on('astroeye:event-saved', (event) => { restored = event; });
+    assert.deepEqual(await context.controller.undoDeleteEvent(), { eventId: 'first', charts: 1 });
+    assert.deepEqual(await context.recordStore.getEvent('first'), source);
+    assert.deepEqual(context.controller.selectionSnapshot(), selection);
+    assert.equal(context.worldClock.now().toISOString(), time);
+    assert.equal(context.presented.length, presentations);
+    assert.deepEqual(restored, { eventId: 'first', restored: true });
+    assert.equal(context.controller.deletionUndoState(), null);
+    await assert.rejects(context.controller.undoDeleteEvent(), /No deleted event/);
+  } finally { await context.recordStore.close(); }
+});
+
+test('only the most recent successful deletion is retained, and a fresh controller has no undo history', async () => {
+  const context = harness();
+  try {
+    for (const id of ['first', 'second']) {
+      await context.controller.saveDraft({ ...DRAFT, id });
+      await context.controller.deleteEvent(id);
+    }
+    assert.equal(await context.controller.deleteEvent('missing'), false);
+    assert.equal(context.controller.deletionUndoState().eventId, 'second');
+    assert.equal(createAstroEyeWorkspaceController(context).deletionUndoState(), null);
+    await context.controller.undoDeleteEvent();
+    assert.equal(await context.recordStore.getEvent('first'), null);
+    assert.ok(await context.recordStore.getEvent('second'));
+  } finally { await context.recordStore.close(); }
+});
+
+test('conflicting undo retains the recovery copy and concurrent undo/delete is rejected', async () => {
+  const context = harness();
+  try {
+    let release;
+    const controller = createAstroEyeWorkspaceController({ ...context, recordStore: { ...context.recordStore,
+      restoreDeletedEvent: (snapshot) => new Promise((resolve, reject) => { release = () => context.recordStore.restoreDeletedEvent(snapshot).then(resolve, reject); }) } });
+    await controller.saveDraft({ ...DRAFT, id: 'event-generated' });
+    await controller.deleteEvent('event-generated');
+    await context.recordStore.saveEvent(eventFromDraft({ ...DRAFT, title: 'Newer' }, () => 'event-generated'));
+    const pending = controller.undoDeleteEvent();
+    await assert.rejects(controller.undoDeleteEvent(), /Wait for/);
+    await assert.rejects(controller.deleteEvent('event-generated'), /Wait for/);
+    const failure = assert.rejects(pending, /already in use/);
+    await release(); await failure;
+    assert.equal(controller.deletionUndoState().title, DRAFT.title);
+    assert.equal((await context.recordStore.getEvent('event-generated')).title, 'Newer');
+  } finally { await context.recordStore.close(); }
+});
+
 test('matching export round-trips only saved matching events and charts without changing selection or records', async () => {
   const context = harness();
   const target = createWorldRecordStore({ indexedDB, databaseName: 'matching-export-roundtrip' });

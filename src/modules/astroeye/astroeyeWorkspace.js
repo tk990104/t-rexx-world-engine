@@ -173,6 +173,11 @@ export function mountAstroEyeWorkspace({
           <p class="astroeye-provenance" data-chart="provenance"></p>
         </div>
         <div class="astroeye-saved-header"><h3>Saved events</h3><div><button type="button" data-action="export">Export all</button><button type="button" data-action="import">Import</button></div></div>
+        <section class="astroeye-deletion-undo" data-role="deletion-undo" aria-label="Recover last deleted event" hidden>
+          <p data-role="deletion-undo-description" class="astroeye-help"></p>
+          <button type="button" data-action="undo-delete">Undo last deletion</button>
+          <p class="astroeye-help">Restores the event and its stored charts without changing the camera or selected chart. Only the most recent deletion can be undone, until this page reloads. Newer records will never be overwritten. Keep a full export for longer-term recovery.</p>
+        </section>
         <form class="astroeye-event-filters" aria-label="Filter saved events">
           <label>Search saved events<input name="query" type="search" maxlength="100" placeholder="Event, team, sport, competition or venue" /></label>
           <div class="astroeye-filter-dates">
@@ -464,7 +469,14 @@ export function mountAstroEyeWorkspace({
   });
   root.querySelector('#astroeye-time-offset').addEventListener('change', (event) => previewTime(Number(event.target.value)));
 
+  function refreshDeletionUndo() {
+    const state = controller.deletionUndoState?.();
+    root.querySelector('[data-role="deletion-undo"]').hidden = !state;
+    root.querySelector('[data-role="deletion-undo-description"]').textContent = state ? `Deleted: ${state.title} · ${state.charts} stored charts available to restore.` : '';
+  }
+
   async function refreshEvents() {
+    refreshDeletionUndo();
     const request = ++eventRefresh;
     const events = await controller.listEvents();
     if (request !== eventRefresh) return;
@@ -670,16 +682,25 @@ export function mountAstroEyeWorkspace({
         renderChart(result.event, result.chart, result.offsetMinutes, result.isShared);
         await refreshEvents();
       }
-    } else if (action === 'delete' && selected && !selected.isShared) {
-      if (!globalThis.confirm(`Delete “${selected.event.title}” and its saved charts?`)) return;
+    } else if (action === 'delete' && selected && !selected.isShared && !root.dataset.busy) {
+      if (!globalThis.confirm(`Delete “${selected.event.title}” and its saved charts? Only the most recent deletion can be undone until this page reloads.`)) return;
       const eventId = selected.event.id;
-      const removed = await busy(() => controller.deleteEvent(eventId), 'Event deleted.');
+      const removed = await busy(() => controller.deleteEvent(eventId), 'Event deleted. Undo last deletion is available in Saved events for this session.');
+      refreshDeletionUndo();
       if (!removed) return;
       selected = null;
       eventSky?.update(null);
       chartRoot.hidden = true;
       empty.hidden = false;
       await refreshEvents();
+    } else if (action === 'undo-delete') {
+      const result = await busy(() => controller.undoDeleteEvent(), 'Deleted event and stored charts restored. Choose it from Saved events; current filters and globe view are unchanged.');
+      refreshDeletionUndo();
+      if (result) {
+        await refreshEvents();
+        const restoredButton = [...eventList.querySelectorAll('[data-event-id]')].find((button) => button.dataset.eventId === result.eventId);
+        (restoredButton || root.querySelector('[data-action="export"]')).focus();
+      }
     } else if (action === 'export-matching') {
       const applied = normalizeSavedEventFilters(eventFilters);
       await busy(async () => {
