@@ -6,7 +6,7 @@ The list renders at most 25 event buttons per page. **Previous page / Next page*
 
 Paging does not change map markers. The map uses up to 100 additional matching events in the applied sort order, independent of the current list page; its selected-event exclusion and framing rules are unchanged. Switching sort can change which 100 additional events appear. The selected chart and purple marker are not changed by either operation.
 
-Both ordering and page selection are local UI state, not record mutations or shared-link/Director data. Clear filters restores newest-first ordering. Export still includes all records. Filtering, sorting and paging use cached records without new storage/provider requests or camera commands. This bounds rendered list rows; it is client-side pagination, not database pagination, and normal workspace refreshes still load the event roster.
+Both ordering and page selection are local UI state, not record mutations or shared-link/Director data. Clear filters restores newest-first ordering. Export all still includes all records; [matching export](astroeye-matching-export.md) includes every applied match, not just the current page or markers. Filtering, sorting and paging use cached records without new storage/provider requests or camera commands. This bounds rendered list rows; it is client-side pagination, not database pagination, and normal workspace refreshes still load the event roster.
 
 ## Bounded verification
 

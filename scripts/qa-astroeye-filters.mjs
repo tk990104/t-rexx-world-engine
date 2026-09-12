@@ -29,6 +29,8 @@ try {
     const { createSavedEventLayer } = await import('/src/modules/astroeye/savedEventLayer.js');
     const { createSavedEventFramer } = await import('/src/modules/astroeye/savedEventFrame.js');
     const { EventBus } = await import('/src/core/eventBus.js');
+    const { matchingEventRecords } = await import('/src/modules/astroeye/matchingEventExport.js');
+    const downloads = [];
     let records = ['West', 'East', 'North'].map((name, i) => ({ id: name, title: `${name} <b>event</b>`, sport: 'Demo', competition: 'Cup',
       venue: { name: `${name} Arena`, latitude: 40, longitude: -74 }, scheduledLocal: { date: `2026-09-${12 + i}`, time: '12:00', timeZone: 'UTC' }, utcStart: `2026-09-${12 + i}T12:00:00Z` }));
     const entities = new Map();
@@ -41,11 +43,15 @@ try {
       camera: { cancelFlight() {}, flyTo() { flights++; } } };
     const layer = createSavedEventLayer({ viewer,
       listEvents, getSelection: () => null, eventBus: new EventBus() });
-    const workspace = mountAstroEyeWorkspace({ controller: { ...controller, listEvents }, savedEventLayer: layer,
+    const snapshot = () => ({ schemaVersion: 1, events: structuredClone(records), charts: [], workspaces: [{ id: 'private' }] });
+    const workspace = mountAstroEyeWorkspace({ controller: { ...controller, listEvents,
+      serializeRecords: async () => JSON.stringify(snapshot()),
+      serializeMatchingRecords: async (filters) => JSON.stringify(matchingEventRecords(snapshot(), filters)) }, savedEventLayer: layer,
+      downloadRecords: (json, filename = 't-rexx-world-records.json') => downloads.push({ records: JSON.parse(json), filename }),
       onViewSavedEvents: createSavedEventFramer({ viewer, getPoints: layer.framePoints, canInteract: () => allowed, runNavigation: (_noun, navigate) => navigate() }) });
     await workspace.open(); await layer.setEnabled(true);
     const seed = records[0];
-    window.filterQA = { layer, workspace, reads: () => reads, flights: () => flights, allow: (value) => { allowed = value; },
+    window.filterQA = { layer, workspace, downloads, reads: () => reads, flights: () => flights, allow: (value) => { allowed = value; },
       markerOrder: () => [...entities.values()].map((entity) => entity.properties.eventId),
       async setCount(count) {
         records = Array.from({ length: count }, (_, i) => {
@@ -73,6 +79,7 @@ try {
   assert.match(await page.$eval('[data-role="filter-status"]', (node) => node.textContent), /Previous filters/);
   await apply({ query: 'missing', dateFrom: '', dateTo: '' });
   assert.deepEqual(await ids(), []);
+  assert.equal(await page.$eval('[data-action="export-matching"]', (button) => button.disabled), true);
   assert.equal(await page.evaluate(() => window.filterQA.layer.state().shown), 0);
   assert.equal(await page.$eval('[data-action="frame-saved-map"]', (button) => button.disabled), true);
   await page.$eval('[data-filter-reset]', (button) => button.click());
@@ -134,6 +141,23 @@ try {
   assert.equal(await page.$eval('.astroeye-event-pages', (node) => node.hidden), true);
   assert.deepEqual(errors, []);
   console.log('PASS: 25-row pages, last/previous page, focus, list/map sort parity, filter reset, shrink clamp and no additional reads or camera requests on paging/sorting.');
+  await page.evaluate(() => window.filterQA.setCount(121));
+  await apply({ query: 'Batch', sort: 'oldest' });
+  await page.$eval('[data-event-page="next"]', (button) => button.click());
+  await page.$eval('.astroeye-event-filters [name="query"]', (input) => { input.value = 'not applied'; });
+  await page.$eval('[data-action="export-matching"]', (button) => button.click());
+  await page.waitForFunction(() => window.filterQA.downloads.length === 1);
+  const exported = await page.evaluate(() => window.filterQA.downloads[0]);
+  assert.equal(exported.filename, 't-rexx-matching-events.json');
+  assert.equal(exported.records.events.length, 121);
+  assert.equal(exported.records.events[0].id, 'row-000');
+  assert.deepEqual(exported.records.workspaces, []);
+  await page.$eval('[data-action="export"]', (button) => button.click());
+  await page.waitForFunction(() => window.filterQA.downloads.length === 2);
+  assert.equal(await page.evaluate(() => window.filterQA.downloads[1].filename), 't-rexx-world-records.json');
+  assert.equal(await page.evaluate(() => window.filterQA.downloads[1].records.workspaces.length), 1);
+  assert.deepEqual(errors, []);
+  console.log('PASS: matching export uses applied filters across all pages beyond 100 markers, excludes workspaces, and preserves full-backup export.');
 } finally {
   await browser?.close();
   clearTimeout(deadline);

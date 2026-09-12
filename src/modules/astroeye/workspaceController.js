@@ -2,6 +2,8 @@ import { normalizeEvent } from '../../domain/events/eventSchema.js';
 import { calculateAstroEyeChart } from './calculation/chart.js';
 import { calculateTimePreview } from './timeExplorer.js';
 import { createSharedView, normalizeSharedView } from './shareView.js';
+import { normalizeSavedEventFilters } from './savedEventFilters.js';
+import { matchingEventRecords } from './matchingEventExport.js';
 
 function requireService(service, name, methods) {
   if (!service || methods.some((method) => typeof service[method] !== 'function')) {
@@ -172,6 +174,11 @@ export function createAstroEyeWorkspaceController({
     },
     serializeRecords() {
       return recordStore.serializeRecords();
+    },
+    async serializeMatchingRecords(filters) {
+      const applied = normalizeSavedEventFilters(filters);
+      const records = JSON.parse(await recordStore.serializeRecords());
+      return JSON.stringify(matchingEventRecords(records, applied), null, 2) + '\n';
     },
     async importRecords(input, options) {
       const result = await recordStore.importRecords(input, options);

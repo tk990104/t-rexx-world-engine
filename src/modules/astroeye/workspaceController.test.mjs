@@ -24,6 +24,42 @@ const DRAFT = {
   houseSystem: 'whole-sign',
 };
 
+test('matching export round-trips only saved matching events and charts without changing selection or records', async () => {
+  const context = harness();
+  const target = createWorldRecordStore({ indexedDB, databaseName: 'matching-export-roundtrip' });
+  try {
+    await context.controller.saveDraft({ ...DRAFT, id: 'keep', title: 'Keep event' });
+    await context.controller.saveDraft({ ...DRAFT, id: 'private', title: 'Private event' });
+    await context.recordStore.saveWorkspace({ id: 'private-research', eventIds: ['keep', 'private'] });
+    context.controller.previewTime(15);
+    const selection = context.controller.selectionSnapshot();
+    const before = await context.controller.serializeRecords();
+    const json = await context.controller.serializeMatchingRecords({ query: 'Keep' });
+    assert.deepEqual(await target.importRecords(json), { mode: 'merge', events: 1, charts: 1, workspaces: 0 });
+    assert.equal((await target.listEvents())[0].id, 'keep');
+    assert.equal((await target.listCharts())[0].eventId, 'keep');
+    assert.equal(await context.controller.serializeRecords(), before);
+    assert.deepEqual(context.controller.selectionSnapshot(), selection);
+    await assert.rejects(context.controller.serializeMatchingRecords({ query: 'missing' }), /Nothing was exported/);
+    await assert.rejects(context.controller.serializeMatchingRecords({ dateFrom: '2026-09-10', dateTo: '2026-09-09' }), /date/i);
+  } finally { await context.recordStore.close(); await target.close(); }
+});
+
+test('matching export freezes caller filters before a delayed storage response', async () => {
+  const context = harness();
+  try {
+    await context.controller.saveDraft({ ...DRAFT, title: 'Keep event' });
+    let release;
+    const delayed = createAstroEyeWorkspaceController({ ...context, recordStore: { ...context.recordStore,
+      serializeRecords: () => new Promise((resolve) => { release = resolve; }) } });
+    const filters = { query: 'Keep' };
+    const pending = delayed.serializeMatchingRecords(filters);
+    filters.query = 'missing';
+    release(await context.controller.serializeRecords());
+    assert.equal(JSON.parse(await pending).events.length, 1);
+  } finally { await context.recordStore.close(); }
+});
+
 test('map selection can calculate a missing house chart without writes or camera navigation', async () => {
   const context = harness();
   try {

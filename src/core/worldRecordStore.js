@@ -171,12 +171,16 @@ export function createWorldRecordStore({
   }
 
   async function exportRecords() {
-    const [events, charts, workspaces] = await Promise.all([
-      list(STORE_EVENTS, 'id'),
-      list(STORE_CHARTS, 'chartId'),
-      list(STORE_WORKSPACES, 'id'),
-    ]);
-    return { schemaVersion: WORLD_RECORD_SCHEMA_VERSION, events, charts, workspaces };
+    return transact(ALL_STORES, 'readonly', async (transaction) => {
+      // Read one coherent snapshot, even when another tab edits records.
+      const [events, charts, workspaces] = await Promise.all(
+        ALL_STORES.map((name) => requestResult(transaction.objectStore(name).getAll())),
+      );
+      return { schemaVersion: WORLD_RECORD_SCHEMA_VERSION,
+        events: copy(events).sort(sortBy('id')),
+        charts: copy(charts).sort(sortBy('chartId')),
+        workspaces: copy(workspaces).sort(sortBy('id')) };
+    });
   }
 
   return Object.freeze({

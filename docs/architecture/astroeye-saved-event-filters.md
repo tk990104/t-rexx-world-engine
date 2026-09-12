@@ -6,7 +6,7 @@ Search is a case-insensitive literal substring across event title, sport, compet
 
 The list and cyan map markers use the same pure `savedEventFilters.js` function. Map filtering happens before the 100-additional-marker cap, so a matching event outside the original first 100 can appear. Counts distinguish matched records from additional rendered markers. The selected purple marker and chart remain unchanged, even when that event falls outside the filter. No-match messages explain how to recover.
 
-Filters are session-only UI state. They survive panel close/reopen, saved-map hide/show and Director suspension within that page, but are not saved in record storage, shared URLs or Director projects. Reload resets them. Export retains its existing all-record behavior; this is not a filtered export feature.
+Filters are session-only UI state. They survive panel close/reopen, saved-map hide/show and Director suspension within that page, but are not saved in record storage, shared URLs or Director projects. Reload resets them. Export all retains its full-backup behavior; the separate [matching export](astroeye-matching-export.md) uses applied filters to export all matching events and their stored charts without research workspaces.
 
 [Newest/oldest sorting and 25-row list pages](astroeye-saved-event-pagination.md) are now available. Apply filters also applies the chosen UTC start order and returns the list to its first page. Clear filters restores newest-first ordering. Paging alone does not alter the filtered map.
 

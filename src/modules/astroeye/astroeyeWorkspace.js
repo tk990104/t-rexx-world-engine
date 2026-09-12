@@ -28,12 +28,12 @@ function formatPosition(position) {
   return `${position.sign} ${position.degreeInSign.toFixed(2)}° · H${position.house}${motion}`;
 }
 
-function downloadJson(text) {
+function downloadJson(text, filename = 't-rexx-world-records.json') {
   const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = 't-rexx-world-records.json';
+  anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -56,6 +56,7 @@ export function mountAstroEyeWorkspace({
   onVenueContext = null,
   savedEventLayer = null,
   onViewSavedEvents = null,
+  downloadRecords = downloadJson,
 } = {}) {
   requireController(controller);
   if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
@@ -166,17 +167,19 @@ export function mountAstroEyeWorkspace({
           </section>
           <p class="astroeye-provenance" data-chart="provenance"></p>
         </div>
-        <div class="astroeye-saved-header"><h3>Saved events</h3><div><button type="button" data-action="export">Export</button><button type="button" data-action="import">Import</button></div></div>
+        <div class="astroeye-saved-header"><h3>Saved events</h3><div><button type="button" data-action="export">Export all</button><button type="button" data-action="import">Import</button></div></div>
         <form class="astroeye-event-filters" aria-label="Filter saved events">
           <label>Search saved events<input name="query" type="search" maxlength="100" placeholder="Event, team, sport, competition or venue" /></label>
           <div class="astroeye-filter-dates">
             <label>From date<input name="dateFrom" type="date" /></label>
             <label>Through date<input name="dateTo" type="date" /></label>
           </div>
-          <p class="astroeye-help">Dates use each venue’s local event date, including both endpoints. Apply filters to update the list and cyan map markers. The selected purple marker and chart stay unchanged, even outside the filters. Export still includes all records.</p>
+          <p class="astroeye-help">Dates use each venue’s local event date, including both endpoints. Apply filters to update the list and cyan map markers. The selected purple marker and chart stay unchanged, even outside the filters.</p>
           <label>Sort by event start (UTC)<select name="sort"><option value="newest">Newest start first</option><option value="oldest">Oldest start first</option></select></label>
           <div class="astroeye-chart-actions"><button type="submit">Apply filters</button><button type="button" data-filter-reset>Clear filters</button></div>
           <p class="astroeye-help" data-role="filter-status" role="status" aria-live="polite"></p>
+          <button type="button" data-action="export-matching" disabled>Export matching events</button>
+          <p class="astroeye-help">Matching export uses applied filters across all pages, beyond the map limit. Includes saved event details, venue coordinates and their stored charts; excludes research workspaces and on-screen previews. Review the file before sharing. Export all remains a complete backup.</p>
         </form>
         <section class="astroeye-saved-map" aria-label="Saved-event map" hidden>
           <button type="button" data-action="saved-map" aria-pressed="false">Show saved events on map</button>
@@ -427,6 +430,9 @@ export function mountAstroEyeWorkspace({
     root.querySelector('[data-event-page="next"]').disabled = page.page === page.pageCount - 1;
     root.querySelector('[data-role="page-status"]').textContent = `${page.from}–${page.to} of ${page.total} matching events · Page ${page.page + 1} of ${page.pageCount}. The map does not change when paging.`;
     root.querySelector('[data-role="filter-status"]').textContent = `${events.length} of ${savedEvents.length} saved events match the applied filters.`;
+    const matchingExport = root.querySelector('[data-action="export-matching"]');
+    matchingExport.disabled = !events.length || typeof controller.serializeMatchingRecords !== 'function';
+    matchingExport.textContent = `Export matching events (${events.length})`;
     eventList.replaceChildren();
     if (!events.length) {
       const message = document.createElement('p');
@@ -602,9 +608,15 @@ export function mountAstroEyeWorkspace({
       chartRoot.hidden = true;
       empty.hidden = false;
       await refreshEvents();
+    } else if (action === 'export-matching') {
+      const applied = normalizeSavedEventFilters(eventFilters);
+      await busy(async () => {
+        const json = await controller.serializeMatchingRecords(applied);
+        downloadRecords(json, 't-rexx-matching-events.json');
+      }, 'Matching events and stored charts exported. Research workspaces were excluded.');
     } else if (action === 'export') {
       const json = await busy(() => controller.serializeRecords(), 'World records exported.');
-      if (json) downloadJson(json);
+      if (json) downloadRecords(json);
     } else if (action === 'import') {
       importFile.click();
     }
