@@ -6,6 +6,7 @@ import { mountSportsSchedulePanel } from './sportsSchedulePanel.js';
 import { scheduleLocalTime } from './sportsSchedule.js';
 import { createSharedViewUrl } from './shareView.js';
 import { filterSavedEvents, normalizeSavedEventFilters, sortSavedEvents, pageSavedEvents } from './savedEventFilters.js';
+import { MAX_IMPORT_FILE_BYTES } from './recordImportReview.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -189,6 +190,13 @@ export function mountAstroEyeWorkspace({
           <p class="astroeye-help">Cyan = saved events; purple = selected event. Click a marker to open its chart without moving the camera. Overlapping venues can be chosen from the list below. Shows up to 100 additional matches in the applied sort order, regardless of list page. Local session only; not included in links or tours. Hidden during Director playback.</p>
         </section>
         <input type="file" data-role="import-file" accept="application/json,.json" hidden />
+        <section class="astroeye-import-review" data-role="import-review" aria-labelledby="astroeye-import-title" hidden>
+          <h4 id="astroeye-import-title" tabindex="-1">Review import</h4>
+          <p class="astroeye-help" data-role="import-filename"></p>
+          <div data-role="import-summary" aria-live="polite"></div>
+          <p class="astroeye-help">Nothing has been imported yet. Confirm merges this file into saved records: matching IDs are overwritten, including identical records; other records remain. Only import files you trust. The current chart preview stays unchanged; reopen an event to view its imported chart.</p>
+          <div class="astroeye-chart-actions"><button type="button" data-action="confirm-import">Confirm merge</button><button type="button" data-action="cancel-import">Cancel</button></div>
+        </section>
         <div id="astroeye-saved-event-list" class="astroeye-event-list" data-role="event-list"></div>
         <nav class="astroeye-event-pages" aria-label="Saved event pages" hidden>
           <p class="astroeye-help" data-role="page-status" role="status" aria-live="polite"></p>
@@ -245,6 +253,17 @@ export function mountAstroEyeWorkspace({
     eventList.querySelector('button')?.focus();
   });
   const importFile = root.querySelector('[data-role="import-file"]');
+  const importReview = root.querySelector('[data-role="import-review"]');
+  let importReadGeneration = 0;
+  root.querySelector('[data-action="import"]').disabled = typeof controller.prepareImportRecords !== 'function';
+
+  function resetImportReview() {
+    importReadGeneration++;
+    controller.cancelImportReview?.();
+    importReview.hidden = true;
+    root.querySelector('[data-role="import-summary"]').replaceChildren();
+    root.querySelector('[data-role="import-filename"]').textContent = '';
+  }
   const initial = defaultLocalValues();
   field(form, 'localDate').value = initial.date;
   field(form, 'localTime').value = initial.time;
@@ -509,11 +528,13 @@ export function mountAstroEyeWorkspace({
   root.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;
+    if (action === 'close') resetImportReview();
     if (action === 'saved-map' && savedEventLayer && !root.dataset.busy) {
       await savedEventLayer.setEnabled(!savedEventLayer.state().enabled);
     } else if (action === 'frame-saved-map' && onViewSavedEvents && !root.dataset.busy) {
       try {
         onViewSavedEvents();
+        resetImportReview();
         if (onRequestClose) await onRequestClose();
         else { root.hidden = true; previouslyFocused?.focus?.(); }
       } catch (error) { setStatus(error.message || 'Could not frame these markers.', 'error'); }
@@ -617,7 +638,18 @@ export function mountAstroEyeWorkspace({
     } else if (action === 'export') {
       const json = await busy(() => controller.serializeRecords(), 'World records exported.');
       if (json) downloadRecords(json);
-    } else if (action === 'import') {
+    } else if (action === 'confirm-import' && !root.dataset.busy && !importReview.hidden) {
+      importReview.hidden = true;
+      const result = await busy(() => controller.confirmImportRecords(), 'World records imported. Reopen an event to view its imported chart.');
+      resetImportReview();
+      if (result) await refreshEvents();
+      root.querySelector('[data-action="import"]').focus();
+    } else if (action === 'cancel-import') {
+      resetImportReview();
+      setStatus('Import canceled. No records were changed.');
+      root.querySelector('[data-action="import"]').focus();
+    } else if (action === 'import' && !root.dataset.busy) {
+      resetImportReview();
       importFile.click();
     }
   });
@@ -625,17 +657,38 @@ export function mountAstroEyeWorkspace({
   importFile.addEventListener('change', async () => {
     const file = importFile.files?.[0];
     importFile.value = '';
-    if (!file) return;
+    if (!file || root.dataset.busy) return;
+    resetImportReview();
+    const generation = importReadGeneration;
     const result = await busy(
-      async () => controller.importRecords(await file.text(), { mode: 'merge' }),
-      'World records imported.',
+      async () => {
+        if (file.size > MAX_IMPORT_FILE_BYTES) throw new Error('Import files must be 10 MiB or smaller. Nothing was imported.');
+        const text = await file.text();
+        if (generation !== importReadGeneration) return null;
+        return controller.prepareImportRecords(text);
+      },
+      'File reviewed. Confirm merge to import, or Cancel to leave saved records unchanged.',
     );
-    if (result) await refreshEvents();
+    if (generation !== importReadGeneration) {
+      setStatus('Import review canceled. No records were changed.');
+      return;
+    }
+    if (!result) return;
+    root.querySelector('[data-role="import-filename"]').textContent = file.name;
+    const summary = root.querySelector('[data-role="import-summary"]');
+    for (const [key, label] of [['events', 'Events'], ['charts', 'Charts'], ['workspaces', 'Research workspaces']]) {
+      const row = document.createElement('p');
+      row.textContent = `${label}: ${result[key].added} to add · ${result[key].overwrite} to overwrite`;
+      summary.append(row);
+    }
+    importReview.hidden = false;
+    root.querySelector('#astroeye-import-title').focus();
   });
 
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
     event.preventDefault();
+    resetImportReview();
     schedulePanel.cancel();
     if (onRequestClose) void onRequestClose();
     else {
@@ -695,6 +748,7 @@ export function mountAstroEyeWorkspace({
       return true;
     },
     close() {
+      resetImportReview();
       eventSky?.setEnabled(false);
       delete root.dataset.skyCompact;
       schedulePanel.cancel();
@@ -702,6 +756,7 @@ export function mountAstroEyeWorkspace({
       previouslyFocused?.focus?.();
     },
     destroy() {
+      resetImportReview();
       eventRefresh++;
       unsubscribeSavedMap?.();
       eventSky?.destroy();

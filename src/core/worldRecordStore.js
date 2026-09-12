@@ -170,17 +170,19 @@ export function createWorldRecordStore({
     });
   }
 
+  async function snapshotRecords(transaction) {
+    // Read one coherent snapshot, even when another tab edits records.
+    const [events, charts, workspaces] = await Promise.all(
+      ALL_STORES.map((name) => requestResult(transaction.objectStore(name).getAll())),
+    );
+    return { schemaVersion: WORLD_RECORD_SCHEMA_VERSION,
+      events: copy(events).sort(sortBy('id')),
+      charts: copy(charts).sort(sortBy('chartId')),
+      workspaces: copy(workspaces).sort(sortBy('id')) };
+  }
+
   async function exportRecords() {
-    return transact(ALL_STORES, 'readonly', async (transaction) => {
-      // Read one coherent snapshot, even when another tab edits records.
-      const [events, charts, workspaces] = await Promise.all(
-        ALL_STORES.map((name) => requestResult(transaction.objectStore(name).getAll())),
-      );
-      return { schemaVersion: WORLD_RECORD_SCHEMA_VERSION,
-        events: copy(events).sort(sortBy('id')),
-        charts: copy(charts).sort(sortBy('chartId')),
-        workspaces: copy(workspaces).sort(sortBy('id')) };
-    });
+    return transact(ALL_STORES, 'readonly', snapshotRecords);
   }
 
   return Object.freeze({
@@ -260,10 +262,31 @@ export function createWorldRecordStore({
     async serializeRecords() {
       return `${JSON.stringify(await exportRecords(), null, 2)}\n`;
     },
-    async importRecords(input, { mode = 'merge' } = {}) {
+    async previewImportRecords(input) {
+      const records = normalizeWorkspace(input);
+      const snapshot = await exportRecords();
+      const eventIds = new Set([...snapshot.events, ...records.events].map(({ id }) => id));
+      for (const chart of records.charts) {
+        if (!eventIds.has(chart.eventId)) throw new Error(`Imported chart references unknown event: ${chart.eventId}`);
+      }
+      const summary = {};
+      for (const [name, key] of [['events', 'id'], ['charts', 'chartId'], ['workspaces', 'id']]) {
+        const existing = new Set(snapshot[name].map((entry) => entry[key]));
+        const overwrite = records[name].filter((entry) => existing.has(entry[key])).length;
+        summary[name] = { added: records[name].length - overwrite, overwrite };
+      }
+      if (!records.events.length && !records.charts.length && !records.workspaces.length) {
+        throw new Error('This file contains no records to import.');
+      }
+      return { records, summary, expectedSnapshot: JSON.stringify(snapshot) };
+    },
+    async importRecords(input, { mode = 'merge', expectedSnapshot } = {}) {
       if (!['merge', 'replace'].includes(mode)) throw new RangeError(`Unsupported import mode: ${mode}`);
       const records = normalizeWorkspace(input);
       return transact(ALL_STORES, 'readwrite', async (transaction) => {
+        if (expectedSnapshot !== undefined && JSON.stringify(await snapshotRecords(transaction)) !== expectedSnapshot) {
+          throw new Error('Saved records changed since this review. Choose the file again to review the current changes. Nothing was imported.');
+        }
         const events = transaction.objectStore(STORE_EVENTS);
         const charts = transaction.objectStore(STORE_CHARTS);
         const workspaces = transaction.objectStore(STORE_WORKSPACES);

@@ -58,5 +58,5 @@ The first [AstroEye Director tour](astroeye-director-tour.md) adds three determi
 - Every provider must register terms, attribution, and a cache policy before its data is displayed.
 - Reproducible time-sensitive work reads `WorldClock`; it must not call `Date.now()` directly.
 - Module state and existing layer state remain separate, versioned payloads.
-- Durable record imports are validated before one atomic IndexedDB transaction; invalid data cannot partially replace a workspace.
+- Durable record imports are validated before one atomic IndexedDB transaction; invalid data cannot partially replace a workspace. The workspace [import review](astroeye-import-review.md) shows add/overwrite counts and requires explicit confirmation. A transactional snapshot check rejects a merge if stored records changed after review.
 - AstroEye business logic lives under `src/modules/astroeye/`, not the core UI file.

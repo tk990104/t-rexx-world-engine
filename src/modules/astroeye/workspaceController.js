@@ -4,6 +4,7 @@ import { calculateTimePreview } from './timeExplorer.js';
 import { createSharedView, normalizeSharedView } from './shareView.js';
 import { normalizeSavedEventFilters } from './savedEventFilters.js';
 import { matchingEventRecords } from './matchingEventExport.js';
+import { createRecordImportReview } from './recordImportReview.js';
 
 function requireService(service, name, methods) {
   if (!service || methods.some((method) => typeof service[method] !== 'function')) {
@@ -185,6 +186,7 @@ export function createAstroEyeWorkspaceController({
       eventBus.emit('astroeye:records-imported', result);
       return result;
     },
+    ...createRecordImportReview({ recordStore, onImported: (result) => eventBus.emit('astroeye:records-imported', result) }),
     selectedState() {
       return moduleState.get('astroeye');
     },
