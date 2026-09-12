@@ -60,6 +60,7 @@ import { createAstroEyeTour, normalizeAstroEyeSceneView } from './modules/astroe
 import { mountVenueContextPanel } from './modules/astroeye/venueContextPanel.js';
 import { installAstroEyeVenueInteraction } from './modules/astroeye/venueInteraction.js';
 import { createEventCallouts } from './modules/astroeye/eventCallouts.js';
+import { createSavedEventLayer } from './modules/astroeye/savedEventLayer.js';
 
 initLogoGaze();
 
@@ -362,6 +363,14 @@ async function init() {
         presentEvent: createAstroEyeWorldPresenter({ viewer }),
       });
       const canOpenVenue = () => !sceneDirector.running && !astroEyeWorkspace?.root.dataset.busy;
+      const savedEventLayer = createSavedEventLayer({ viewer, listEvents: () => astroEyeController.listEvents(),
+        getSelection: () => astroEyeController.selectionSnapshot(), eventBus: worldPlatform.eventBus });
+      // Observe mode transitions, not frames; local collections must not leak into tours.
+      const savedMapModeObserver = new MutationObserver(() => {
+        const suspended = document.body.classList.contains('scene-playback-mode');
+        if (suspended !== savedEventLayer.state().suspended) savedEventLayer.setSuspended(suspended);
+      });
+      savedMapModeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
       const eventCallouts = createEventCallouts({ annotations, getSelection: () => astroEyeController.selectionSnapshot(), canInteract: canOpenVenue });
       const openVenueContext = async () => {
         if (!canOpenVenue() || (!astroEyeController.selectionSnapshot() && !eventCallouts.count())) return;
@@ -375,6 +384,7 @@ async function init() {
         onCreateTour: (snapshot) => sceneDirector.addScene(createAstroEyeTour(snapshot)),
         onPreviewTour: (id) => sceneDirector.startScene(id, { single: true }),
         onVenueContext: openVenueContext,
+        savedEventLayer,
         eventSky: createEventSky({ ring: styleManager.celestialRing,
           setRingEnabled: (enabled, options) => styleManager.setCelestialRingEnabled(enabled, options) }),
       });
@@ -412,9 +422,21 @@ async function init() {
       const removeVenueInteraction = installAstroEyeVenueInteraction({
         viewer, onOpen: openVenueContext, canInteract: canOpenVenue,
         hasSelection: () => Boolean(astroEyeController.selectedState()),
+        savedEventIdForEntity: savedEventLayer.eventIdForEntity,
+        onSavedEvent: async (eventId) => {
+          if (!canOpenVenue()) return;
+          await worldPlatform.panelRegistry.show('astroeye-workspace', document.body);
+          if (!canOpenVenue()) return;
+          const selected = await astroEyeWorkspace.selectSavedEvent(eventId, {
+            navigate: false, persistChart: false, isCurrent: () => !sceneDirector.running,
+          });
+          if (selected) astroEyeWorkspace.focusChart();
+        },
       });
       window.addEventListener('pagehide', () => {
         removeVenueInteraction();
+        savedMapModeObserver.disconnect();
+        savedEventLayer.destroy();
         venueContext.destroy();
       }, { once: true });
       astroEyeLauncher?.addEventListener('click', (event) => {

@@ -1,0 +1,23 @@
+# AstroEye saved-event map
+
+Under **Saved events**, choose **Show saved events on map**. Up to 100 additional saved events appear as smaller cyan markers; the current selected event keeps its larger purple marker. Events are ordered newest scheduled UTC start first, then by record ID. The control reports the additional marker count and total saved records. A selected local event is excluded from the cyan collection; unsaved shared inputs do not hide a local record merely because their IDs match.
+
+Click a cyan marker to open its chart without a camera flight. This selects that event at its scheduled start using the form's chosen house system. A missing chart is calculated in memory, without creating another saved chart; module state uses a null selected-chart ID for this transient result. The usual saved-event list continues to provide an accessible selection path and is the fallback for overlapping venues. List selection retains its existing save-chart and navigation behavior. **View venue** explicitly navigates.
+
+## Boundaries and lifecycle
+
+- `savedEventLayer.js` owns only its registered Cesium entity IDs. Hiding, replacing, suspending or destroying it never removes the purple selection, annotations, or unrelated layers. Labels use scheduled start, not the chart preview clock. Labels disappear beyond 200 km camera distance to reduce clutter; cyan points remain.
+- The collection starts off on every page load. Showing it reads existing local records but does not import, save, export, calculate charts, navigate, or alter WorldClock. Visibility and collection contents are not serialized into share links or Director projects. Event records themselves retain their normal persistence/export behavior.
+- Save, import and delete notifications refresh an enabled collection. Selection notifications update the selected-marker exclusion without rereading storage. The 100-additional-marker rendering limit does not truncate or delete stored records. There is no date filter, clustering or global camera framing in this first slice.
+- Generation checks discard late storage responses after a newer refresh, hide or disposal. A read failure clears the stale collection and exposes a retry instruction. Draw errors remove the partial owned collection. No new polling timer, animation loop, provider request or per-frame ephemeris calculation is introduced.
+- The shared venue picker recognizes both the selected marker and currently owned saved markers, uses a topmost pick and rejects camera drags. Deferred callbacks recheck ownership and interaction permission. Hidden/removed IDs are no longer pick-owned.
+- The composition root observes the existing Director body-mode class to suspend local markers throughout playback and restore the user's opt-in afterward. This observes mode changes, not animation frames. Picks are also blocked while Director runs or the workspace is busy.
+- Page cleanup disconnects the mode observer, removes record-event subscriptions and destroys the owned collection. The workspace unsubscribes from its count/status notifications on disposal.
+
+This is a bounded module-owned overlay declared as `astroeye-saved-events`, not a new upstream live-data provider. It requires no API key, package or additional license. Existing map-provider display/export restrictions still apply. General layer-manager serialization, filtering, clustering, persistent research annotations and broader MVP release gates remain separate work.
+
+## Verification
+
+Focused tests cover opt-in reads, the 100-marker cap and ordering, selected/shared identity, suspension, scoped cleanup, save/import/delete refreshes, stale responses, storage failures, disposed/hidden picks and write-free chart selection. The browser walkthrough is `node scripts/qa-astroeye-saved-map.mjs`: it creates two synthetic events in a fresh browser, clicks an actual rendered marker, checks camera/record preservation, inspects mobile controls, completes a real Director preview, then verifies that reloading retains records but resets the map opt-in. It never attaches to the user's browser session.
+
+Milestone verification passed 128 platform tests and 71 annotation/scene/pick/gesture tests (199 focused checks), the production build, the saved-map browser walkthrough, and the existing venue/callout browser regression. Both browser workflows completed with no page errors. Globe and mobile screenshots were inspected. The camera assertion permits only a last-bit numerical tolerance; the tour test waits for completion instead of racing its disappearing Stop button. Existing build size and browser-externalization warnings remain; this is not a full inherited-suite or MVP-release certification.

@@ -59,7 +59,7 @@ test('venue picks are registered with other layers and only the owned topmost pi
     state.hit(null); state.fire('LEFT_CLICK'); await flush(); assert.equal(state.opened, 1);
     state.select(false);
     assert.equal(isOwnedByOtherLayer('flights', ASTROEYE_EVENT_ENTITY_ID), false);
-    state.fire('LEFT_CLICK'); assert.equal(state.picks, 3);
+    state.fire('LEFT_CLICK'); assert.equal(state.picks, 4, 'saved markers can be picked without a selected event');
   } finally { state.cleanup(); }
   assert.equal(isOwnedByOtherLayer('flights', ASTROEYE_EVENT_ENTITY_ID), false);
   state.cleanup(); assert.equal(state.destroyed, 1);

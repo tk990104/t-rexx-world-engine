@@ -24,6 +24,23 @@ const DRAFT = {
   houseSystem: 'whole-sign',
 };
 
+test('map selection can calculate a missing house chart without writes or camera navigation', async () => {
+  const context = harness();
+  try {
+    await context.controller.saveDraft(DRAFT);
+    const before = await context.recordStore.serializeRecords();
+    let presentedOptions;
+    const reader = createAstroEyeWorkspaceController({ ...context, presentEvent: async (_event, _chart, options) => { presentedOptions = options; } });
+    const result = await reader.selectEvent('event-generated', { houseSystem: 'equal', navigate: false, persistChart: false });
+    assert.equal(result.chart.options.houseSystem, 'equal');
+    assert.equal(presentedOptions.navigate, false);
+    assert.equal(reader.selectedState().selectedChartId, null, 'transient chart must not claim a durable chart ID');
+    assert.equal(await context.recordStore.serializeRecords(), before);
+    assert.equal(await reader.selectEvent('event-generated', { isCurrent: () => false, persistChart: false }), null);
+    assert.equal(reader.selectionSnapshot().chart.options.houseSystem, 'equal');
+  } finally { await context.recordStore.close(); }
+});
+
 let sequence = 0;
 
 test('selection snapshots expose the committed preview before notifications and never share mutable records', async () => {

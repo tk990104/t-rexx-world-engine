@@ -49,6 +49,8 @@ The [venue context card](astroeye-venue-context.md) reads defensive current-sele
 
 [Event callouts](astroeye-event-callouts.md) reuse the annotation engine with module-owned deduplication and scoped removal. Up to five session-only venue labels capture chart time and a short note without camera assistance, geocoding, record writes or shared-state changes. They remain fixed snapshots when the chart clock moves; persistent research annotations are a separate future record capability.
 
+The opt-in [saved-event map](astroeye-saved-event-map.md) displays up to 100 additional local event markers with owned cleanup and stale-read protection. Marker selection opens a chart without camera navigation or chart-record writes. Collection visibility stays session-only and is suspended during Director playback, rather than entering shared module state or tour exports.
+
 The first [AstroEye Director tour](astroeye-director-tour.md) adds three deterministic camera shots with versioned calculation inputs. Director project v4 stores module context separately from layers; product adapters validate and restore it without saving records or competing for the camera. AstroEye is the first registered scene adapter; other modules can adopt the same boundary.
 
 - A module may depend only on capabilities it declares.

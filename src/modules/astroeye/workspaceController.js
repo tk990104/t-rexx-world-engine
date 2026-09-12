@@ -68,23 +68,23 @@ export function createAstroEyeWorkspaceController({
   let currentView = null;
 
   function applySelectionTime(chart, offsetMinutes) {
-    const { event, chart: originalChart, isShared } = activeSelection;
+    const { event, chart: originalChart, isShared, chartIsSaved } = activeSelection;
     worldClock.setMode(offsetMinutes === 0 ? 'event' : 'replay', { time: chart.calculatedFor });
     moduleState.set('astroeye', {
-      version: 1, selectedEventId: event.id, selectedChartId: isShared ? null : originalChart.chartId,
+      version: 1, selectedEventId: event.id, selectedChartId: isShared || !chartIsSaved ? null : originalChart.chartId,
       houseSystem: chart.options.houseSystem,
       ...(isShared ? { shared: true } : {}),
       ...(offsetMinutes === 0 ? {} : { preview: { offsetMinutes, calculatedFor: chart.calculatedFor } }),
     });
   }
 
-  async function activate(event, chart, { isShared = false, offsetMinutes = 0, navigate = true, isCurrent = () => true } = {}) {
+  async function activate(event, chart, { isShared = false, chartIsSaved = true, offsetMinutes = 0, navigate = true, isCurrent = () => true } = {}) {
     const displayedChart = offsetMinutes === 0 ? chart : calculateTimePreview(event, offsetMinutes, { houseSystem: chart.options.houseSystem });
     // Validate and calculate everything before presentation or shared-state mutation.
     if (!isCurrent()) return null;
     await presentEvent(event, chart, { navigate, isCurrent });
     if (!isCurrent()) return null;
-    activeSelection = Object.freeze({ event, chart, isShared });
+    activeSelection = Object.freeze({ event, chart, isShared, chartIsSaved });
     applySelectionTime(displayedChart, offsetMinutes);
     currentView = Object.freeze({ event, chart: displayedChart, offsetMinutes, isShared });
     moduleState.setActiveModule('astroeye');
@@ -140,13 +140,18 @@ export function createAstroEyeWorkspaceController({
       eventBus.emit('astroeye:event-saved', { eventId: event.id, chartId: chart.chartId });
       return activate(saved.event, saved.chart);
     },
-    async selectEvent(eventId, { houseSystem = 'whole-sign' } = {}) {
+    async selectEvent(eventId, { houseSystem = 'whole-sign', navigate = true, persistChart = true, isCurrent = () => true } = {}) {
       const event = await recordStore.getEvent(eventId);
       if (!event) throw new Error(`Unknown AstroEye event: ${eventId}`);
       const charts = await recordStore.listCharts({ eventId });
       let chart = charts.find((entry) => entry.options?.houseSystem === houseSystem && entry.calculatedFor === event.utcStart);
-      if (!chart) chart = await recordStore.saveChart(calculateAstroEyeChart(event, { houseSystem }));
-      return activate(event, chart);
+      let chartIsSaved = Boolean(chart);
+      if (!isCurrent()) return null;
+      if (!chart) {
+        chart = calculateAstroEyeChart(event, { houseSystem });
+        if (persistChart) { chart = await recordStore.saveChart(chart); chartIsSaved = true; }
+      }
+      return activate(event, chart, { navigate, isCurrent, chartIsSaved });
     },
     async deleteEvent(eventId) {
       const removed = await recordStore.deleteEvent(eventId);

@@ -53,6 +53,7 @@ export function mountAstroEyeWorkspace({
   onCreateTour = null,
   onPreviewTour = null,
   onVenueContext = null,
+  savedEventLayer = null,
 } = {}) {
   requireController(controller);
   if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
@@ -164,6 +165,11 @@ export function mountAstroEyeWorkspace({
           <p class="astroeye-provenance" data-chart="provenance"></p>
         </div>
         <div class="astroeye-saved-header"><h3>Saved events</h3><div><button type="button" data-action="export">Export</button><button type="button" data-action="import">Import</button></div></div>
+        <section class="astroeye-saved-map" aria-label="Saved-event map" hidden>
+          <button type="button" data-action="saved-map" aria-pressed="false">Show saved events on map</button>
+          <p class="astroeye-help" data-role="saved-map-status" role="status"></p>
+          <p class="astroeye-help">Cyan = saved events; purple = selected event. Click a marker to open its chart without moving the camera. Overlapping venues can be chosen from the list below. Shows up to 100 additional events, newest first. Local session only; not included in links or tours. Hidden during Director playback.</p>
+        </section>
         <input type="file" data-role="import-file" accept="application/json,.json" hidden />
         <div class="astroeye-event-list" data-role="event-list"></div>
       </section>
@@ -171,6 +177,13 @@ export function mountAstroEyeWorkspace({
     <div class="astroeye-live-status" role="status" aria-live="polite">AstroEye ready.</div>
   `;
   host.append(root);
+  root.querySelector('.astroeye-saved-map').hidden = !savedEventLayer;
+  const unsubscribeSavedMap = savedEventLayer?.subscribe((state) => {
+    const button = root.querySelector('[data-action="saved-map"]');
+    button.textContent = state.enabled ? 'Hide saved events from map' : 'Show saved events on map';
+    button.setAttribute('aria-pressed', String(state.enabled));
+    root.querySelector('[data-role="saved-map-status"]').textContent = state.error || (state.loading ? 'Reading saved events…' : !state.enabled ? 'Saved-event map is off.' : state.suspended ? 'Saved-event map paused for Director.' : `${state.shown} additional markers · ${state.total} saved events. Selected event stays purple.`);
+  });
 
   const form = root.querySelector('.astroeye-form');
   const empty = root.querySelector('.astroeye-empty');
@@ -406,23 +419,28 @@ export function mountAstroEyeWorkspace({
     await refreshEvents();
   });
 
-  eventList.addEventListener('click', async (event) => {
-    const button = event.target.closest('button[data-event-id]');
-    if (!button) return;
+  async function selectSavedEvent(eventId, options = {}) {
     const houseSystem = field(form, 'houseSystem').value;
     const result = await busy(
-      () => controller.selectEvent(button.dataset.eventId, { houseSystem }),
+      () => controller.selectEvent(eventId, { houseSystem, ...options }),
       'Saved event synchronized with the globe.',
     );
-    if (!result) return;
+    if (!result) return false;
     renderChart(result.event, result.chart);
     await refreshEvents();
+    return true;
+  }
+  eventList.addEventListener('click', async (event) => {
+    const button = event.target.closest('button[data-event-id]');
+    if (button) await selectSavedEvent(button.dataset.eventId);
   });
 
   root.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;
-    if (action === 'venue-context' && selected && onVenueContext) {
+    if (action === 'saved-map' && savedEventLayer && !root.dataset.busy) {
+      await savedEventLayer.setEnabled(!savedEventLayer.state().enabled);
+    } else if (action === 'venue-context' && selected && onVenueContext) {
       try { await onVenueContext(); }
       catch (error) { setStatus(error.message || 'Could not open venue details.', 'error'); }
     } else if (action === 'create-tour' && selected && onCreateTour) {
@@ -545,6 +563,7 @@ export function mountAstroEyeWorkspace({
 
   return Object.freeze({
     root,
+    selectSavedEvent,
     focusChart() {
       const title = root.querySelector('[data-chart="title"]');
       title.tabIndex = -1;
@@ -600,6 +619,7 @@ export function mountAstroEyeWorkspace({
       previouslyFocused?.focus?.();
     },
     destroy() {
+      unsubscribeSavedMap?.();
       eventSky?.destroy();
       schedulePanel.destroy();
       root.remove();
