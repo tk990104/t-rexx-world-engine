@@ -6,6 +6,8 @@ This is a new manual draft, not an edit or duplicate write. No event ID, chart I
 
 Copying the template itself does not read storage, calculate a chart, change the selection, move the camera or change world time. It uses the event's original start, not an active time-explorer offset. For repeated daylight-saving hours, the exact original UTC occurrence (including seconds) is selected in the form. If the user changes the date, time or time zone, existing time-resolution validation applies.
 
+The [draft start-time summary](astroeye-draft-time-summary.md) shows the copied local time, UTC offset and UTC instant before saving, and refreshes after edits or a different repeated-hour choice.
+
 The action also works from an unsaved shared view: it prepares a manual draft and does not silently save the shared record. Pending provider selections are canceled and provider form state is cleared so a later time-zone edit cannot unexpectedly restore the old schedule time. No network service, dependency, schema migration or API key is added.
 
 ## Implementation and bounded verification

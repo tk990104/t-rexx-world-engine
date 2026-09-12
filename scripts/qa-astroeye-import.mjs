@@ -140,6 +140,7 @@ try {
   assert.equal(draftValues.localTime, '01:30:15');
   assert.equal(draftValues.houseSystem, 'equal');
   assert.equal(draftValues.id, undefined);
+  assert.match(await page.$eval('[data-role="draft-time-summary"]', (node) => node.textContent), /Second occurrence.*UTC-05:00.*06:30:15 UTC/);
   assert.equal(await page.$eval('.astroeye-form', (form) => form.checkValidity()), false);
   assert.ok(await page.$eval('[data-action="use-template"]', (button) => button.parentElement.scrollWidth <= button.parentElement.clientWidth + 1));
   await page.$eval('.astroeye-form', (form) => {
@@ -159,6 +160,32 @@ try {
   assert.equal(newEvent.utcStart, '2026-11-01T06:30:15.000Z');
   assert.deepEqual(copiedRecords.events.find((event) => event.id === 'template-original'), JSON.parse(beforeTemplate).events.find((event) => event.id === 'template-original'));
   assert.equal(copiedRecords.events.length, JSON.parse(beforeTemplate).events.length + 1);
+  const timeCheckRecords = await saved();
+  const summaryState = () => page.$eval('[data-role="draft-time-summary"]', (node) => node.dataset.state);
+  await page.$eval('.astroeye-form [name="utcStart"]', (select) => {
+    select.value = '2026-11-01T05:30:15.000Z'; select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  assert.match(await page.$eval('[data-role="draft-time-summary"]', (node) => node.textContent), /First occurrence.*UTC-04:00/);
+  await page.$eval('.astroeye-form [name="localDate"]', (input) => {
+    input.value = '2026-03-08'; input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  assert.equal(await summaryState(), 'pending');
+  await page.$eval('.astroeye-form', (form) => {
+    const time = form.elements.namedItem('localTime'); time.value = '02:30'; time.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  assert.equal(await summaryState(), 'nonexistent');
+  await page.$eval('.astroeye-form [name="timeZone"]', (input) => {
+    input.value = 'Mars/Olympus'; input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  assert.equal(await summaryState(), 'invalid');
+  await page.$eval('.astroeye-form [name="localTime"]', (input) => {
+    input.value = ''; input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  assert.equal(await summaryState(), 'incomplete');
+  await click('new');
+  assert.ok(['ready', 'ambiguous'].includes(await summaryState()));
+  assert.equal(await saved(), timeCheckRecords);
+  console.log('PASS: draft UTC summary follows template occurrence, manual occurrence changes, pending edits, DST gap, invalid zone, incomplete time and clear-form reset without storage writes.');
   assert.deepEqual(errors, []);
   console.log('PASS: event template makes no writes or selection changes, preserves repeated-hour kickoff instead of preview time, copies house system, requires review, resets review after edits and saves a new manual ID without changing the original.');
   await page.evaluate(async () => { window.importQA.workspace.destroy(); await window.importQA.recordStore.close(); });

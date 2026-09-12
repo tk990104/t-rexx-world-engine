@@ -1,6 +1,6 @@
 import './astroeyeWorkspace.css';
 
-import { resolveZonedLocalTime } from '../../domain/events/eventSchema.js';
+import { describeDraftTime } from './draftTimeSummary.js';
 import { renderAstroEyeChartWheel } from './chartWheel.js';
 import { mountSportsSchedulePanel } from './sportsSchedulePanel.js';
 import { scheduleLocalTime } from './sportsSchedule.js';
@@ -103,6 +103,7 @@ export function mountAstroEyeWorkspace({
             <option value="Europe/Madrid"></option><option value="America/Phoenix"></option>
           </datalist>
           <label class="astroeye-span-2 astroeye-utc-choice" data-role="utc-choice" hidden>Repeated-hour choice<select name="utcStart"></select></label>
+          <p class="astroeye-help astroeye-span-2" data-role="draft-time-summary" role="status" aria-live="polite"></p>
           <label class="astroeye-span-2">Venue name<input name="venueName" required placeholder="Stadium or arena" autocomplete="off" /></label>
           <label>Latitude<input name="latitude" type="number" min="-90" max="90" step="any" required placeholder="40.7505" /></label>
           <label>Longitude<input name="longitude" type="number" min="-180" max="180" step="any" required placeholder="-73.9934" /></label>
@@ -315,19 +316,26 @@ export function mountAstroEyeWorkspace({
     status.dataset.tone = tone;
   }
 
+  function refreshDraftTimeSummary() {
+    const summary = describeDraftTime(Object.fromEntries(['localDate', 'localTime', 'timeZone', 'utcStart'].map((name) => [name, field(form, name).value])));
+    const node = root.querySelector('[data-role="draft-time-summary"]');
+    node.textContent = summary.text;
+    node.dataset.state = summary.state;
+    return summary;
+  }
+
   function refreshTimeResolution() {
     const choice = root.querySelector('[data-role="utc-choice"]');
     const select = field(form, 'utcStart');
     const previousChoice = select.value;
+    const summary = refreshDraftTimeSummary();
     choice.hidden = true;
     select.required = false;
     select.replaceChildren();
-    const localDate = field(form, 'localDate').value;
-    const localTime = field(form, 'localTime').value;
-    const timeZone = field(form, 'timeZone').value.trim();
-    if (!localDate || !localTime || !timeZone) return true;
+    if (summary.state === 'incomplete') return true;
     try {
-      const resolution = resolveZonedLocalTime({ localDate, localTime, timeZone });
+      const resolution = summary.resolution;
+      if (!resolution) { setStatus(summary.text, 'error'); return false; }
       if (resolution.status === 'nonexistent') {
         setStatus('That local time is skipped by daylight saving. Choose a different start time.', 'error');
         return false;
@@ -367,11 +375,19 @@ export function mountAstroEyeWorkspace({
       }
       refreshTimeResolution();
       if (converted && !root.querySelector('[data-role="utc-choice"]').hidden) field(form, 'utcStart').value = converted.utcStart;
+      refreshDraftTimeSummary();
     });
   }
+  field(form, 'utcStart').addEventListener('change', refreshDraftTimeSummary);
   form.addEventListener('input', (event) => {
     if (event.target.name !== 'scheduleReviewed') field(form, 'scheduleReviewed').checked = false;
+    if (['localDate', 'localTime', 'timeZone', 'utcStart'].includes(event.target.name)) {
+      const node = root.querySelector('[data-role="draft-time-summary"]');
+      node.textContent = 'Time fields edited. Finish editing to check the updated draft start.';
+      node.dataset.state = 'pending';
+    }
   });
+  refreshDraftTimeSummary();
 
   function renderChart(event, chart, offsetMinutes = 0, isShared = false) {
     eventSky?.update(chart);
@@ -602,6 +618,7 @@ export function mountAstroEyeWorkspace({
         root.querySelector('[data-role="schedule-origin"]').textContent = 'New manual draft from the selected event. Uses the original event start, not the time-explorer preview. Review all details before saving; the original saved event stays unchanged.';
         refreshTimeResolution();
         if (!root.querySelector('[data-role="utc-choice"]').hidden) field(form, 'utcStart').value = draft.utcStart;
+        refreshDraftTimeSummary();
         field(form, 'title').focus();
         setStatus('Template copied into the event form, replacing unsaved entries. Review and edit it, then Save to create a new event. No records or globe view were changed.');
       } catch (error) { setStatus(error.message || 'Could not prepare an event template.', 'error'); }
@@ -611,12 +628,12 @@ export function mountAstroEyeWorkspace({
       scheduleReview.hidden = true;
       field(form, 'scheduleReviewed').required = false;
       form.reset();
-      refreshTimeResolution();
       field(form, 'localDate').value = defaultLocalValues().date;
       field(form, 'localTime').value = defaultLocalValues().time;
       field(form, 'timeZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       field(form, 'sport').value = 'American Football';
       field(form, 'competition').value = 'NFL';
+      refreshTimeResolution();
       field(form, 'title').focus();
     } else if (action === 'refocus' && selected) {
       await busy(
