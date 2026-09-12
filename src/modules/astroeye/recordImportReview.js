@@ -17,8 +17,15 @@ export function createRecordImportReview({ recordStore, onImported = () => {} })
       pending = prepared;
       return structuredClone(prepared.summary);
     },
-    async confirmImportRecords() {
+    async confirmImportRecords({ allowOverwrite = false } = {}) {
       if (!pending) throw new Error('Choose a file and review it before confirming an import.');
+      const counts = Object.values(pending.summary);
+      if (!counts.some((entry) => entry.added || entry.overwrite)) {
+        throw new Error('All records already match. Nothing needs to be imported.');
+      }
+      if (counts.some((entry) => entry.overwrite) && allowOverwrite !== true) {
+        throw new Error('Acknowledge overwriting changed records before confirming this import.');
+      }
       const prepared = pending;
       pending = null;
       generation++;

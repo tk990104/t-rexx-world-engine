@@ -76,6 +76,12 @@ function sortBy(key) {
   return (left, right) => String(left[key]).localeCompare(String(right[key]));
 }
 
+function recordFingerprint(value) {
+  // Object key order is not a data change; array order remains significant.
+  return JSON.stringify(value, (_key, entry) => entry && typeof entry === 'object' && !Array.isArray(entry)
+    ? Object.fromEntries(Object.keys(entry).sort().map((key) => [key, entry[key]])) : entry);
+}
+
 /** Native IndexedDB persistence shared by AstroEye and future product modules. */
 export function createWorldRecordStore({
   indexedDB: indexedDbFactory = globalThis.indexedDB,
@@ -270,15 +276,23 @@ export function createWorldRecordStore({
         if (!eventIds.has(chart.eventId)) throw new Error(`Imported chart references unknown event: ${chart.eventId}`);
       }
       const summary = {};
+      const changes = { schemaVersion: records.schemaVersion };
       for (const [name, key] of [['events', 'id'], ['charts', 'chartId'], ['workspaces', 'id']]) {
-        const existing = new Set(snapshot[name].map((entry) => entry[key]));
-        const overwrite = records[name].filter((entry) => existing.has(entry[key])).length;
-        summary[name] = { added: records[name].length - overwrite, overwrite };
+        const existing = new Map(snapshot[name].map((entry) => [entry[key], entry]));
+        const counts = { added: 0, overwrite: 0, unchanged: 0 };
+        changes[name] = records[name].filter((entry) => {
+          const previous = existing.get(entry[key]);
+          if (!previous) { counts.added++; return true; }
+          if (recordFingerprint(previous) === recordFingerprint(entry)) { counts.unchanged++; return false; }
+          counts.overwrite++;
+          return true;
+        });
+        summary[name] = counts;
       }
       if (!records.events.length && !records.charts.length && !records.workspaces.length) {
         throw new Error('This file contains no records to import.');
       }
-      return { records, summary, expectedSnapshot: JSON.stringify(snapshot) };
+      return { records: changes, summary, expectedSnapshot: JSON.stringify(snapshot) };
     },
     async importRecords(input, { mode = 'merge', expectedSnapshot } = {}) {
       if (!['merge', 'replace'].includes(mode)) throw new RangeError(`Unsupported import mode: ${mode}`);

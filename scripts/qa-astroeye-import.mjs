@@ -68,6 +68,8 @@ try {
   await choose();
   assert.equal(await saved(), before);
   assert.match(await page.$eval('[data-role="import-summary"]', (node) => node.textContent), /Events: 1 to add · 1 to overwrite/);
+  assert.match(await page.$eval('[data-role="import-summary"]', (node) => node.textContent), /Charts: 0 to add · 0 to overwrite · 1 unchanged/);
+  assert.equal(await page.$eval('[data-action="confirm-import"]', (button) => button.disabled), true);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'astroeye-import-title');
   assert.equal(await page.$eval('[data-role="import-filename"]', (node) => node.querySelectorAll('img').length), 0);
   assert.ok(await page.$eval('[data-role="import-review"]', (node) => node.scrollWidth <= node.clientWidth + 1));
@@ -75,11 +77,24 @@ try {
   assert.equal(await saved(), before);
   assert.equal(await page.evaluate(() => document.activeElement.dataset.action), 'import');
   await choose();
+  const acknowledge = () => page.$eval('[data-role="import-overwrite-check"]', (checkbox) => checkbox.click());
+  await acknowledge();
+  assert.equal(await page.$eval('[data-action="confirm-import"]', (button) => button.disabled), false);
+  await acknowledge();
+  assert.equal(await page.$eval('[data-action="confirm-import"]', (button) => button.disabled), true);
+  await acknowledge();
   await click('confirm-import');
   assert.equal(JSON.parse(await saved()).events.length, 2);
   assert.equal(await page.evaluate(() => window.importQA.recordStore.getEvent('original').then((event) => event.title)), 'Imported title');
   assert.equal(await page.$eval('[data-role="import-review"]', (node) => node.hidden), true);
   await choose();
+  assert.equal(await page.$eval('[data-action="confirm-import"]', (button) => button.disabled), true);
+  assert.match(await page.$eval('.astroeye-live-status', (node) => node.textContent), /already match/);
+  assert.equal(await page.$eval('[data-role="import-overwrite-check"]', (checkbox) => checkbox.checked), false);
+  await page.evaluate(() => { window.importQA.incoming.events[0].title = 'Another imported title'; });
+  await choose();
+  assert.equal(await page.$eval('[data-role="import-overwrite-check"]', (checkbox) => checkbox.checked), false);
+  await acknowledge();
   await page.evaluate(() => window.importQA.recordStore.saveWorkspace({ id: 'newer-notes' }));
   const changed = await saved();
   await click('confirm-import');
@@ -104,7 +119,7 @@ try {
   assert.equal(await saved(), changed);
   assert.deepEqual(errors, []);
   await page.evaluate(async () => { window.importQA.workspace.destroy(); await window.importQA.recordStore.close(); });
-  console.log('PASS: real IndexedDB preview/no writes, counts, cancel, explicit confirmation, stale-review rejection, invalid/oversized files, escaped filename, mobile width/focus, Escape and close during delayed file read.');
+  console.log('PASS: real IndexedDB preview/no writes, add/change/identical counts, overwrite acknowledgment and reset, identical-only refusal, cancel, confirmation, stale rejection, invalid/oversized files, escaped filename, mobile width/focus, Escape and delayed-read close.');
 } finally {
   await browser?.close();
   clearTimeout(deadline);

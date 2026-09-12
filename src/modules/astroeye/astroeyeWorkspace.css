@@ -161,6 +161,8 @@
 .astroeye-import-review h4 { margin: 0 0 8px; color: var(--astro-cyan); }
 .astroeye-import-review [data-role="import-summary"] { font-size: 12px; }
 .astroeye-import-review button { min-height: 44px; }
+.astroeye-import-review [data-role="import-overwrite"] { font-size: 12px; line-height: 1.6; }
+.astroeye-import-review button:disabled { opacity: .45; cursor: not-allowed; }
 .astroeye-event-list button { display: grid; gap: 3px; padding: 9px 10px; color: #fff; border: 1px solid rgba(255,255,255,.09); border-radius: 7px; background: rgba(255,255,255,.035); text-align: left; cursor: pointer; }
 .astroeye-event-list button:hover, .astroeye-event-list button.active { border-color: rgba(214,166,255,.4); background: rgba(214,166,255,.08); }
 .astroeye-event-list button strong { font-size: 11px; }

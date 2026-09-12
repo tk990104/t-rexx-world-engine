@@ -194,7 +194,8 @@ export function mountAstroEyeWorkspace({
           <h4 id="astroeye-import-title" tabindex="-1">Review import</h4>
           <p class="astroeye-help" data-role="import-filename"></p>
           <div data-role="import-summary" aria-live="polite"></div>
-          <p class="astroeye-help">Nothing has been imported yet. Confirm merges this file into saved records: matching IDs are overwritten, including identical records; other records remain. Only import files you trust. The current chart preview stays unchanged; reopen an event to view its imported chart.</p>
+          <p class="astroeye-help">Nothing has been imported yet. Identical records are skipped. Changed records with matching IDs will be overwritten only after acknowledgment; other records remain. Only import files you trust. The current chart preview stays unchanged; reopen an event to view its imported chart.</p>
+          <label data-role="import-overwrite" hidden><input type="checkbox" data-role="import-overwrite-check" /> I approve overwriting the changed saved records.</label>
           <div class="astroeye-chart-actions"><button type="button" data-action="confirm-import">Confirm merge</button><button type="button" data-action="cancel-import">Cancel</button></div>
         </section>
         <div id="astroeye-saved-event-list" class="astroeye-event-list" data-role="event-list"></div>
@@ -255,12 +256,24 @@ export function mountAstroEyeWorkspace({
   const importFile = root.querySelector('[data-role="import-file"]');
   const importReview = root.querySelector('[data-role="import-review"]');
   let importReadGeneration = 0;
+  let importHasChanges = false;
+  let importHasOverwrites = false;
+  const overwriteCheck = root.querySelector('[data-role="import-overwrite-check"]');
+  function updateImportConfirmation() {
+    root.querySelector('[data-action="confirm-import"]').disabled = !importHasChanges || (importHasOverwrites && !overwriteCheck.checked);
+  }
+  overwriteCheck.addEventListener('change', updateImportConfirmation);
   root.querySelector('[data-action="import"]').disabled = typeof controller.prepareImportRecords !== 'function';
 
   function resetImportReview() {
     importReadGeneration++;
     controller.cancelImportReview?.();
     importReview.hidden = true;
+    importHasChanges = false;
+    importHasOverwrites = false;
+    overwriteCheck.checked = false;
+    root.querySelector('[data-role="import-overwrite"]').hidden = true;
+    updateImportConfirmation();
     root.querySelector('[data-role="import-summary"]').replaceChildren();
     root.querySelector('[data-role="import-filename"]').textContent = '';
   }
@@ -640,7 +653,8 @@ export function mountAstroEyeWorkspace({
       if (json) downloadRecords(json);
     } else if (action === 'confirm-import' && !root.dataset.busy && !importReview.hidden) {
       importReview.hidden = true;
-      const result = await busy(() => controller.confirmImportRecords(), 'World records imported. Reopen an event to view its imported chart.');
+      const allowOverwrite = overwriteCheck.checked;
+      const result = await busy(() => controller.confirmImportRecords({ allowOverwrite }), 'Changed and new records imported. Identical records were skipped. Reopen an event to view its imported chart.');
       resetImportReview();
       if (result) await refreshEvents();
       root.querySelector('[data-action="import"]').focus();
@@ -678,9 +692,14 @@ export function mountAstroEyeWorkspace({
     const summary = root.querySelector('[data-role="import-summary"]');
     for (const [key, label] of [['events', 'Events'], ['charts', 'Charts'], ['workspaces', 'Research workspaces']]) {
       const row = document.createElement('p');
-      row.textContent = `${label}: ${result[key].added} to add · ${result[key].overwrite} to overwrite`;
+      row.textContent = `${label}: ${result[key].added} to add · ${result[key].overwrite} to overwrite · ${result[key].unchanged} unchanged (skipped)`;
       summary.append(row);
     }
+    importHasChanges = Object.values(result).some((entry) => entry.added || entry.overwrite);
+    importHasOverwrites = Object.values(result).some((entry) => entry.overwrite);
+    root.querySelector('[data-role="import-overwrite"]').hidden = !importHasOverwrites;
+    updateImportConfirmation();
+    if (!importHasChanges) setStatus('All records already match. Nothing needs to be imported.');
     importReview.hidden = false;
     root.querySelector('#astroeye-import-title').focus();
   });

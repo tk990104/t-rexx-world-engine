@@ -28,14 +28,17 @@ test('review counts add/overwrite by ID for all stores and does not write until 
   try {
     const before = await recordStore.serializeRecords();
     const summary = await review.prepareImportRecords(incoming);
-    assert.deepEqual(summary, { events: { added: 1, overwrite: 1 }, charts: { added: 1, overwrite: 1 }, workspaces: { added: 1, overwrite: 1 } });
+    assert.deepEqual(summary, { events: { added: 1, overwrite: 1, unchanged: 0 }, charts: { added: 1, overwrite: 0, unchanged: 1 }, workspaces: { added: 1, overwrite: 1, unchanged: 0 } });
     assert.equal(await recordStore.serializeRecords(), before);
     assert.equal(notifications.length, 0);
     incoming.events[0].title = 'Mutated after review';
     summary.events.overwrite = 0;
-    const confirmation = review.confirmImportRecords();
+    await assert.rejects(review.confirmImportRecords(), /Acknowledge/);
+    await assert.rejects(review.confirmImportRecords({ allowOverwrite: 'true' }), /Acknowledge/);
+    assert.equal(await recordStore.serializeRecords(), before);
+    const confirmation = review.confirmImportRecords({ allowOverwrite: true });
     await assert.rejects(review.confirmImportRecords(), /review it/);
-    assert.deepEqual(await confirmation, { mode: 'merge', events: 2, charts: 2, workspaces: 2 });
+    assert.deepEqual(await confirmation, { mode: 'merge', events: 2, charts: 1, workspaces: 2 });
     assert.equal((await recordStore.getEvent('existing')).title, 'Imported title');
     assert.equal(notifications.length, 1);
   } finally { await recordStore.close(); }
@@ -61,7 +64,7 @@ for (const change of ['event', 'chart', 'workspace']) {
       if (change === 'chart') await recordStore.saveChart({ ...incoming.charts[0], note: 'Newer chart' });
       if (change === 'workspace') await recordStore.saveWorkspace({ id: 'existing-notes', title: 'Newer local notes' });
       const before = await recordStore.serializeRecords();
-      await assert.rejects(review.confirmImportRecords(), /changed since this review/);
+      await assert.rejects(review.confirmImportRecords({ allowOverwrite: true }), /changed since this review/);
       assert.equal(await recordStore.serializeRecords(), before);
       assert.equal(notifications.length, 0);
       await assert.rejects(review.confirmImportRecords(), /review it/);
@@ -87,8 +90,8 @@ test('invalid JSON, schema, duplicate IDs, orphan charts and empty files clear p
 test('merge preview accepts charts linked to already-saved events and preserves unrelated records', async () => {
   const { recordStore, review, incoming } = await harness();
   try {
-    const summary = await review.prepareImportRecords({ schemaVersion: 1, events: [], charts: [incoming.charts[0]], workspaces: [] });
-    assert.deepEqual(summary.charts, { added: 0, overwrite: 1 });
+    const summary = await review.prepareImportRecords({ schemaVersion: 1, events: [], charts: [{ ...incoming.charts[0], chartId: 'additional-chart' }], workspaces: [] });
+    assert.deepEqual(summary.charts, { added: 1, overwrite: 0, unchanged: 0 });
     await review.confirmImportRecords();
     assert.equal((await recordStore.listEvents()).length, 1);
     assert.equal((await recordStore.listWorkspaces()).length, 1);
@@ -108,4 +111,34 @@ test('cancel and newer reviews discard delayed responses', async () => {
   assert.deepEqual(await third, { name: 'third' });
   releases[1]({ summary: { name: 'second' } });
   assert.equal(await second, null);
+});
+
+test('identical data with reordered nested object keys is skipped and cannot trigger a write or notification', async () => {
+  const { recordStore, review, notifications } = await harness();
+  try {
+    const before = await recordStore.serializeRecords();
+    const reorder = (value) => Array.isArray(value) ? value.map(reorder) : value && typeof value === 'object'
+      ? Object.fromEntries(Object.entries(value).reverse().map(([key, entry]) => [key, reorder(entry)])) : value;
+    const summary = await review.prepareImportRecords(reorder(JSON.parse(before)));
+    for (const counts of Object.values(summary)) assert.deepEqual(counts, { added: 0, overwrite: 0, unchanged: 1 });
+    await assert.rejects(review.confirmImportRecords({ allowOverwrite: true }), /already match/);
+    assert.equal(await recordStore.serializeRecords(), before);
+    assert.equal(notifications.length, 0);
+  } finally { await recordStore.close(); }
+});
+
+test('array order and nested value changes are real overwrites, and approval is not reused for a new review', async () => {
+  const { recordStore, review } = await harness();
+  try {
+    await recordStore.saveWorkspace({ id: 'ordered', items: ['first', 'second'], nested: { value: 1 } });
+    const incoming = { schemaVersion: 1, events: [], charts: [], workspaces: [{ id: 'ordered', items: ['second', 'first'], nested: { value: 1 } }] };
+    const first = await review.prepareImportRecords(incoming);
+    assert.deepEqual(first.workspaces, { added: 0, overwrite: 1, unchanged: 0 });
+    await review.confirmImportRecords({ allowOverwrite: true });
+    incoming.workspaces[0].nested.value = 2;
+    const second = await review.prepareImportRecords(incoming);
+    assert.equal(second.workspaces.overwrite, 1);
+    await assert.rejects(review.confirmImportRecords(), /Acknowledge/);
+    assert.equal((await recordStore.getWorkspace('ordered')).nested.value, 1);
+  } finally { await recordStore.close(); }
 });
