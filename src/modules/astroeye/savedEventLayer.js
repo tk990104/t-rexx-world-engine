@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { filterSavedEvents, normalizeSavedEventFilters } from './savedEventFilters.js';
 
 export const SAVED_EVENT_LIMIT = 100;
 export const savedEventEntityId = (id) => `t-rexx-astroeye-saved-${encodeURIComponent(id)}`;
@@ -7,8 +8,10 @@ export const savedEventEntityId = (id) => `t-rexx-astroeye-saved-${encodeURIComp
 export function createSavedEventLayer({ viewer, listEvents, getSelection, eventBus }) {
   let enabled = false, suspended = false, disposed = false, loading = false;
   let generation = 0, records = [], error = '';
+  let filters = normalizeSavedEventFilters();
   const entities = new Map(), listeners = new Set();
-  const state = () => ({ enabled, suspended, loading, error, shown: entities.size, total: records.length, limit: SAVED_EVENT_LIMIT });
+  const state = () => ({ enabled, suspended, loading, error, shown: entities.size, total: records.length,
+    matched: filterSavedEvents(records, filters).length, limit: SAVED_EVENT_LIMIT });
   const notify = () => { for (const listener of listeners) listener(state()); };
   function clear() {
     for (const id of entities.keys()) viewer.entities.removeById(id);
@@ -19,7 +22,7 @@ export function createSavedEventLayer({ viewer, listEvents, getSelection, eventB
     clear();
     if (enabled && !suspended && !disposed) {
       const selected = getSelection();
-      const events = records.filter((event) => selected?.isShared || event.id !== selected?.event.id).slice(0, SAVED_EVENT_LIMIT);
+      const events = filterSavedEvents(records, filters).filter((event) => selected?.isShared || event.id !== selected?.event.id).slice(0, SAVED_EVENT_LIMIT);
       try {
         for (const event of events) {
           const id = savedEventEntityId(event.id);
@@ -69,6 +72,11 @@ export function createSavedEventLayer({ viewer, listEvents, getSelection, eventB
     subscribe(listener) { listeners.add(listener); listener(state()); return () => listeners.delete(listener); },
     eventIdForEntity: (id) => entities.get(id) ?? null,
     refresh,
+    setFilters(input) {
+      if (disposed) return;
+      filters = normalizeSavedEventFilters(input);
+      render();
+    },
     async setEnabled(value) {
       if (disposed) return;
       enabled = Boolean(value); generation++;

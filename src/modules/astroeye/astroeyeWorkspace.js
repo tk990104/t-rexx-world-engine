@@ -5,6 +5,7 @@ import { renderAstroEyeChartWheel } from './chartWheel.js';
 import { mountSportsSchedulePanel } from './sportsSchedulePanel.js';
 import { scheduleLocalTime } from './sportsSchedule.js';
 import { createSharedViewUrl } from './shareView.js';
+import { filterSavedEvents, normalizeSavedEventFilters } from './savedEventFilters.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -165,6 +166,16 @@ export function mountAstroEyeWorkspace({
           <p class="astroeye-provenance" data-chart="provenance"></p>
         </div>
         <div class="astroeye-saved-header"><h3>Saved events</h3><div><button type="button" data-action="export">Export</button><button type="button" data-action="import">Import</button></div></div>
+        <form class="astroeye-event-filters" aria-label="Filter saved events">
+          <label>Search saved events<input name="query" type="search" maxlength="100" placeholder="Event, team, sport, competition or venue" /></label>
+          <div class="astroeye-filter-dates">
+            <label>From date<input name="dateFrom" type="date" /></label>
+            <label>Through date<input name="dateTo" type="date" /></label>
+          </div>
+          <p class="astroeye-help">Dates use each venue’s local event date, including both endpoints. Apply filters to update the list and cyan map markers. The selected purple marker and chart stay unchanged, even outside the filters. Export still includes all records.</p>
+          <div class="astroeye-chart-actions"><button type="submit">Apply filters</button><button type="button" data-filter-reset>Clear filters</button></div>
+          <p class="astroeye-help" data-role="filter-status" role="status" aria-live="polite"></p>
+        </form>
         <section class="astroeye-saved-map" aria-label="Saved-event map" hidden>
           <button type="button" data-action="saved-map" aria-pressed="false">Show saved events on map</button>
           <p class="astroeye-help" data-role="saved-map-status" role="status"></p>
@@ -182,7 +193,7 @@ export function mountAstroEyeWorkspace({
     const button = root.querySelector('[data-action="saved-map"]');
     button.textContent = state.enabled ? 'Hide saved events from map' : 'Show saved events on map';
     button.setAttribute('aria-pressed', String(state.enabled));
-    root.querySelector('[data-role="saved-map-status"]').textContent = state.error || (state.loading ? 'Reading saved events…' : !state.enabled ? 'Saved-event map is off.' : state.suspended ? 'Saved-event map paused for Director.' : `${state.shown} additional markers · ${state.total} saved events. Selected event stays purple.`);
+    root.querySelector('[data-role="saved-map-status"]').textContent = state.error || (state.loading ? 'Reading saved events…' : !state.enabled ? 'Saved-event map is off.' : state.suspended ? 'Saved-event map paused for Director.' : `${state.shown} additional markers · ${state.matched} matching / ${state.total} saved events. Selected event stays purple.`);
   });
 
   const form = root.querySelector('.astroeye-form');
@@ -190,6 +201,29 @@ export function mountAstroEyeWorkspace({
   const chartRoot = root.querySelector('.astroeye-chart');
   const status = root.querySelector('.astroeye-live-status');
   const eventList = root.querySelector('[data-role="event-list"]');
+  const filterForm = root.querySelector('.astroeye-event-filters');
+  let eventFilters = normalizeSavedEventFilters();
+  let savedEvents = [], eventRefresh = 0;
+  function applyFilters(input) {
+    if (root.dataset.busy) return;
+    try {
+      const normalized = normalizeSavedEventFilters(input);
+      savedEventLayer?.setFilters(normalized);
+      eventFilters = normalized;
+      renderEvents();
+    } catch (error) {
+      root.querySelector('[data-role="filter-status"]').textContent = `${error.message} Previous filters are still applied.`;
+    }
+  }
+  filterForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    applyFilters(Object.fromEntries(new FormData(filterForm).entries()));
+  });
+  filterForm.querySelector('[data-filter-reset]').addEventListener('click', () => {
+    if (root.dataset.busy) return;
+    filterForm.reset();
+    applyFilters({});
+  });
   const importFile = root.querySelector('[data-role="import-file"]');
   const initial = defaultLocalValues();
   field(form, 'localDate').value = initial.date;
@@ -360,13 +394,21 @@ export function mountAstroEyeWorkspace({
   root.querySelector('#astroeye-time-offset').addEventListener('change', (event) => previewTime(Number(event.target.value)));
 
   async function refreshEvents() {
+    const request = ++eventRefresh;
     const events = await controller.listEvents();
-    events.sort((left, right) => right.utcStart.localeCompare(left.utcStart));
+    if (request !== eventRefresh) return;
+    savedEvents = events.sort((left, right) => right.utcStart.localeCompare(left.utcStart) || left.id.localeCompare(right.id));
+    renderEvents();
+  }
+
+  function renderEvents() {
+    const events = filterSavedEvents(savedEvents, eventFilters);
+    root.querySelector('[data-role="filter-status"]').textContent = `${events.length} of ${savedEvents.length} saved events match the applied filters.`;
     eventList.replaceChildren();
     if (!events.length) {
       const message = document.createElement('p');
       message.className = 'astroeye-event-list-empty';
-      message.textContent = 'No saved events yet.';
+      message.textContent = savedEvents.length ? 'No events match. Change or clear the filters.' : 'No saved events yet.';
       eventList.append(message);
       return;
     }
@@ -619,6 +661,7 @@ export function mountAstroEyeWorkspace({
       previouslyFocused?.focus?.();
     },
     destroy() {
+      eventRefresh++;
       unsubscribeSavedMap?.();
       eventSky?.destroy();
       schedulePanel.destroy();

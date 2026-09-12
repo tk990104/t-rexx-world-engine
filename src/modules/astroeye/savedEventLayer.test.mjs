@@ -49,6 +49,45 @@ test('selected local event is excluded; shared ID collisions do not hide local r
   } finally { h.layer.destroy(); }
 });
 
+test('filters apply before the marker cap and do not reread records or remove the selected marker', async () => {
+  const h = harness(async () => Array.from({ length: 103 }, (_, i) => event(String(i).padStart(3, '0'))));
+  h.entities.add({ id: 't-rexx-astroeye-selected-event' });
+  try {
+    await h.layer.setEnabled(true);
+    h.layer.setFilters({ query: 'Event 102' });
+    assert.equal(h.layer.state().matched, 1);
+    assert.equal(h.layer.state().shown, 1);
+    assert.equal(h.layer.eventIdForEntity(savedEventEntityId('102')), '102');
+    assert.equal(h.reads, 1);
+    assert.throws(() => h.layer.setFilters({ dateFrom: '2026-09-13', dateTo: '2026-09-12' }));
+    assert.equal(h.layer.state().shown, 1);
+    h.layer.setFilters({ query: 'No matches' });
+    assert.equal(h.layer.state().shown, 0);
+    assert.ok(h.entities.getById('t-rexx-astroeye-selected-event'));
+    assert.ok(h.entities.getById('unrelated'));
+    h.layer.setFilters({});
+    assert.equal(h.layer.state().shown, 100);
+  } finally { h.layer.destroy(); }
+});
+
+test('pending reads, hide/show and Director resume all retain the latest filters', async () => {
+  let release;
+  const h = harness(() => new Promise((resolve) => { release = resolve; }));
+  try {
+    const first = h.layer.setEnabled(true);
+    h.layer.setFilters({ query: 'Event b' });
+    release([event('a'), event('b')]); await first;
+    assert.equal(h.layer.eventIdForEntity(savedEventEntityId('a')), null);
+    assert.equal(h.layer.eventIdForEntity(savedEventEntityId('b')), 'b');
+    h.layer.setSuspended(true); h.layer.setSuspended(false);
+    assert.equal(h.layer.state().shown, 1);
+    await h.layer.setEnabled(false);
+    const second = h.layer.setEnabled(true);
+    release([event('a'), event('b')]); await second;
+    assert.equal(h.layer.state().shown, 1);
+  } finally { h.layer.destroy(); }
+});
+
 test('late reads cannot resurrect a hidden or destroyed layer', async () => {
   const releases = [];
   const h = harness(() => new Promise((resolve) => releases.push(resolve)));
