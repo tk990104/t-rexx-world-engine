@@ -165,6 +165,8 @@
 .astroeye-comparison caption { margin: 10px 0; text-align: left; font-size: 11px; }
 .astroeye-comparison button { min-height: 44px; }
 .astroeye-comparison button:disabled { opacity: .45; cursor: not-allowed; }
+.astroeye-cross-aspects { max-height: 320px; overflow: auto; }
+.astroeye-cross-aspects:focus-visible { outline: 2px solid var(--astro-cyan); outline-offset: 2px; }
 .astroeye-deletion-undo { margin-top: 12px; padding: 12px; border: 1px solid var(--astro-cyan); border-radius: 8px; overflow-wrap: anywhere; }
 .astroeye-deletion-undo button { min-height: 44px; }
 .astroeye-import-review { margin-top: 12px; padding: 12px; border: 1px solid var(--astro-cyan); border-radius: 8px; overflow-wrap: anywhere; }

@@ -2,6 +2,10 @@
 
 Updated: August 24, 2026
 
+## T-Rexx AstroEye addition — September 12, 2026
+
+Chart comparison now offers an opt-in cross-chart aspect view with explicit existing thresholds, valid/skipped pair counts and a bounded keyboard-scrollable table. It compares the two session-only snapshots without changing stored records or globe state. Plain-text comparison report format 2 includes aspects only while enabled. See [cross-chart aspect behavior and verification](architecture/astroeye-cross-chart-aspects.md). The upstream snapshot below is historical and is not a declaration that all inherited release gates have been rerun.
+
 > **2026-08-23 — first-run mission launcher** (`src/firstRunExperience.js`,
 > `#first-run-launcher`, styles at the tail of `style.css`). After startup
 > settles, a fresh session gets one card offering **Live Contacts · Space

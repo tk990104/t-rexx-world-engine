@@ -1,13 +1,15 @@
 import { compareCharts } from './chartComparison.js';
+import { compareCrossChartAspects, crossAspectSummary, CROSS_ASPECT_RULES, CROSS_ASPECT_SCOPE } from './crossChartAspects.js';
 
 // Quote free text so embedded line breaks cannot masquerade as report structure.
 const quote = (value) => JSON.stringify(value).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 const degrees = (value) => value == null ? 'Unavailable' : `${value.toFixed(2)}°`;
 
-export function serializeComparisonReport(pinned, current) {
+export function serializeComparisonReport(pinned, current, { includeAspects = false } = {}) {
   if (!pinned || !current) throw new Error('Pin a chart and open a current chart before exporting a comparison.');
   const result = compareCharts(pinned, current);
   if (!result.rows.length) throw new Error(result.warning);
+  const aspects = includeAspects === true ? compareCrossChartAspects(pinned, current) : null;
   const describe = (label, chart) => [
     label,
     `Event title: ${quote(chart.title)}`,
@@ -19,7 +21,7 @@ export function serializeComparisonReport(pinned, current) {
   ];
   return [
     'T-REXX WORLD ENGINE — ASTROEYE COMPARISON REPORT',
-    'Report format: 1',
+    'Report format: 2',
     'Read-only snapshot report. Not an event backup; cannot be imported into AstroEye.',
     '',
     ...describe('PINNED SNAPSHOT', pinned),
@@ -29,6 +31,15 @@ export function serializeComparisonReport(pinned, current) {
     'Point | Pinned | Current | Shortest separation',
     ...result.rows.map((row) => `${row.body} | ${degrees(row.pinned)} | ${degrees(row.current)} | ${degrees(row.separation)}`),
     '',
+    ...(aspects ? [
+      'CROSS-CHART ASPECTS',
+      `Inclusive orb limits: ${CROSS_ASPECT_RULES}.`,
+      CROSS_ASPECT_SCOPE,
+      crossAspectSummary(aspects),
+      'Pinned point | Current point | Aspect | Separation | Orb',
+      ...aspects.rows.map((row) => `${row.pinned} | ${row.current} | ${row.aspect} | ${degrees(row.separation)} | ${degrees(row.orb)}`),
+      '',
+    ] : ['Cross-chart aspects were not included (view not enabled).', '']),
     'Units: degrees. Separation is unsigned, from 0 to 180 degrees.',
     'Values are rounded to two decimals for display; separation is computed before rounding.',
     'Unavailable means a missing or invalid value, not zero.',

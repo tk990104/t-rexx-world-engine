@@ -14,6 +14,8 @@ Pins are not persisted or included in record exports, share links, annotations o
 
 **Download comparison report (.txt)** explicitly downloads the two displayed snapshots and their comparison values. This separate human-readable report is not an importable event backup and does not persist the pin in the app. See [comparison report notes](astroeye-comparison-report.md) for its format, privacy boundaries and verification.
 
+**Show cross-chart aspects** adds an optional bounded view of pinned-to-current point pairs using the existing major-aspect thresholds. It includes same-named points, skips missing values and does not infer applying/separating motion across snapshot times. Clearing the pin resets this option; reloading also clears it. See [cross-chart aspect notes](astroeye-cross-chart-aspects.md).
+
 The workspace only mounts the panel, supplies displayed event/chart updates, clears its current chart on deletion and destroys it on teardown. Provider titles and metadata are rendered as plain text. No API, dependency, database migration or provider credentials are added.
 
 ## Bounded verification

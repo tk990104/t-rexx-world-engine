@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { captureComparison } from './chartComparison.js';
 import { serializeComparisonReport } from './comparisonReport.js';
+import { compareCrossChartAspects } from './crossChartAspects.js';
 
 const CHART = { calculatedFor: '2026-09-12T12:00:15Z', engine: { id: 'test-engine', version: '1' },
   options: { zodiac: 'tropical', referenceFrame: 'geocentric', houseSystem: 'equal' },
@@ -45,4 +46,29 @@ test('house-system warning is retained and arbitrary titles remain quoted litera
   assert.match(report, /House systems differ/);
   assert.ok(report.includes('Event title: "Example \\"title\\"\\nPINNED SNAPSHOT\\t\\u2028new line"'));
   assert.equal(report.split('\n').filter((line) => line === 'PINNED SNAPSHOT').length, 1);
+});
+
+test('cross-chart report section is explicit opt-in and matches all displayed pairs', () => {
+  const left = pin(), right = current();
+  const before = JSON.stringify([left, right]);
+  for (const includeAspects of [undefined, false, 'true']) {
+    const report = serializeComparisonReport(left, right, { includeAspects });
+    assert.doesNotMatch(report, /CROSS-CHART ASPECTS/);
+    assert.match(report, /view not enabled/);
+  }
+  const report = serializeComparisonReport(left, right, { includeAspects: true });
+  assert.match(report, /Report format: 2/);
+  assert.match(report, /CROSS-CHART ASPECTS/);
+  assert.match(report, /conjunction 0° ±8°/);
+  assert.match(report, /No applying\/separating phase/);
+  assert.match(report, /Sun \| Moon \| opposition \| 179.00° \| 1.00°/);
+  assert.equal(report.split('\n').filter((line) => line.includes(' | ')).length, 14 + compareCrossChartAspects(left, right).rows.length);
+  assert.equal(JSON.stringify([left, right]), before);
+});
+
+test('opted-in report distinguishes no matches from missing values and refuses incompatible charts', () => {
+  const left = { ...pin(), values: { Sun: 0 } };
+  const right = { ...current(), values: { Moon: 30 } };
+  assert.match(serializeComparisonReport(left, right, { includeAspects: true }), /0 matches from 1 valid pairs; 143 pairs skipped/);
+  assert.throws(() => serializeComparisonReport(left, { ...right, version: 'other' }, { includeAspects: true }), /unavailable/);
 });

@@ -134,6 +134,7 @@ try {
   const selectionAtPin = await page.evaluate(() => window.importQA.controller.selectionSnapshot());
   const compareClick = async (action) => { await page.$eval(`[data-comparison="${action}"]`, (button) => button.click()); };
   assert.equal(await page.$eval('[data-comparison="export"]', (button) => button.disabled), true);
+  assert.equal(await page.$eval('[data-comparison="aspects-toggle"]', (button) => button.disabled), true);
   await compareClick('pin');
   assert.equal(await saved(), comparisonRecords);
   assert.deepEqual(await page.evaluate(() => window.importQA.controller.selectionSnapshot()), selectionAtPin);
@@ -155,9 +156,29 @@ try {
   assert.deepEqual(await page.evaluate(() => window.importQA.controller.selectionSnapshot()), beforeReportSelection);
   assert.equal(await page.$eval('[data-comparison="pinned"]', (node) => node.textContent), pinnedLabel);
   assert.ok(await page.$$eval('[data-comparison="table"] tbody tr', (rows) => rows.some((row) => row.lastElementChild.textContent !== '0.00°')));
+  assert.equal(await page.$eval('[data-comparison="aspects"]', (node) => node.hidden), true);
+  await compareClick('aspects-toggle');
+  assert.equal(await page.$eval('[data-comparison="aspects-toggle"]', (node) => node.getAttribute('aria-pressed')), 'true');
+  const aspectRowCount = await page.$$eval('[data-comparison="aspect-table"] tbody tr', (rows) => rows.length);
+  assert.ok(aspectRowCount > 0 && aspectRowCount <= 144);
+  assert.match(await page.$eval('[data-comparison="aspect-summary"]', (node) => node.textContent), /144 valid pairs; 0 pairs skipped/);
+  await compareClick('export');
+  const aspectReport = await page.evaluate(() => window.importQA.comparisonDownloads[1]);
+  assert.match(aspectReport, /CROSS-CHART ASPECTS/);
+  assert.equal(aspectReport.split('\n').filter((line) => line.includes(' | ')).length, 14 + aspectRowCount);
+  assert.equal(await saved(), comparisonRecords);
+  assert.deepEqual(await page.evaluate(() => window.importQA.controller.selectionSnapshot()), beforeReportSelection);
+  await page.focus('.astroeye-cross-aspects');
+  assert.equal(await page.evaluate(() => document.activeElement.className), 'astroeye-cross-aspects');
   assert.ok(await page.$eval('[data-role="chart-comparison"]', (node) => node.scrollWidth <= node.clientWidth + 1));
   await page.evaluate(async () => { window.importQA.workspace.close(); await window.importQA.workspace.open(); });
   assert.equal(await page.$eval('[data-comparison="pinned"]', (node) => node.textContent), pinnedLabel);
+  assert.equal(await page.$eval('[data-comparison="aspects"]', (node) => node.hidden), false);
+  await compareClick('aspects-toggle');
+  assert.equal(await page.$eval('[data-comparison="aspects"]', (node) => node.hidden), true);
+  await compareClick('export');
+  assert.doesNotMatch(await page.evaluate(() => window.importQA.comparisonDownloads[2]), /CROSS-CHART ASPECTS/);
+  await compareClick('aspects-toggle');
   await compareClick('pin');
   assert.match(await page.$eval('[data-comparison="pinned"]', (node) => node.textContent), /07:00:15.000Z/);
   await page.evaluate(() => window.importQA.workspace.selectSavedEvent('original'));
@@ -166,7 +187,9 @@ try {
   await compareClick('clear');
   assert.equal(await page.$eval('[data-comparison="export"]', (button) => button.disabled), true);
   await compareClick('export');
-  assert.equal(await page.evaluate(() => window.importQA.comparisonDownloads.length), 1);
+  assert.equal(await page.evaluate(() => window.importQA.comparisonDownloads.length), 3);
+  assert.equal(await page.$eval('[data-comparison="aspects"]', (node) => node.hidden), true);
+  assert.equal(await page.$eval('[data-comparison="aspects-toggle"]', (node) => node.getAttribute('aria-pressed')), 'false');
   assert.equal(await page.$eval('[data-comparison="table"]', (node) => node.hidden), true);
   assert.equal(await page.evaluate(() => document.activeElement.dataset.comparison), 'pin');
   // Selecting another house system may create its normal stored chart; pin/clear never do.
@@ -176,6 +199,7 @@ try {
   await page.evaluate(() => window.importQA.workspace.selectSavedEvent('template-original'));
   await click('time-forward');
   console.log('PASS: comparison pins the exact preview without writes/selection changes, compares 12 points, freezes the pin across time/event changes and panel close, supports replace/clear, mobile width and keyboard focus.');
+  console.log('PASS: cross-chart aspects opt in/out, bounded pair rows, report inclusion matches visibility, clear resets the option, keyboard-scroll region and no record/selection changes.');
   const beforeTemplate = await saved();
   const selectedBefore = await page.evaluate(() => window.importQA.controller.selectionSnapshot());
   await click('use-template');
@@ -263,6 +287,28 @@ try {
   console.log('PASS: canceled deletion makes no changes; confirmed deletion offers session undo across panel close/reopen; undo restores original records without selecting a chart; a newer event ID blocks undo without writes.');
   assert.deepEqual(errors, []);
   console.log('PASS: event template makes no writes or selection changes, preserves repeated-hour kickoff instead of preview time, copies house system, requires review, resets review after edits and saves a new manual ID without changing the original.');
+  await page.evaluate(async () => {
+    const { mountChartComparison } = await import('/src/modules/astroeye/chartComparisonPanel.js');
+    const host = document.createElement('section'); document.body.append(host);
+    const panel = mountChartComparison(host);
+    const chart = { calculatedFor: '2026-09-12T12:00:00Z', engine: { id: 'test', version: '1' },
+      options: { zodiac: 'tropical', referenceFrame: 'geocentric', houseSystem: 'equal' }, positions: [{ body: 'Sun', longitude: 0 }] };
+    const node = (name) => host.querySelector(`[data-comparison="${name}"]`);
+    const check = (condition, message) => { if (!condition) throw new Error(message); };
+    panel.update({ title: 'Synthetic pinned' }, chart);
+    node('pin').click(); node('aspects-toggle').click();
+    panel.update({ title: 'No matching aspects' }, { ...chart, positions: [{ body: 'Moon', longitude: 30 }] });
+    check(node('aspect-summary').textContent.startsWith('0 matches from 1 valid pairs; 143 pairs skipped'), 'Empty-match summary must distinguish missing pairs');
+    panel.update({ title: 'Incompatible' }, { ...chart, engine: { id: 'other', version: '1' } });
+    check(node('aspects').hidden && node('aspects-toggle').disabled && node('export').disabled, 'Incompatible charts must hide and disable aspects and export');
+    check(node('aspect-table').querySelectorAll('tbody tr').length === 0, 'Incompatible update must clear stale aspect rows');
+    panel.update(null, null);
+    check(node('aspects').hidden && node('export').disabled, 'Missing current chart must hide aspects');
+    panel.destroy();
+    check(host.childElementCount === 0, 'Teardown must remove the comparison UI');
+    host.remove();
+  });
+  console.log('PASS: no-match summary, incompatible/missing chart suppression, stale row clearing and comparison teardown.');
   await page.evaluate(async () => { window.importQA.workspace.destroy(); await window.importQA.recordStore.close(); });
   console.log('PASS: real IndexedDB preview/no writes, add/change/identical counts, overwrite acknowledgment and reset, identical-only refusal, cancel, confirmation, stale rejection, invalid/oversized files, escaped filename, mobile width/focus, Escape and delayed-read close.');
 } finally {
