@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { filterSavedEvents, normalizeSavedEventFilters } from './savedEventFilters.js';
+import { filterSavedEvents, normalizeSavedEventFilters, sortSavedEvents, pageSavedEvents } from './savedEventFilters.js';
 
 const events = [
   { id: 'west', title: 'Lions at Owls', sport: 'Football', competition: 'Demo Cup', participants: { home: 'Owls', away: 'Lions' },
@@ -39,4 +39,30 @@ test('clearing matches all records without mutating inputs or changing their ord
   assert.deepEqual(events, before);
   assert.notEqual(filterSavedEvents(events), events);
   assert.equal(Object.isFrozen(normalizeSavedEventFilters()), true);
+});
+
+test('ordering uses actual UTC starts, keeps ID ties stable and does not mutate records', () => {
+  const before = structuredClone(events);
+  assert.deepEqual(sortSavedEvents(events).map((event) => event.id), ['west', 'east']);
+  assert.deepEqual(sortSavedEvents(events, 'oldest').map((event) => event.id), ['east', 'west']);
+  const ties = [{ id: 'b', utcStart: '2026-09-13T00:00:00Z' }, { id: 'a', utcStart: '2026-09-12T20:00:00-04:00' }];
+  for (const sort of ['oldest', 'newest']) assert.deepEqual(sortSavedEvents(ties, sort).map((event) => event.id), ['a', 'b']);
+  assert.deepEqual(events, before);
+  assert.throws(() => normalizeSavedEventFilters({ sort: 'random' }));
+});
+
+test('pages are bounded to 25 rows and clamp correctly after a collection shrinks', () => {
+  const rows = Array.from({ length: 61 }, (_, id) => ({ id }));
+  const first = pageSavedEvents(rows);
+  assert.equal(first.items.length, 25);
+  assert.equal(first.pageCount, 3);
+  assert.equal(first.from, 1); assert.equal(first.to, 25);
+  const last = pageSavedEvents(rows, 200);
+  assert.equal(last.page, 2); assert.equal(last.items.length, 11);
+  assert.equal(last.from, 51); assert.equal(last.to, 61);
+  assert.equal(pageSavedEvents(rows.slice(0, 5), 2).page, 0);
+  assert.equal(pageSavedEvents(rows, -1).page, 0);
+  assert.equal(pageSavedEvents(rows, NaN).page, 0);
+  assert.deepEqual(pageSavedEvents([]), { page: 0, pageCount: 1, total: 0, from: 0, to: 0, items: [] });
+  assert.equal(rows.length, 61);
 });

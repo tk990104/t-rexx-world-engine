@@ -1,5 +1,5 @@
 import * as Cesium from 'cesium';
-import { filterSavedEvents, normalizeSavedEventFilters } from './savedEventFilters.js';
+import { filterSavedEvents, normalizeSavedEventFilters, sortSavedEvents } from './savedEventFilters.js';
 
 export const SAVED_EVENT_LIMIT = 100;
 export const savedEventEntityId = (id) => `t-rexx-astroeye-saved-${encodeURIComponent(id)}`;
@@ -30,7 +30,7 @@ export function createSavedEventLayer({ viewer, listEvents, getSelection, eventB
     clear();
     if (enabled && !suspended && !disposed) {
       const selected = getSelection();
-      const events = filterSavedEvents(records, filters).filter((event) => selected?.isShared || event.id !== selected?.event.id).slice(0, SAVED_EVENT_LIMIT);
+      const events = sortSavedEvents(filterSavedEvents(records, filters), filters.sort).filter((event) => selected?.isShared || event.id !== selected?.event.id).slice(0, SAVED_EVENT_LIMIT);
       try {
         for (const event of events) {
           const id = savedEventEntityId(event.id);
@@ -64,7 +64,7 @@ export function createSavedEventLayer({ viewer, listEvents, getSelection, eventB
     try {
       const result = await listEvents();
       if (request !== generation || disposed || !enabled) return;
-      records = [...result].sort((a, b) => b.utcStart.localeCompare(a.utcStart) || a.id.localeCompare(b.id));
+      records = [...result];
     } catch {
       if (request !== generation || disposed || !enabled) return;
       records = [];

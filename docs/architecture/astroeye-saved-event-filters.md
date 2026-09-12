@@ -8,6 +8,8 @@ The list and cyan map markers use the same pure `savedEventFilters.js` function.
 
 Filters are session-only UI state. They survive panel close/reopen, saved-map hide/show and Director suspension within that page, but are not saved in record storage, shared URLs or Director projects. Reload resets them. Export retains its existing all-record behavior; this is not a filtered export feature.
 
+[Newest/oldest sorting and 25-row list pages](astroeye-saved-event-pagination.md) are now available. Apply filters also applies the chosen UTC start order and returns the list to its first page. Clear filters restores newest-first ordering. Paging alone does not alter the filtered map.
+
 Applying filters uses cached record lists: no storage read/write, chart calculation, camera command or provider call. Normal save/import/delete refreshes continue and use the latest applied filters. Workspace list refreshes now discard older responses; layer refreshes retain their existing generation guard. No new dependency or API key is needed.
 
 ## Bounded verification

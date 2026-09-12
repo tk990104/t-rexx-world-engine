@@ -5,7 +5,7 @@ import { renderAstroEyeChartWheel } from './chartWheel.js';
 import { mountSportsSchedulePanel } from './sportsSchedulePanel.js';
 import { scheduleLocalTime } from './sportsSchedule.js';
 import { createSharedViewUrl } from './shareView.js';
-import { filterSavedEvents, normalizeSavedEventFilters } from './savedEventFilters.js';
+import { filterSavedEvents, normalizeSavedEventFilters, sortSavedEvents, pageSavedEvents } from './savedEventFilters.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -174,6 +174,7 @@ export function mountAstroEyeWorkspace({
             <label>Through date<input name="dateTo" type="date" /></label>
           </div>
           <p class="astroeye-help">Dates use each venue’s local event date, including both endpoints. Apply filters to update the list and cyan map markers. The selected purple marker and chart stay unchanged, even outside the filters. Export still includes all records.</p>
+          <label>Sort by event start (UTC)<select name="sort"><option value="newest">Newest start first</option><option value="oldest">Oldest start first</option></select></label>
           <div class="astroeye-chart-actions"><button type="submit">Apply filters</button><button type="button" data-filter-reset>Clear filters</button></div>
           <p class="astroeye-help" data-role="filter-status" role="status" aria-live="polite"></p>
         </form>
@@ -182,10 +183,14 @@ export function mountAstroEyeWorkspace({
           <button type="button" data-action="frame-saved-map" disabled>View matching markers</button>
           <p class="astroeye-help">View matching markers closes this panel and moves the camera to the displayed matches (up to 100 cyan markers plus a matching selected event). Widely spread events use a globe overview; rotate it to see the far side.</p>
           <p class="astroeye-help" data-role="saved-map-status" role="status"></p>
-          <p class="astroeye-help">Cyan = saved events; purple = selected event. Click a marker to open its chart without moving the camera. Overlapping venues can be chosen from the list below. Shows up to 100 additional events, newest first. Local session only; not included in links or tours. Hidden during Director playback.</p>
+          <p class="astroeye-help">Cyan = saved events; purple = selected event. Click a marker to open its chart without moving the camera. Overlapping venues can be chosen from the list below. Shows up to 100 additional matches in the applied sort order, regardless of list page. Local session only; not included in links or tours. Hidden during Director playback.</p>
         </section>
         <input type="file" data-role="import-file" accept="application/json,.json" hidden />
-        <div class="astroeye-event-list" data-role="event-list"></div>
+        <div id="astroeye-saved-event-list" class="astroeye-event-list" data-role="event-list"></div>
+        <nav class="astroeye-event-pages" aria-label="Saved event pages" hidden>
+          <p class="astroeye-help" data-role="page-status" role="status" aria-live="polite"></p>
+          <div class="astroeye-chart-actions"><button type="button" data-event-page="previous" aria-controls="astroeye-saved-event-list">Previous page</button><button type="button" data-event-page="next" aria-controls="astroeye-saved-event-list">Next page</button></div>
+        </nav>
       </section>
     </div>
     <div class="astroeye-live-status" role="status" aria-live="polite">AstroEye ready.</div>
@@ -207,13 +212,14 @@ export function mountAstroEyeWorkspace({
   const eventList = root.querySelector('[data-role="event-list"]');
   const filterForm = root.querySelector('.astroeye-event-filters');
   let eventFilters = normalizeSavedEventFilters();
-  let savedEvents = [], eventRefresh = 0;
+  let savedEvents = [], eventRefresh = 0, eventPage = 0;
   function applyFilters(input) {
     if (root.dataset.busy) return;
     try {
       const normalized = normalizeSavedEventFilters(input);
       savedEventLayer?.setFilters(normalized);
       eventFilters = normalized;
+      eventPage = 0;
       renderEvents();
     } catch (error) {
       root.querySelector('[data-role="filter-status"]').textContent = `${error.message} Previous filters are still applied.`;
@@ -227,6 +233,13 @@ export function mountAstroEyeWorkspace({
     if (root.dataset.busy) return;
     filterForm.reset();
     applyFilters({});
+  });
+  root.querySelector('.astroeye-event-pages').addEventListener('click', (event) => {
+    const direction = event.target.closest('[data-event-page]')?.dataset.eventPage;
+    if (!direction || root.dataset.busy) return;
+    eventPage += direction === 'next' ? 1 : -1;
+    renderEvents();
+    eventList.querySelector('button')?.focus();
   });
   const importFile = root.querySelector('[data-role="import-file"]');
   const initial = defaultLocalValues();
@@ -401,12 +414,18 @@ export function mountAstroEyeWorkspace({
     const request = ++eventRefresh;
     const events = await controller.listEvents();
     if (request !== eventRefresh) return;
-    savedEvents = events.sort((left, right) => right.utcStart.localeCompare(left.utcStart) || left.id.localeCompare(right.id));
+    savedEvents = [...events];
     renderEvents();
   }
 
   function renderEvents() {
-    const events = filterSavedEvents(savedEvents, eventFilters);
+    const events = sortSavedEvents(filterSavedEvents(savedEvents, eventFilters), eventFilters.sort);
+    const page = pageSavedEvents(events, eventPage);
+    eventPage = page.page;
+    root.querySelector('.astroeye-event-pages').hidden = page.pageCount <= 1;
+    root.querySelector('[data-event-page="previous"]').disabled = page.page === 0;
+    root.querySelector('[data-event-page="next"]').disabled = page.page === page.pageCount - 1;
+    root.querySelector('[data-role="page-status"]').textContent = `${page.from}–${page.to} of ${page.total} matching events · Page ${page.page + 1} of ${page.pageCount}. The map does not change when paging.`;
     root.querySelector('[data-role="filter-status"]').textContent = `${events.length} of ${savedEvents.length} saved events match the applied filters.`;
     eventList.replaceChildren();
     if (!events.length) {
@@ -416,7 +435,7 @@ export function mountAstroEyeWorkspace({
       eventList.append(message);
       return;
     }
-    for (const event of events) {
+    for (const event of page.items) {
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.eventId = event.id;

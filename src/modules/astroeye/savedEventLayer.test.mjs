@@ -109,6 +109,24 @@ test('pending reads, hide/show and Director resume all retain the latest filters
   } finally { h.layer.destroy(); }
 });
 
+test('oldest/newest order controls the marker cap without new reads or changing selection', async () => {
+  const rows = Array.from({ length: 103 }, (_, i) => ({ ...event(String(i).padStart(3, '0')),
+    utcStart: new Date(Date.UTC(2026, 0, 1) + i * 86400000).toISOString() }));
+  const h = harness(async () => rows);
+  try {
+    await h.layer.setEnabled(true);
+    assert.equal(h.layer.eventIdForEntity(savedEventEntityId('000')), null);
+    assert.equal(h.layer.eventIdForEntity(savedEventEntityId('102')), '102');
+    h.layer.setFilters({ sort: 'oldest' });
+    assert.equal(h.layer.eventIdForEntity(savedEventEntityId('000')), '000');
+    assert.equal(h.layer.eventIdForEntity(savedEventEntityId('102')), null);
+    assert.equal(h.layer.state().shown, 100);
+    assert.equal(h.reads, 1);
+    assert.throws(() => h.layer.setFilters({ sort: 'bad' }));
+    assert.equal(h.layer.eventIdForEntity(savedEventEntityId('000')), '000');
+  } finally { h.layer.destroy(); }
+});
+
 test('late reads cannot resurrect a hidden or destroyed layer', async () => {
   const releases = [];
   const h = harness(() => new Promise((resolve) => releases.push(resolve)));

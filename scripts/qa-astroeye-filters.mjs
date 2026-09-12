@@ -29,7 +29,7 @@ try {
     const { createSavedEventLayer } = await import('/src/modules/astroeye/savedEventLayer.js');
     const { createSavedEventFramer } = await import('/src/modules/astroeye/savedEventFrame.js');
     const { EventBus } = await import('/src/core/eventBus.js');
-    const records = ['West', 'East', 'North'].map((name, i) => ({ id: name, title: `${name} <b>event</b>`, sport: 'Demo', competition: 'Cup',
+    let records = ['West', 'East', 'North'].map((name, i) => ({ id: name, title: `${name} <b>event</b>`, sport: 'Demo', competition: 'Cup',
       venue: { name: `${name} Arena`, latitude: 40, longitude: -74 }, scheduledLocal: { date: `2026-09-${12 + i}`, time: '12:00', timeZone: 'UTC' }, utcStart: `2026-09-${12 + i}T12:00:00Z` }));
     const entities = new Map();
     let reads = 0;
@@ -44,7 +44,18 @@ try {
     const workspace = mountAstroEyeWorkspace({ controller: { ...controller, listEvents }, savedEventLayer: layer,
       onViewSavedEvents: createSavedEventFramer({ viewer, getPoints: layer.framePoints, canInteract: () => allowed, runNavigation: (_noun, navigate) => navigate() }) });
     await workspace.open(); await layer.setEnabled(true);
-    window.filterQA = { layer, workspace, reads: () => reads, flights: () => flights, allow: (value) => { allowed = value; } };
+    const seed = records[0];
+    window.filterQA = { layer, workspace, reads: () => reads, flights: () => flights, allow: (value) => { allowed = value; },
+      markerOrder: () => [...entities.values()].map((entity) => entity.properties.eventId),
+      async setCount(count) {
+        records = Array.from({ length: count }, (_, i) => {
+          const utcStart = new Date(Date.UTC(2026, 0, 1) + i * 86400000).toISOString();
+          const suffix = String(i).padStart(3, '0');
+          return { ...seed, id: `row-${suffix}`, title: `Batch ${suffix}`, utcStart,
+            scheduledLocal: { ...seed.scheduledLocal, date: utcStart.slice(0, 10) } };
+        });
+        await workspace.open(); await layer.refresh();
+      } };
   });
   const ids = () => page.$$eval('[data-role="event-list"] [data-event-id]', (nodes) => nodes.map((node) => node.dataset.eventId));
   const apply = (values) => page.$eval('.astroeye-event-filters', (form, fields) => {
@@ -89,6 +100,40 @@ try {
   assert.deepEqual(errors, []);
   console.log('PASS: explicit framing only, empty-state disable, playback refusal and panel close after one camera request.');
   console.log('PASS: list/map parity, inclusive dates, invalid-range rollback, empty/reset, keyboard submit, no reads/writes/navigation on filtering, mobile width and no page errors.');
+  await page.evaluate(() => window.filterQA.setCount(61));
+  await page.$eval('[data-filter-reset]', (button) => button.click());
+  const pageReads = await page.evaluate(() => window.filterQA.reads());
+  const markersBeforePaging = await page.evaluate(() => window.filterQA.markerOrder());
+  assert.equal((await ids()).length, 25);
+  assert.equal((await ids())[0], 'row-060');
+  for (let i = 0; i < 2; i++) await page.$eval('[data-event-page="next"]', (button) => button.click());
+  assert.equal((await ids()).length, 11);
+  assert.equal((await ids())[0], 'row-010');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.eventId), 'row-010');
+  assert.equal(await page.$eval('[data-event-page="next"]', (button) => button.disabled), true);
+  assert.deepEqual(await page.evaluate(() => window.filterQA.markerOrder()), markersBeforePaging);
+  await page.$eval('.astroeye-event-pages', (node) => node.scrollIntoView({ block: 'center' }));
+  assert.ok(await page.$eval('.astroeye-event-pages', (node) => node.scrollWidth <= node.clientWidth + 1));
+  await page.screenshot({ path: 'qa-shots/astroeye-filters/pages-mobile.png' });
+  await page.$eval('[data-event-page="previous"]', (button) => button.click());
+  assert.equal((await ids())[0], 'row-035');
+  await apply({ sort: 'oldest' });
+  assert.equal((await ids())[0], 'row-000');
+  assert.equal((await page.evaluate(() => window.filterQA.markerOrder()))[0], 'row-000');
+  assert.equal(await page.$eval('[data-event-page="previous"]', (button) => button.disabled), true);
+  await apply({ query: 'Batch 060' });
+  assert.deepEqual(await ids(), ['row-060']);
+  assert.equal(await page.$eval('.astroeye-event-pages', (node) => node.hidden), true);
+  await page.$eval('[data-filter-reset]', (button) => button.click());
+  assert.equal((await ids())[0], 'row-060');
+  assert.equal(await page.evaluate(() => window.filterQA.reads()), pageReads);
+  assert.equal(await page.evaluate(() => window.filterQA.flights()), 1, 'paging and sorting do not navigate');
+  await page.$eval('[data-event-page="next"]', (button) => button.click());
+  await page.evaluate(() => window.filterQA.setCount(5));
+  assert.equal((await ids()).length, 5);
+  assert.equal(await page.$eval('.astroeye-event-pages', (node) => node.hidden), true);
+  assert.deepEqual(errors, []);
+  console.log('PASS: 25-row pages, last/previous page, focus, list/map sort parity, filter reset, shrink clamp and no additional reads or camera requests on paging/sorting.');
 } finally {
   await browser?.close();
   clearTimeout(deadline);
