@@ -60,6 +60,7 @@ export function mountAstroEyeWorkspace({
   savedEventLayer = null,
   onViewSavedEvents = null,
   downloadRecords = downloadJson,
+  downloadComparison,
 } = {}) {
   requireController(controller);
   if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
@@ -293,7 +294,7 @@ export function mountAstroEyeWorkspace({
   field(form, 'localTime').value = initial.time;
   field(form, 'timeZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   let selected = null;
-  const comparison = mountChartComparison(root.querySelector('[data-role="chart-comparison"]'));
+  const comparison = mountChartComparison(root.querySelector('[data-role="chart-comparison"]'), { downloadReport: downloadComparison });
   let userInteracted = false;
   root.addEventListener('pointerdown', () => { userInteracted = true; });
   root.addEventListener('keydown', () => { userInteracted = true; });

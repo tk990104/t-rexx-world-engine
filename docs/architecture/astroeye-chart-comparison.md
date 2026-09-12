@@ -12,6 +12,8 @@ One pin is held privately by `chartComparisonPanel.js`, using immutable field-on
 
 Pins are not persisted or included in record exports, share links, annotations or Director projects. The panel has no storage, clock, camera or network capabilities. Pin/replace/clear do not calculate charts or change selection. Selecting events and exploring time continue through their existing paths, with their existing side effects (for example, calculating a missing house-system chart on normal selection).
 
+**Download comparison report (.txt)** explicitly downloads the two displayed snapshots and their comparison values. This separate human-readable report is not an importable event backup and does not persist the pin in the app. See [comparison report notes](astroeye-comparison-report.md) for its format, privacy boundaries and verification.
+
 The workspace only mounts the panel, supplies displayed event/chart updates, clears its current chart on deletion and destroys it on teardown. Provider titles and metadata are rendered as plain text. No API, dependency, database migration or provider credentials are added.
 
 ## Bounded verification

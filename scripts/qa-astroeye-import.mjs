@@ -41,9 +41,10 @@ try {
     const incoming = JSON.parse(before);
     incoming.events[0].title = 'Imported title';
     incoming.events.push({ ...incoming.events[0], id: 'new-event' });
-    const workspace = mountAstroEyeWorkspace({ controller });
+    const comparisonDownloads = [];
+    const workspace = mountAstroEyeWorkspace({ controller, downloadComparison: (report) => comparisonDownloads.push(report) });
     await workspace.open();
-    window.importQA = { workspace, recordStore, controller, incoming, before,
+    window.importQA = { workspace, recordStore, controller, incoming, before, comparisonDownloads,
       choose(text, { oversized = false, delayed = false } = {}) {
         const file = new File([text], '<img src=x onerror=alert(1)>.json', { type: 'application/json' });
         if (oversized) Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 + 1 });
@@ -132,6 +133,7 @@ try {
   const comparisonRecords = await saved();
   const selectionAtPin = await page.evaluate(() => window.importQA.controller.selectionSnapshot());
   const compareClick = async (action) => { await page.$eval(`[data-comparison="${action}"]`, (button) => button.click()); };
+  assert.equal(await page.$eval('[data-comparison="export"]', (button) => button.disabled), true);
   await compareClick('pin');
   assert.equal(await saved(), comparisonRecords);
   assert.deepEqual(await page.evaluate(() => window.importQA.controller.selectionSnapshot()), selectionAtPin);
@@ -142,6 +144,16 @@ try {
   await click('time-forward');
   assert.equal(await page.$eval('[data-comparison="pinned"]', (node) => node.textContent), pinnedLabel);
   assert.match(await page.$eval('[data-comparison="current"]', (node) => node.textContent), /2026-11-01T07:00:15.000Z/);
+  const beforeReportSelection = await page.evaluate(() => window.importQA.controller.selectionSnapshot());
+  await compareClick('export');
+  const report = await page.evaluate(() => window.importQA.comparisonDownloads[0]);
+  assert.match(report, /2026-11-01T06:45:15.000Z/);
+  assert.match(report, /2026-11-01T07:00:15.000Z/);
+  assert.equal(report.split('\n').filter((line) => line.includes(' | ')).length, 13);
+  assert.match(report, /not an event backup|Not an event backup/);
+  assert.equal(await saved(), comparisonRecords);
+  assert.deepEqual(await page.evaluate(() => window.importQA.controller.selectionSnapshot()), beforeReportSelection);
+  assert.equal(await page.$eval('[data-comparison="pinned"]', (node) => node.textContent), pinnedLabel);
   assert.ok(await page.$$eval('[data-comparison="table"] tbody tr', (rows) => rows.some((row) => row.lastElementChild.textContent !== '0.00°')));
   assert.ok(await page.$eval('[data-role="chart-comparison"]', (node) => node.scrollWidth <= node.clientWidth + 1));
   await page.evaluate(async () => { window.importQA.workspace.close(); await window.importQA.workspace.open(); });
@@ -152,6 +164,9 @@ try {
   assert.match(await page.$eval('[data-comparison="current"]', (node) => node.textContent), /Imported title/);
   assert.match(await page.$eval('[data-comparison="pinned"]', (node) => node.textContent), /Original repeated-hour game/);
   await compareClick('clear');
+  assert.equal(await page.$eval('[data-comparison="export"]', (button) => button.disabled), true);
+  await compareClick('export');
+  assert.equal(await page.evaluate(() => window.importQA.comparisonDownloads.length), 1);
   assert.equal(await page.$eval('[data-comparison="table"]', (node) => node.hidden), true);
   assert.equal(await page.evaluate(() => document.activeElement.dataset.comparison), 'pin');
   // Selecting another house system may create its normal stored chart; pin/clear never do.
