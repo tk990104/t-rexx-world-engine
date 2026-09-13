@@ -61,6 +61,10 @@ western-intersection and coincident-plane defects in legacy model 1. The version
 rejects unstable boundaries and uses distinct chart IDs while retaining model-1 replay.
 Charts/comparisons still warn from absolute latitude 66 degrees. Independent polar
 references and wider boundary coverage remain release blockers; A1 is not closed.
+The [published 78N behavior check](architecture/astroeye-polar-reference-behavior.md)
+now tests rounded ranges, motion direction and two jumps. This is independent
+behavioral evidence, not precise polar UTC/MC/cusp agreement; those fixtures are
+still required before closing A1.
 Keep reference retrieval separate from offline tests and normal app startup. No Swiss
 Ephemeris integration or license purchase is included in this work package.
 

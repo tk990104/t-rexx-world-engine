@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "koch-astrodienst-78n-behavior",
+  "source": {
+    "author": "Dieter Koch",
+    "title": "Astrology in polar regions and on the southern hemisphere",
+    "url": "https://www.astro.com/astrology/in_polar_asc_e.htm",
+    "section": "3. Odd behaviour of the ascendant/descendant in polar regions",
+    "retrievedOn": "2026-09-13",
+    "access": "Search-index text; direct page returned browser verification.",
+    "rights": "Astrodienst article; only factual numeric bounds and behavior paraphrased here, no article or image copied."
+  },
+  "published": {
+    "latitude": 78,
+    "equinoctialHalfWidthDegrees": 31,
+    "directCenterDegrees": 180,
+    "retrogradeCenterDegrees": 0,
+    "dailyHalfTurnJumps": 2
+  },
+  "testConventions": {
+    "kind": "orientation-behavior-only",
+    "adoptedObliquityDegrees": 23.44,
+    "boundToleranceDegrees": 1,
+    "siderealStepDegrees": 0.5,
+    "motionHalfStepDegrees": 0.01,
+    "jumpThresholdDegrees": 170
+  },
+  "limitations": [
+    "Rounded published ranges, not precise expected chart angles.",
+    "Adopted obliquity is a test assumption, not a value supplied by the article.",
+    "No UTC, longitude, MC, house-cusp or southern-hemisphere accuracy certification.",
+    "The article's local clock example is not converted into a UTC fixture because its exact conventions are incomplete."
+  ]
+}

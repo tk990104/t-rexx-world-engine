@@ -67,6 +67,10 @@ sourced polar UTC/location ASC/MC/cusp fixtures. High-latitude cautions remain v
 and **A1 remains open**. The next validation slice should supply those independent
 references and record their conventions and preselected tolerances.
 
+Follow-up: the [published 78N behavior check](astroeye-polar-reference-behavior.md)
+adds independent rounded-range and motion evidence. It does not supply the missing
+precise UTC/location ASC/MC/cusp fixtures or close A1.
+
 ### Checkpoint verification — 2026-09-13
 
 All **261 platform tests** passed (25.97 seconds). The isolated angle-caution/model
