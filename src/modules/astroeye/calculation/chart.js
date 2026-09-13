@@ -19,6 +19,7 @@ export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign',
     latitude: event.venue.latitude,
     longitude: event.venue.longitude,
     system: houseSystem,
+    calculationVersion,
   });
   const positions = calculateAstronomyEnginePositions(event.utcStart).map((position) => {
     const zodiac = zodiacPosition(position.longitude);
@@ -34,7 +35,7 @@ export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign',
   return Object.freeze({
     schemaVersion: 1,
     calculationVersion,
-    chartId: `astroeye:${event.id}:${event.utcStart}:tropical-geocentric:${houseSystem}`,
+    chartId: `astroeye:${event.id}:${event.utcStart}:tropical-geocentric:${houseSystem}${calculationVersion === 1 ? '' : ':model-2'}`,
     eventId: event.id,
     calculatedFor: event.utcStart,
     location: Object.freeze({

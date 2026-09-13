@@ -48,8 +48,8 @@ test('orientation geometry satisfies horizon and meridian planes across hemisphe
       assert.ok(Math.abs(asc.up) < 1e-12, `horizon: ${latitude}/${theta}`);
       assert.ok(Math.abs(mc.east) < 1e-12, `meridian: ${latitude}/${theta}`);
       assert.ok(mc.meridianDirection > 0, 'MC has local sidereal RA, not opposite RA');
-      // Polar branch semantics need separate external references; do not certify them here.
-      if (Math.abs(latitude) < 66) assert.ok(asc.east > 0, 'non-polar Ascendant is eastern');
+      // Geometric regression, not independent ephemeris accuracy certification.
+      assert.ok(asc.east > 0, 'model 2 Ascendant is eastern');
     }
   }
 });

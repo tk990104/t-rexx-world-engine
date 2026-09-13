@@ -23,7 +23,8 @@ try {
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.evaluate(async () => {
     const { mountAstroEyeWorkspace } = await import('/src/modules/astroeye/astroeyeWorkspace.js');
-    const { createAstroEyeWorkspaceController } = await import('/src/modules/astroeye/workspaceController.js');
+    const { createAstroEyeWorkspaceController, eventFromDraft } = await import('/src/modules/astroeye/workspaceController.js');
+    const { calculateAstroEyeChart } = await import('/src/modules/astroeye/calculation/chart.js');
     const { createWorldRecordStore } = await import('/src/core/worldRecordStore.js');
     const { EventBus } = await import('/src/core/eventBus.js');
     const { ModuleStateCoordinator } = await import('/src/core/moduleState.js');
@@ -32,8 +33,9 @@ try {
     const controller = createAstroEyeWorkspaceController({ recordStore, eventBus,
       moduleState: new ModuleStateCoordinator({ eventBus }), worldClock: new WorldClock({ eventBus }) });
     for (const [id, latitude] of [['polar', 80], ['ordinary', 40]]) {
-      await controller.saveDraft({ id, title: id, sport: 'Synthetic', competition: 'QA', home: 'A', away: 'B',
+      const event = eventFromDraft({ id, title: id, sport: 'Synthetic', competition: 'QA', home: 'A', away: 'B',
         localDate: '2026-09-13', localTime: '12:00', timeZone: 'UTC', venueName: 'Test only', latitude, longitude: 12.345678 });
+      await recordStore.saveEventWithChart(event, calculateAstroEyeChart(event, { calculationVersion: 1 }));
     }
     const downloads = [];
     const [legacy] = await recordStore.listCharts({ eventId: 'ordinary' });
@@ -43,7 +45,7 @@ try {
     await workspace.open();
     const before = await recordStore.serializeRecords();
     await workspace.selectSavedEvent('polar');
-    window.angleQA = { workspace, recordStore, downloads, before };
+    window.angleQA = { workspace, controller, recordStore, downloads, before };
   });
   const warning = '[data-chart="angle-caution"]';
   assert.match(await page.$eval(warning, (node) => node.textContent), /provisional/);
@@ -74,9 +76,39 @@ try {
   });
   assert.equal(await page.$eval(warning, (node) => node.hidden), false);
   assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.before), true);
+  // Exercise actual form submission and rendering for a new model 2 polar chart.
+  await page.evaluate(async () => {
+    const Astronomy = await import('/node_modules/astronomy-engine/esm/astronomy.js');
+    const date = new Date('2026-09-13T12:00:00Z');
+    const longitude = ((270 - Astronomy.SiderealTime(date) * 15 + 540) % 360) - 180;
+    window.angleQA.boundaryLatitude = 90 - Astronomy.e_tilt(Astronomy.MakeTime(date)).tobl;
+    const form = document.querySelector('.astroeye-form');
+    for (const [name, value] of Object.entries({ title: 'Modern polar test', sport: 'Synthetic', competition: 'QA',
+      home: 'A', away: 'B', localDate: '2026-09-13', localTime: '12:00', timeZone: 'UTC',
+      venueName: 'Test only', latitude: 80, longitude })) form.elements.namedItem(name).value = value;
+    form.requestSubmit();
+  });
+  await page.waitForFunction(() => document.querySelector('[data-chart="provenance"]').textContent.includes('calculation model 2'));
+  assert.match(await page.$eval('[data-comparison="warning"]', (node) => node.textContent), /model versions/);
+  assert.equal(await page.$eval('[data-comparison="export"]', (node) => node.disabled), true);
+  await page.$eval('[data-comparison="pin"]', (node) => node.click());
+  await page.$eval('[data-comparison="export"]', (node) => node.click());
+  assert.equal((await page.evaluate(() => window.angleQA.downloads.at(-1))).split('Calculation model: 2').length - 1, 2);
+  await page.evaluate(async () => {
+    window.angleQA.modernBefore = await window.angleQA.recordStore.serializeRecords();
+    window.angleQA.selectionBefore = JSON.stringify(window.angleQA.controller.selectionSnapshot());
+    const form = document.querySelector('.astroeye-form');
+    form.elements.namedItem('title').value = 'Unavailable boundary';
+    form.elements.namedItem('latitude').value = window.angleQA.boundaryLatitude;
+    form.requestSubmit();
+  });
+  await page.waitForFunction(() => document.querySelector('.astroeye-live-status').textContent.includes('Angles unavailable'));
+  assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.modernBefore), true);
+  assert.equal(await page.evaluate(() => JSON.stringify(window.angleQA.controller.selectionSnapshot()) === window.angleQA.selectionBefore), true);
+  assert.match(await page.$eval('[data-chart="provenance"]', (node) => node.textContent), /calculation model 2/);
   assert.deepEqual(errors, []);
   await page.evaluate(() => window.angleQA.workspace.destroy());
-  console.log('PASS: chart and pinned/report cautions, clear/reopen, narrow/wide layout, and unchanged isolated records.');
+  console.log('PASS: legacy replay/cautions, model 2 form/report, mixed-model refusal, explicit boundary error, layouts, and record preservation.');
 } finally {
   try { await browser?.close(); } finally { clearTimeout(deadline); }
 }

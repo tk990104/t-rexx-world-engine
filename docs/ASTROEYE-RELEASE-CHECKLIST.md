@@ -55,14 +55,12 @@ That first slice covers orientation geometry only; subsequent evidence is listed
 Follow-up A1 evidence: [two published date/location ASC/MC cases and a full two-system cusp case](architecture/astroeye-published-chart-references.md).
 These pass convention-aware comparisons; A1 remains open for polar/near-degenerate
 behavior and broader independent quadrant, boundary and geographic/date coverage.
-**Known blocker:** [polar geometry investigation](architecture/astroeye-polar-caution.md)
-reproduces western-intersection and coincident-plane results. Charts/comparisons now
-warn conservatively from absolute latitude 66 degrees; this is mitigation, not correction.
-Resolve calculation versioning and old-record behavior before changing polar results.
-The [model-version foundation](architecture/astroeye-calculation-version.md) now tags
-new v1 charts, preserves untagged legacy records and rejects incompatible cache entries
-and comparisons. The polar correction, distinct future chart IDs and old-model replay
-policy still need implementation; A1 is not closed.
+The [polar geometry investigation](architecture/astroeye-polar-caution.md) reproduced
+western-intersection and coincident-plane defects in legacy model 1. The versioned
+[model 2 correction](architecture/astroeye-polar-model-2.md) selects the eastern branch,
+rejects unstable boundaries and uses distinct chart IDs while retaining model-1 replay.
+Charts/comparisons still warn from absolute latitude 66 degrees. Independent polar
+references and wider boundary coverage remain release blockers; A1 is not closed.
 Keep reference retrieval separate from offline tests and normal app startup. No Swiss
 Ephemeris integration or license purchase is included in this work package.
 

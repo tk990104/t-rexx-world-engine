@@ -1,7 +1,7 @@
 import { ASTRONOMY_ENGINE_SOURCE } from './astronomyEngineProvider.js';
 
-// Version 1 retains the existing math, including its documented polar limitations.
-export const ASTROEYE_CALCULATION_VERSION = 1;
+// Model 1 remains replayable; new calculations use the eastern-intersection model.
+export const ASTROEYE_CALCULATION_VERSION = 2;
 
 /** Only omission denotes legacy v1. Explicit null, strings and invalid numbers do not. */
 export function chartCalculationVersion(chart) {
@@ -12,13 +12,13 @@ export function chartCalculationVersion(chart) {
 }
 
 export function requireCalculationVersion(version) {
-  if (version !== ASTROEYE_CALCULATION_VERSION) throw new RangeError('Unsupported AstroEye calculation version.');
+  if (version !== 1 && version !== 2) throw new RangeError('Unsupported AstroEye calculation version.');
   return version;
 }
 
 export function isSupportedChartCalculation(chart) {
   try {
-    return chartCalculationVersion(chart) === ASTROEYE_CALCULATION_VERSION
+    return Boolean(requireCalculationVersion(chartCalculationVersion(chart)))
       && chart?.engine?.id === ASTRONOMY_ENGINE_SOURCE.id
       && chart?.engine?.version === ASTRONOMY_ENGINE_SOURCE.version
       && chart?.options?.zodiac === 'tropical'

@@ -159,7 +159,10 @@ export function createAstroEyeWorkspaceController({
       if (!isCurrent()) return null;
       if (!chart && matching.length) requireSupportedChartCalculation(matching[0]);
       if (!chart) {
-        chart = calculateAstroEyeChart(event, { houseSystem });
+        // Adding another house system to an older event must not upgrade its math.
+        const sibling = charts.find((entry) => entry.calculatedFor === event.utcStart && isSupportedChartCalculation(entry));
+        chart = calculateAstroEyeChart(event, { houseSystem,
+          ...(sibling ? { calculationVersion: requireSupportedChartCalculation(sibling) } : {}) });
         if (persistChart) { chart = await recordStore.saveChart(chart); chartIsSaved = true; }
       }
       return activate(event, chart, { navigate, isCurrent, chartIsSaved });

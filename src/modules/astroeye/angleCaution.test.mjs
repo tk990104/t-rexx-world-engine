@@ -46,10 +46,10 @@ test('pin freezes caution without copying coordinates; reports retain side and h
 test('known polar branch defect is reproduced geometrically, not certified as correct', () => {
   const rad = (value) => value * Math.PI / 180;
   for (const [latitude, theta] of [[80, 270], [-80, 90]]) {
-    const angles = calculateAnglesFromOrientation(theta, latitude, 23.44);
+    const angles = calculateAnglesFromOrientation(theta, latitude, 23.44, { calculationVersion: 1 });
     const l = rad(angles.ascendant), t = rad(theta), e = rad(23.44);
     const east = -Math.cos(l) * Math.sin(t) + Math.sin(l) * Math.cos(e) * Math.cos(t);
-    assert.ok(east < -0.99, 'known existing western intersection; replace this characterization when correcting the model');
+    assert.ok(east < -0.99, 'legacy model 1 retains its known western intersection for reproducible replay');
     assert.equal(needsAngleCaution(chart(latitude)), true);
   }
 });

@@ -1,8 +1,15 @@
 # High-latitude angle limitation and visible caution
 
+## Update — versioned correction
+
+[Model 2](astroeye-polar-model-2.md) now selects the eastern intersection and rejects
+ill-conditioned cases. The defects below describe **legacy model 1**, which is retained
+for older records, previews, links and tours. The visible high-latitude caution remains:
+the geometric correction is not independent high-latitude accuracy certification.
+
 ## Confirmed issue, not a passing accuracy gate
 
-On 2026-09-13, geometric checks reproduced two limitations of the current formula:
+On 2026-09-13, geometric checks reproduced two limitations of the model-1 formula:
 
 - Latitude +80 degrees, local sidereal angle 270 degrees, obliquity 23.44 degrees:
   returned Ascendant 180 degrees; projection onto local east -1.

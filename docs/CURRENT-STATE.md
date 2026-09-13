@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13: [polar calculation model 2](architecture/astroeye-polar-model-2.md) is the default for new events. It selects the eastern horizon intersection and explicitly refuses unstable polar boundaries before saving. Legacy charts and links retain model 1, new IDs cannot overwrite old charts, and adding a house system to an older event preserves its saved model. Mixed-model comparisons remain unavailable. High-latitude cautions and independent-validation release gate A1 remain open. Earlier checkpoint descriptions below are historical.
+
 September 13: [calculation model tracking](architecture/astroeye-calculation-version.md) now distinguishes AstroEye's model from the astronomy package version. New charts are tagged v1; legacy charts stay unmodified. Unsupported matching cache entries cannot trigger automatic replacement, and mismatched model versions cannot be compared. The existing polar math and caution remain; this is a compatibility prerequisite, not the correction.
 
 September 13: [high-latitude chart cautions](architecture/astroeye-polar-caution.md) identify provisional angle/house results in the chart, pinned comparison and text report. Geometric investigation reproduced western-intersection and near-degenerate limitations; the warning does not fix them, alter saved charts or close A1. All 227 platform tests and the isolated caution browser check passed.

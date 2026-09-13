@@ -1,5 +1,17 @@
 # Calculation model version foundation
 
+## Current behavior — model 2
+
+New drafts now use **calculation model 2**, with chart IDs ending in `:model-2`.
+Explicit model 1 and untagged legacy records remain supported without migration.
+Shares and tours accept both versions and preserve the input version; missing link
+versions and unsupported future versions are rejected. Comparisons still refuse
+mixed models. See [the correction and compatibility contract](astroeye-polar-model-2.md).
+
+The remainder of this document records checkpoint 39's **historical model-1 foundation**,
+including its then-current test counts and prerequisites. Model 2 implements the
+compatibility path; independent polar references and release gate A1 remain open.
+
 ## Purpose and current version
 
 AstroEye's numerical model is separate from the Astronomy Engine package version.
