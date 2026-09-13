@@ -1,3 +1,5 @@
+import { needsAngleCaution, HIGH_LATITUDE_ANGLE_CAUTION } from './angleCaution.js';
+
 const BODIES = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
 
 function longitude(value) {
@@ -20,14 +22,20 @@ export function captureComparison(event, chart) {
   return Object.freeze({ title: text(event?.title, 'an event title'), calculatedFor: time.toISOString(),
     engine: text(chart.engine?.id, 'an engine'), version: text(chart.engine?.version, 'an engine version'),
     zodiac: text(chart.options?.zodiac, 'a zodiac'), frame: text(chart.options?.referenceFrame, 'a reference frame'),
-    houseSystem: text(chart.options?.houseSystem, 'a house system'), values: Object.freeze(values) });
+    houseSystem: text(chart.options?.houseSystem, 'a house system'),
+    ...(needsAngleCaution(chart) ? { highLatitudeCaution: true } : {}), values: Object.freeze(values) });
 }
 
 export function compareCharts(pinned, current) {
   if (['engine', 'version', 'zodiac', 'frame'].some((key) => pinned[key] !== current[key])) {
     return { rows: [], warning: 'Calculation conventions or engine versions differ. Numeric comparison is unavailable.' };
   }
-  return { warning: pinned.houseSystem === current.houseSystem ? '' : 'House systems differ. This compares longitudes, not house assignments.',
+  const cautions = [
+    pinned.houseSystem === current.houseSystem ? '' : 'House systems differ. This compares longitudes, not house assignments.',
+    pinned.highLatitudeCaution === true ? `Pinned snapshot — ${HIGH_LATITUDE_ANGLE_CAUTION}` : '',
+    current.highLatitudeCaution === true ? `Current chart — ${HIGH_LATITUDE_ANGLE_CAUTION}` : '',
+  ].filter(Boolean);
+  return { warning: cautions.join(' '),
     rows: [...BODIES, 'Ascendant', 'Midheaven'].map((body) => {
       const left = pinned.values[body], right = current.values[body];
       const distance = left == null || right == null ? null : Math.abs(right - left);

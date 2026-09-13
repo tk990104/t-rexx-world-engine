@@ -39,6 +39,9 @@ that a wrong antipode or a one-arcsecond perturbation exceeds the fixture tolera
 
 ## Remaining A1 work — gate stays open
 
+Polar follow-up: [known branch/degeneracy issues and visible cautions](astroeye-polar-caution.md)
+are now documented. The caution is not a corrected or independently certified polar model.
+
 Update: [published date/location comparisons](astroeye-published-chart-references.md)
 now cover two ASC/MC cases and a complete Equal/Whole Sign cusp case. The first
 bullet below is partly addressed, not complete; polar and wider coverage remain open.

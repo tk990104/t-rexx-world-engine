@@ -55,6 +55,10 @@ That first slice covers orientation geometry only; subsequent evidence is listed
 Follow-up A1 evidence: [two published date/location ASC/MC cases and a full two-system cusp case](architecture/astroeye-published-chart-references.md).
 These pass convention-aware comparisons; A1 remains open for polar/near-degenerate
 behavior and broader independent quadrant, boundary and geographic/date coverage.
+**Known blocker:** [polar geometry investigation](architecture/astroeye-polar-caution.md)
+reproduces western-intersection and coincident-plane results. Charts/comparisons now
+warn conservatively from absolute latitude 66 degrees; this is mitigation, not correction.
+Resolve calculation versioning and old-record behavior before changing polar results.
 Keep reference retrieval separate from offline tests and normal app startup. No Swiss
 Ephemeris integration or license purchase is included in this work package.
 

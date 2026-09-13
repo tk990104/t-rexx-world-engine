@@ -10,6 +10,7 @@ import { MAX_IMPORT_FILE_BYTES } from './recordImportReview.js';
 import { eventTemplateDraft } from './eventTemplate.js';
 import { mountChartComparison } from './chartComparisonPanel.js';
 import { mountResearchNotebook } from './researchNotebookPanel.js';
+import { renderAngleCaution } from './angleCaution.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -136,6 +137,7 @@ export function mountAstroEyeWorkspace({
         <div class="astroeye-empty" tabindex="-1">To compare charts, first save an event or choose one from Saved events. Then use Compare charts → Pin this chart, and select another event or change the Time explorer. Nothing is pinned automatically.</div>
         <div class="astroeye-chart" hidden>
           <div class="astroeye-chart-title"><strong data-chart="title"></strong><span data-chart="time"></span></div>
+          <p class="astroeye-help" data-chart="angle-caution" role="status" hidden></p>
           <section class="astroeye-time-explorer" aria-labelledby="astroeye-time-heading">
             <div class="astroeye-time-heading"><h4 id="astroeye-time-heading">Time explorer</h4><span data-time="mode">EVENT START</span></div>
             <p data-time="instant"></p>
@@ -429,6 +431,7 @@ export function mountAstroEyeWorkspace({
     empty.hidden = true;
     chartRoot.hidden = false;
     root.querySelector('[data-chart="title"]').textContent = event.title;
+    renderAngleCaution(root.querySelector('[data-chart="angle-caution"]'), chart);
     root.querySelector('[data-chart="time"]').textContent = `${event.scheduledLocal.date} · ${event.scheduledLocal.time.slice(0, 5)} · ${event.scheduledLocal.timeZone}`;
     const slider = root.querySelector('#astroeye-time-offset');
     slider.value = offsetMinutes;
