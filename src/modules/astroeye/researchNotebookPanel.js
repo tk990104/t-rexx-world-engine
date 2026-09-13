@@ -1,11 +1,13 @@
 import { MAX_RESEARCH_NOTE_LENGTH } from './researchNotebook.js';
 import { createNotebookChartReference, appendNotebookChartReference } from './notebookChartReference.js';
 import { createNotebookDraftDownload, downloadNotebookDraft } from './notebookDraftDownload.js';
+import { createUnsavedNotebookGuard } from './unsavedNotebookGuard.js';
 
 export function mountResearchNotebook(host, { notebook, downloadDraft = downloadNotebookDraft, confirmDiscard = (message) => window.confirm(message) }) {
   host.innerHTML = `<h3 tabindex="-1">Research notebook</h3>
     <p class="astroeye-help">One notebook across events, saved only in this browser. It is not automatically linked to the current event or chart. Opening charts never adds or changes notes.</p>
     <p class="astroeye-help">Save notes explicitly. Saved notes are included in Export all backups, but excluded from matching-event exports, comparison reports, links and tours. Review backups before sharing; browser data can be cleared. Unsaved edits survive panel close/reopen, not page reload.</p>
+    <p class="astroeye-help">While notes are unsaved, this page requests a browser warning before reload or leaving. Browsers may suppress it; crashes or forced app shutdown cannot be protected. Save notes or download a draft before leaving. Downloading does not mark the notebook saved.</p>
     <label>Research notes<textarea rows="8" maxlength="${MAX_RESEARCH_NOTE_LENGTH}" disabled></textarea></label>
     <div class="astroeye-chart-actions"><button type="button" data-note="append-reference" disabled>Append current chart reference</button></div>
     <p class="astroeye-help">Appends the displayed chart's event title, exact UTC time and calculation settings to this draft—not the pinned chart. No venue coordinates or saved-event collection are copied. Review the appended text, then Save notes to keep it. References do not update when charts change.</p>
@@ -21,7 +23,9 @@ export function mountResearchNotebook(host, { notebook, downloadDraft = download
   let baseline = null, baselineText = '', loaded = false, pending = false, destroyed = false;
   let reference = null;
   const dirty = () => loaded && textarea.value !== baselineText;
+  const leaveGuard = createUnsavedNotebookGuard(host.ownerDocument.defaultView);
   function render() {
+    leaveGuard.setDirty(dirty());
     textarea.disabled = pending || !loaded;
     node('save').disabled = pending || !dirty();
     node('reload').disabled = pending;
@@ -87,6 +91,6 @@ export function mountResearchNotebook(host, { notebook, downloadDraft = download
       render();
     },
     open() { host.hidden = false; if (!loaded) void load(); },
-    destroy() { destroyed = true; host.removeEventListener('click', click); textarea.removeEventListener('input', input); host.replaceChildren(); },
+    destroy() { destroyed = true; leaveGuard.destroy(); host.removeEventListener('click', click); textarea.removeEventListener('input', input); host.replaceChildren(); },
   });
 }
