@@ -44,6 +44,7 @@
     "test:platform": "node --test src/core/*.test.mjs src/domain/events/*.test.mjs src/modules/astroeye/*.test.mjs src/modules/astroeye/calculation/*.test.mjs",
     "test:track": "node scripts/track-regression.mjs",
     "qa:map-source-tray": "node scripts/qa-map-source-tray.mjs",
+    "qa:astroeye-browser-safety": "node scripts/qa-astroeye-browser-safety.mjs",
     "start": "vite preview --host 0.0.0.0 --port ${PORT:-4173}"
   },
   "dependencies": {

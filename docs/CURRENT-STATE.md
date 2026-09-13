@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+`npm run qa:astroeye-browser-safety` now verifies real Chromium text-file downloads and the notebook's native leave-warning lifecycle with synthetic data in a fresh browser. The check passed; the user's embedded preview host is not certified by it. See [browser safety coverage](architecture/astroeye-browser-safety.md).
+
 Unsaved research notes now request the browser's standard leave/reload warning. The listener exists only while notes differ from the saved/loaded baseline, remains active through pending/failed saves and draft downloads, and is removed after successful save/reload, reverting text or panel teardown. This is not autosave or crash recovery; host/browser dialogs may be suppressed. See [notebook leave-warning limits](architecture/astroeye-research-notebook.md).
 
 Research notes now offers **Download note draft (.txt)** to preserve the editor's current text without saving or overwriting the notebook. It includes unsaved edits and remains usable after a save conflict, whose warning stays visible. The file is plaintext, not an importable world-record backup. See [draft recovery boundaries](architecture/astroeye-research-notebook.md).

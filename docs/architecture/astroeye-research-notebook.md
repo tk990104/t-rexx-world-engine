@@ -36,6 +36,8 @@ The notebook uses the existing IndexedDB `workspaces` store with ID `astroeye-re
 
 ## Verification
 
+A subsequent [real-browser safety check](astroeye-browser-safety.md) now verifies actual draft/report files and Chromium leave dialogs, including cancel, successful-save navigation and explicitly accepted navigation. This is separate from the embedded preview host, which remains unverified for native dialog behavior.
+
 Leave-warning checkpoint: 22 targeted warning/download/reference/notebook/storage tests passed. The isolated notebook browser regression dispatches cancellable synthetic beforeunload events to verify clean/dirty state, reference append, download, close/reopen, conflict, reverting text, confirmed reload, a delayed save and teardown while dirty. It does not navigate away or certify the native leave dialog in the user's embedded browser. The check keeps its 60-second watchdog.
 
 The production build passed with existing externalization/bundle-size warnings. No full-globe or full inherited release-suite run was performed for this checkpoint.

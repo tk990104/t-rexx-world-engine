@@ -14,6 +14,8 @@ This is a human-readable research aid, not an importable JSON event backup, spor
 
 ## Bounded verification
 
+The later [real-browser safety check](astroeye-browser-safety.md) verifies a real comparison-report file saved by Chromium and compares its contents with the expected report. This adds native-download coverage beyond the original callback-only checks below; embedded-host behavior is not certified.
+
 32 targeted report, comparison and workspace-controller tests passed. Report checks cover exact UTC times, all rows, angular wraparound, missing values, compatibility refusal, house-system warnings, quoted multiline titles, deterministic serialization, immutable inputs and exclusion of extra supplied fields.
 
 The isolated DOM-only browser check passed within its 60-second watchdog. It captured the download callback to verify report contents, disabled controls and unchanged stored records, selection and pin. It also reran existing import, template, time-summary and deletion-recovery checks. This verifies the UI dispatch and payload, not the native browser download dialog or a file saved to disk. No full 3D globe or live-provider test was started.
