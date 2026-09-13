@@ -9,6 +9,7 @@ import { filterSavedEvents, normalizeSavedEventFilters, sortSavedEvents, pageSav
 import { MAX_IMPORT_FILE_BYTES } from './recordImportReview.js';
 import { eventTemplateDraft } from './eventTemplate.js';
 import { mountChartComparison } from './chartComparisonPanel.js';
+import { mountResearchNotebook } from './researchNotebookPanel.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -49,6 +50,7 @@ function defaultLocalValues(now = new Date()) {
 /** Mount the first non-technical AstroEye event workspace. */
 export function mountAstroEyeWorkspace({
   controller,
+  researchNotebook = null,
   host = document.body,
   onOpen = async () => {},
   onRequestClose = null,
@@ -84,6 +86,7 @@ export function mountAstroEyeWorkspace({
     <nav class="astroeye-quick-nav" aria-label="AstroEye shortcuts">
       <button type="button" data-action="compare-charts">Compare charts</button>
       <button type="button" data-action="find-saved-events">Saved events</button>
+      <button type="button" data-action="research-notes">Research notes</button>
     </nav>
     <div class="astroeye-body">
       <section class="astroeye-entry" aria-labelledby="astroeye-event-heading">
@@ -179,6 +182,7 @@ export function mountAstroEyeWorkspace({
           </section>
           <p class="astroeye-provenance" data-chart="provenance"></p>
         </div>
+        <section class="astroeye-research-notebook" data-role="research-notebook" aria-label="Research notebook" tabindex="-1" hidden></section>
         <div class="astroeye-saved-header"><h3 data-role="saved-events-heading" tabindex="-1">Saved events</h3><div><button type="button" data-action="export">Export all</button><button type="button" data-action="import">Import</button></div></div>
         <section class="astroeye-deletion-undo" data-role="deletion-undo" aria-label="Recover last deleted event" hidden>
           <p data-role="deletion-undo-description" class="astroeye-help"></p>
@@ -299,6 +303,9 @@ export function mountAstroEyeWorkspace({
   field(form, 'timeZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   let selected = null;
   const comparison = mountChartComparison(root.querySelector('[data-role="chart-comparison"]'), { downloadReport: downloadComparison });
+  const notebookHost = root.querySelector('[data-role="research-notebook"]');
+  const notebookPanel = researchNotebook ? mountResearchNotebook(notebookHost, { notebook: researchNotebook }) : null;
+  root.querySelector('[data-action="research-notes"]').hidden = !notebookPanel;
   let userInteracted = false;
   root.addEventListener('pointerdown', () => { userInteracted = true; });
   root.addEventListener('keydown', () => { userInteracted = true; });
@@ -592,6 +599,9 @@ export function mountAstroEyeWorkspace({
     if (action === 'close') resetImportReview();
     if (action === 'compare-charts') {
       focusWorkspaceSection(selected ? root.querySelector('[data-role="chart-comparison"]') : empty);
+    } else if (action === 'research-notes' && notebookPanel) {
+      notebookPanel.open();
+      focusWorkspaceSection(notebookHost);
     } else if (action === 'find-saved-events') {
       focusWorkspaceSection(root.querySelector('[data-role="saved-events-heading"]'));
     } else if (action === 'saved-map' && savedEventLayer && !root.dataset.busy) {
@@ -858,6 +868,7 @@ export function mountAstroEyeWorkspace({
     destroy() {
       resetImportReview();
       comparison.destroy();
+      notebookPanel?.destroy();
       eventRefresh++;
       unsubscribeSavedMap?.();
       eventSky?.destroy();

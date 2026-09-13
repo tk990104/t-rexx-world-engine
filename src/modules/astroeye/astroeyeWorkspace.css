@@ -169,6 +169,11 @@
 .astroeye-comparison button { min-height: 44px; }
 .astroeye-comparison button:disabled { opacity: .45; cursor: not-allowed; }
 .astroeye-cross-aspects { max-height: 320px; overflow: auto; }
+.astroeye-research-notebook { margin-top: 16px; padding: 12px; border: 1px solid var(--astro-cyan); border-radius: 8px; }
+.astroeye-research-notebook label { display: grid; gap: 8px; font-size: 12px; }
+.astroeye-research-notebook textarea { box-sizing: border-box; width: 100%; min-width: 0; resize: vertical; padding: 8px; color: #fff; background: #160d28; border: 1px solid #68517f; border-radius: 6px; font: 13px/1.5 sans-serif; }
+.astroeye-research-notebook button { min-height: 44px; }
+.astroeye-research-notebook:focus-visible, .astroeye-research-notebook :focus-visible { outline: 2px solid var(--astro-cyan); outline-offset: 2px; }
 .astroeye-aspect-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 10px; }
 .astroeye-aspect-filters label { display: grid; gap: 5px; min-width: 0; font-size: 11px; }
 .astroeye-aspect-filters select, .astroeye-aspect-filters button { min-height: 44px; max-width: 100%; padding: 7px; border: 1px solid #68517f; border-radius: 6px; background: #160d28; color: #fff; }

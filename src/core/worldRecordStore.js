@@ -280,6 +280,21 @@ export function createWorldRecordStore({
     async getWorkspace(workspaceId) {
       return get(STORE_WORKSPACES, requireText(workspaceId, 'workspaceId'));
     },
+    async saveWorkspaceIfUnchanged(workspace, expected) {
+      if (!workspace || typeof workspace !== 'object') throw new TypeError('Workspace record is required');
+      const normalized = { ...copy(workspace), id: requireText(workspace.id, 'workspace.id') };
+      if (expected !== null && (!expected || expected.id !== normalized.id)) throw new TypeError('Expected workspace must match the saved ID or be null.');
+      const baseline = copy(expected);
+      return transact([STORE_WORKSPACES], 'readwrite', async (transaction) => {
+        const store = transaction.objectStore(STORE_WORKSPACES);
+        const current = await requestResult(store.get(normalized.id)) ?? null;
+        if (recordFingerprint(current) !== recordFingerprint(baseline)) {
+          throw new Error('Research notes changed in storage. Your draft is unchanged. Copy it somewhere safe, then reload saved notes before saving again.');
+        }
+        await requestResult(store.put(normalized));
+        return copy(normalized);
+      });
+    },
     async listWorkspaces() {
       return list(STORE_WORKSPACES, 'id');
     },

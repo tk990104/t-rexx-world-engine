@@ -51,6 +51,7 @@ import { initFirstRunExperience } from './firstRunExperience.js';
 import { createWorldPlatform } from './core/platform.js';
 import { createWorldRecordStore } from './core/worldRecordStore.js';
 import { createAstroEyeModule } from './modules/astroeye/index.js';
+import { createResearchNotebook } from './modules/astroeye/researchNotebook.js';
 import { createAstroEyeWorkspaceController } from './modules/astroeye/workspaceController.js';
 import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.js';
 import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js';
@@ -379,6 +380,7 @@ async function init() {
       };
       astroEyeWorkspace = mountAstroEyeWorkspace({
         controller: astroEyeController,
+        researchNotebook: createResearchNotebook(worldRecordStore),
         onOpen: () => worldPlatform.moduleRegistry.activate('astroeye'),
         onRequestClose: () => worldPlatform.panelRegistry.hide(),
         createWorldLink: () => styleManager.shareLinkManager.createLink(),

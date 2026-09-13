@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+**Research notes** opens a local notebook across events, loaded on request and saved explicitly. Full backups include saved notes; matching-event exports, comparison reports, links and tours do not. Atomic stale-write protection preserves drafts when storage has changed. Notes are not encrypted or cloud-synced, and unsaved text does not survive reload. See [notebook boundaries and verification](architecture/astroeye-research-notebook.md).
+
 Cross-chart aspects now offer **Aspect type** and **Maximum orb** filters, explicit shown/total counts and a reset action. These session-only controls narrow existing matches without altering the pin or saved records. Report format 3 records the active filters and exports only the displayed aspect rows; all 12 longitude rows remain included.
 
 AstroEye now has a sticky shortcut bar with **Compare charts** and **Saved events**, so comparison no longer requires hunting below the chart wheel. With no chart open, Compare charts explains the prerequisite instead of navigating to hidden controls. Shortcuts move panel scroll/focus only and expand compact layout without changing event sky, selection or saved records. See [comparison navigation](architecture/astroeye-chart-comparison.md).
