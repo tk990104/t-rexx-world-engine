@@ -6,6 +6,8 @@
 
 T-Rexx World Engine is a product fork of God's Eye View. It keeps the photorealistic 3D globe, live public-data layers, cinematic camera system, annotations, and voice control while adding a module platform. **AstroEye** is the first module; AstroTrace, Sound Radar, Cosmic Watch, Sports Command, RC Command, Collector Radar, Research Mode, and Director Mode follow on the same shared engine.
 
+AstroEye is pre-release. The [v0.1 release checklist](docs/ASTROEYE-RELEASE-CHECKLIST.md) defines five remaining work packages, 15 acceptance gates, and features deferred until after the first release.
+
 The exact source lineage and third-party boundaries are recorded in [`NOTICE.md`](NOTICE.md). The initial T-Rexx baseline is [`uhrichsam4/gods-eye-view@5804ba8`](https://github.com/uhrichsam4/gods-eye-view/commit/5804ba8811235983505b676e02e855d8986de21e), which retains the original Bilawal Sidhu MIT notice and the provider-specific data and asset terms.
 
 *One world. Many lenses.*

@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+The [AstroEye v0.1 release checklist](ASTROEYE-RELEASE-CHECKLIST.md) now sets a bounded finish line: 15 open acceptance gates across calculation validation, voice, durable event annotations, end-to-end usability and release engineering. This is a planning checkpoint, not a release certification; the next implementation step is independent angle/house validation.
+
 `npm run qa:astroeye-browser-safety` now verifies real Chromium text-file downloads and the notebook's native leave-warning lifecycle with synthetic data in a fresh browser. The check passed; the user's embedded preview host is not certified by it. See [browser safety coverage](architecture/astroeye-browser-safety.md).
 
 Unsaved research notes now request the browser's standard leave/reload warning. The listener exists only while notes differ from the saved/loaded baseline, remains active through pending/failed saves and draft downloads, and is removed after successful save/reload, reverting text or panel teardown. This is not autosave or crash recovery; host/browser dialogs may be suppressed. See [notebook leave-warning limits](architecture/astroeye-research-notebook.md).
