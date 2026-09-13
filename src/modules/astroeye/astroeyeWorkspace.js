@@ -305,6 +305,7 @@ export function mountAstroEyeWorkspace({
   const comparison = mountChartComparison(root.querySelector('[data-role="chart-comparison"]'), { downloadReport: downloadComparison });
   const notebookHost = root.querySelector('[data-role="research-notebook"]');
   const notebookPanel = researchNotebook ? mountResearchNotebook(notebookHost, { notebook: researchNotebook }) : null;
+  notebookPanel?.updateChart(null, null);
   root.querySelector('[data-action="research-notes"]').hidden = !notebookPanel;
   let userInteracted = false;
   root.addEventListener('pointerdown', () => { userInteracted = true; });
@@ -413,6 +414,7 @@ export function mountAstroEyeWorkspace({
     eventSky?.update(chart);
     selected = { event, chart, offsetMinutes, isShared };
     comparison.update(event, chart);
+    notebookPanel?.updateChart(event, chart);
     root.querySelector('[data-action="delete"]').hidden = isShared;
     root.querySelector('[data-action="save-shared"]').hidden = !isShared;
     root.querySelector('[data-action="share-view"]').disabled = typeof createWorldLink !== 'function';
@@ -721,6 +723,7 @@ export function mountAstroEyeWorkspace({
       if (!removed) return;
       selected = null;
       comparison.update(null, null);
+      notebookPanel?.updateChart(null, null);
       eventSky?.update(null);
       chartRoot.hidden = true;
       empty.hidden = false;

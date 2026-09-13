@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+Research notes now offers **Append current chart reference**: a reviewable, unsaved text block containing the displayed event title, exact UTC chart time and calculation conventions. It preserves time-explorer previews without copying coordinates, selecting/pinning charts or automatically saving. The block stays static as charts change; overflow refuses the entire append. See [notebook chart references](architecture/astroeye-research-notebook.md).
+
 **Research notes** opens a local notebook across events, loaded on request and saved explicitly. Full backups include saved notes; matching-event exports, comparison reports, links and tours do not. Atomic stale-write protection preserves drafts when storage has changed. Notes are not encrypted or cloud-synced, and unsaved text does not survive reload. See [notebook boundaries and verification](architecture/astroeye-research-notebook.md).
 
 Cross-chart aspects now offer **Aspect type** and **Maximum orb** filters, explicit shown/total counts and a reset action. These session-only controls narrow existing matches without altering the pin or saved records. Report format 3 records the active filters and exports only the displayed aspect rows; all 12 longitude rows remain included.
