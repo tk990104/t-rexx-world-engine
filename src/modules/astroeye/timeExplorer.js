@@ -1,10 +1,12 @@
 import { normalizeEvent } from '../../domain/events/eventSchema.js';
 import { calculateAstroEyeChart } from './calculation/chart.js';
+import { ASTROEYE_CALCULATION_VERSION, requireCalculationVersion } from './calculation/modelVersion.js';
 
 export const TIME_EXPLORER_LIMIT_MINUTES = 360;
 
 /** Temporary calculation input only: never replace the saved source event. */
-export function calculateTimePreview(event, offsetMinutes, { houseSystem = 'whole-sign' } = {}) {
+export function calculateTimePreview(event, offsetMinutes, { houseSystem = 'whole-sign', calculationVersion = ASTROEYE_CALCULATION_VERSION } = {}) {
+  requireCalculationVersion(calculationVersion);
   if (!Number.isInteger(offsetMinutes) || Math.abs(offsetMinutes) > TIME_EXPLORER_LIMIT_MINUTES) {
     throw new RangeError('Choose a whole-minute offset within six hours of the event.');
   }
@@ -23,5 +25,5 @@ export function calculateTimePreview(event, offsetMinutes, { houseSystem = 'whol
       timeZone: event.scheduledLocal.timeZone,
     },
   });
-  return calculateAstroEyeChart(calculationEvent, { houseSystem });
+  return calculateAstroEyeChart(calculationEvent, { houseSystem, calculationVersion });
 }

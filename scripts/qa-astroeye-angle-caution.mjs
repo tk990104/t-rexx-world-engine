@@ -36,6 +36,9 @@ try {
         localDate: '2026-09-13', localTime: '12:00', timeZone: 'UTC', venueName: 'Test only', latitude, longitude: 12.345678 });
     }
     const downloads = [];
+    const [legacy] = await recordStore.listCharts({ eventId: 'ordinary' });
+    delete legacy.calculationVersion;
+    await recordStore.saveChart(legacy);
     const workspace = mountAstroEyeWorkspace({ controller, downloadComparison: (value) => downloads.push(value) });
     await workspace.open();
     const before = await recordStore.serializeRecords();
@@ -45,14 +48,18 @@ try {
   const warning = '[data-chart="angle-caution"]';
   assert.match(await page.$eval(warning, (node) => node.textContent), /provisional/);
   assert.equal(await page.$eval(warning, (node) => node.hidden), false);
+  assert.match(await page.$eval('[data-chart="provenance"]', (node) => node.textContent), /calculation model 1/);
   await page.$eval('[data-comparison="pin"]', (node) => node.click());
   await page.evaluate(() => window.angleQA.workspace.selectSavedEvent('ordinary'));
   assert.equal(await page.$eval(warning, (node) => node.hidden), true);
   assert.equal(await page.$eval(warning, (node) => node.textContent), '');
+  assert.match(await page.$eval('[data-chart="provenance"]', (node) => node.textContent), /calculation model 1 \(legacy untagged chart\)/);
+  assert.match(await page.$eval('[data-comparison="pinned"]', (node) => node.textContent), /calculation model 1/);
   assert.match(await page.$eval('[data-comparison="warning"]', (node) => node.textContent), /Pinned snapshot — High-latitude/);
   await page.$eval('[data-comparison="export"]', (node) => node.click());
   const report = await page.evaluate(() => window.angleQA.downloads.at(-1));
   assert.match(report, /Pinned snapshot — High-latitude/);
+  assert.equal(report.split('Calculation model: 1').length - 1, 2);
   assert.ok(!report.includes('12.345678'));
   await page.evaluate(() => window.angleQA.workspace.selectSavedEvent('polar'));
   for (const width of [390, 1280]) {

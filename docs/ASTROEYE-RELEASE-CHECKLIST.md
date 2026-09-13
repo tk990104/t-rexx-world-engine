@@ -59,6 +59,10 @@ behavior and broader independent quadrant, boundary and geographic/date coverage
 reproduces western-intersection and coincident-plane results. Charts/comparisons now
 warn conservatively from absolute latitude 66 degrees; this is mitigation, not correction.
 Resolve calculation versioning and old-record behavior before changing polar results.
+The [model-version foundation](architecture/astroeye-calculation-version.md) now tags
+new v1 charts, preserves untagged legacy records and rejects incompatible cache entries
+and comparisons. The polar correction, distinct future chart IDs and old-model replay
+policy still need implementation; A1 is not closed.
 Keep reference retrieval separate from offline tests and normal app startup. No Swiss
 Ephemeris integration or license purchase is included in this work package.
 

@@ -2,13 +2,14 @@ import { normalizeEvent } from '../../domain/events/eventSchema.js';
 import { ASTRONOMY_ENGINE_VERSION } from './calculation/astronomyEngineProvider.js';
 import { HOUSE_SYSTEMS } from './calculation/houses.js';
 import { TIME_EXPLORER_LIMIT_MINUTES } from './timeExplorer.js';
+import { ASTROEYE_CALCULATION_VERSION } from './calculation/modelVersion.js';
 
 export const ASTROEYE_SHARE_PARAM = 'ae';
 export const ASTROEYE_SHARE_MAX_LENGTH = 8192;
 
 /** Explicit allowlist: links contain calculation inputs, never executable charts or credentials. */
 export function normalizeSharedView(input) {
-  if (!input || input.version !== 1 || input.calculationVersion !== 1) throw new Error('Unsupported AstroEye link version.');
+  if (!input || input.version !== 1 || input.calculationVersion !== ASTROEYE_CALCULATION_VERSION) throw new Error('Unsupported AstroEye link version.');
   if (input.engineVersion !== ASTRONOMY_ENGINE_VERSION) throw new Error('This link requires a different calculation engine version.');
   if (!HOUSE_SYSTEMS.includes(input.houseSystem)) throw new Error('Unsupported shared house system.');
   if (!Number.isInteger(input.offsetMinutes) || Math.abs(input.offsetMinutes) > TIME_EXPLORER_LIMIT_MINUTES) {
@@ -24,13 +25,13 @@ export function normalizeSharedView(input) {
     if (value && typeof value === 'object') Object.values(value).forEach(checkStrings);
   }
   checkStrings(event);
-  return Object.freeze({ version: 1, calculationVersion: 1, engineVersion: ASTRONOMY_ENGINE_VERSION,
+  return Object.freeze({ version: 1, calculationVersion: ASTROEYE_CALCULATION_VERSION, engineVersion: ASTRONOMY_ENGINE_VERSION,
     event, houseSystem: input.houseSystem, offsetMinutes: input.offsetMinutes,
     ...(input.skyEnabled === true ? { skyEnabled: true } : {}) });
 }
 
-export function createSharedView(event, { houseSystem = 'whole-sign', offsetMinutes = 0 } = {}) {
-  return normalizeSharedView({ version: 1, calculationVersion: 1,
+export function createSharedView(event, { houseSystem = 'whole-sign', offsetMinutes = 0, calculationVersion = ASTROEYE_CALCULATION_VERSION } = {}) {
+  return normalizeSharedView({ version: 1, calculationVersion,
     engineVersion: ASTRONOMY_ENGINE_VERSION, event, houseSystem, offsetMinutes });
 }
 

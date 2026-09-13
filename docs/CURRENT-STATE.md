@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13: [calculation model tracking](architecture/astroeye-calculation-version.md) now distinguishes AstroEye's model from the astronomy package version. New charts are tagged v1; legacy charts stay unmodified. Unsupported matching cache entries cannot trigger automatic replacement, and mismatched model versions cannot be compared. The existing polar math and caution remain; this is a compatibility prerequisite, not the correction.
+
 September 13: [high-latitude chart cautions](architecture/astroeye-polar-caution.md) identify provisional angle/house results in the chart, pinned comparison and text report. Geometric investigation reproduced western-intersection and near-degenerate limitations; the warning does not fix them, alter saved charts or close A1. All 227 platform tests and the isolated caution browser check passed.
 
 September 13: [published date/location angle and cusp comparisons](architecture/astroeye-published-chart-references.md) now check northern/southern ASC/MC examples and a full Equal/Whole Sign cusp case offline. The checks distinguish matched-orientation agreement from date-based convention differences; A1 remains open for polar and wider coverage. No runtime code changed in this checkpoint.

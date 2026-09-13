@@ -34,7 +34,7 @@ export function mountChartComparison(host, { downloadReport = downloadComparison
   let pinned = null, current = null, error = '', showAspects = false;
   let aspectFilters = normalizeCrossAspectFilters();
   const node = (name) => host.querySelector(`[data-comparison="${name}"]`);
-  const describe = (value) => `${value.title} · ${value.calculatedFor} · ${value.houseSystem} houses · ${value.engine} ${value.version} · ${value.zodiac} · ${value.frame}`;
+  const describe = (value) => `${value.title} · ${value.calculatedFor} · ${value.houseSystem} houses · ${value.engine} ${value.version} · calculation model ${value.calculationVersion} · ${value.zodiac} · ${value.frame}`;
   const degrees = (value) => value == null ? 'Unavailable' : `${value.toFixed(2)}°`;
   function render() {
     node('pin').disabled = !current;

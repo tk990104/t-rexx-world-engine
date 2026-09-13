@@ -80,6 +80,12 @@ try {
   await page.evaluate(() => window.comparisonQA.panel.update({ title: 'Incompatible' }, { ...window.comparisonQA.current, engine: { id: 'other', version: '1' } }));
   assert.equal(await page.$eval(selector('aspects'), (node) => node.hidden), true);
   assert.equal(await page.$eval(selector('export'), (node) => node.disabled), true);
+  await page.evaluate(() => window.comparisonQA.panel.update({ title: 'Future model' }, { ...window.comparisonQA.current, calculationVersion: 2 }));
+  assert.match(await page.$eval(selector('warning'), (node) => node.textContent), /model versions/);
+  assert.equal(await page.$eval(selector('table'), (node) => node.hidden), true);
+  assert.equal(await page.$eval(selector('export'), (node) => node.disabled), true);
+  await page.evaluate(() => window.comparisonQA.panel.update({ title: 'Legacy model' }, window.comparisonQA.current));
+  assert.equal(await page.$eval(selector('export'), (node) => node.disabled), false);
   await page.evaluate(() => window.comparisonQA.panel.destroy());
   assert.equal(await page.$eval('#comparison', (node) => node.childElementCount), 0);
   assert.deepEqual(errors, []);

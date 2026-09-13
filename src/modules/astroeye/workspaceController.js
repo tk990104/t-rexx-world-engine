@@ -5,6 +5,7 @@ import { createSharedView, normalizeSharedView } from './shareView.js';
 import { normalizeSavedEventFilters } from './savedEventFilters.js';
 import { matchingEventRecords } from './matchingEventExport.js';
 import { createRecordImportReview } from './recordImportReview.js';
+import { isSupportedChartCalculation, requireSupportedChartCalculation } from './calculation/modelVersion.js';
 
 function requireService(service, name, methods) {
   if (!service || methods.some((method) => typeof service[method] !== 'function')) {
@@ -84,7 +85,8 @@ export function createAstroEyeWorkspaceController({
   }
 
   async function activate(event, chart, { isShared = false, chartIsSaved = true, offsetMinutes = 0, navigate = true, isCurrent = () => true } = {}) {
-    const displayedChart = offsetMinutes === 0 ? chart : calculateTimePreview(event, offsetMinutes, { houseSystem: chart.options.houseSystem });
+    const calculationVersion = requireSupportedChartCalculation(chart);
+    const displayedChart = offsetMinutes === 0 ? chart : calculateTimePreview(event, offsetMinutes, { houseSystem: chart.options.houseSystem, calculationVersion });
     // Validate and calculate everything before presentation or shared-state mutation.
     if (!isCurrent()) return null;
     await presentEvent(event, chart, { navigate, isCurrent });
@@ -102,13 +104,14 @@ export function createAstroEyeWorkspaceController({
     shareSnapshot() {
       if (!activeSelection) throw new Error('Choose an event before creating a view link.');
       return createSharedView(activeSelection.event, {
+        calculationVersion: requireSupportedChartCalculation(activeSelection.chart),
         houseSystem: activeSelection.chart.options.houseSystem,
         offsetMinutes: moduleState.get('astroeye')?.preview?.offsetMinutes ?? 0,
       });
     },
     async restoreSharedView(input, { isCurrent = () => true } = {}) {
       const snapshot = normalizeSharedView(input);
-      const chart = calculateAstroEyeChart(snapshot.event, { houseSystem: snapshot.houseSystem });
+      const chart = calculateAstroEyeChart(snapshot.event, { houseSystem: snapshot.houseSystem, calculationVersion: snapshot.calculationVersion });
       // No IndexedDB writes and no camera move: the shell owns the shared camera pose.
       return activate(snapshot.event, chart, { isShared: true, offsetMinutes: snapshot.offsetMinutes, navigate: false, isCurrent });
     },
@@ -118,7 +121,7 @@ export function createAstroEyeWorkspaceController({
       const id = idFactory();
       if (id === activeSelection.event.id || await recordStore.getEvent(id)) throw new Error('Could not allocate a new event ID. No records were changed.');
       const event = normalizeEvent({ ...activeSelection.event, id });
-      const chart = calculateAstroEyeChart(event, { houseSystem: activeSelection.chart.options.houseSystem });
+      const chart = calculateAstroEyeChart(event, { houseSystem: activeSelection.chart.options.houseSystem, calculationVersion: requireSupportedChartCalculation(activeSelection.chart) });
       const saved = await recordStore.saveEventWithChart(event, chart);
       eventBus.emit('astroeye:event-saved', { eventId: event.id, chartId: chart.chartId });
       return activate(saved.event, saved.chart, { offsetMinutes, navigate: false });
@@ -128,6 +131,7 @@ export function createAstroEyeWorkspaceController({
       const { event, chart: savedChart } = activeSelection;
       const chart = offsetMinutes === 0 ? savedChart : calculateTimePreview(event, offsetMinutes, {
         houseSystem: savedChart.options.houseSystem,
+        calculationVersion: requireSupportedChartCalculation(savedChart),
       });
       applySelectionTime(chart, offsetMinutes);
       currentView = Object.freeze({ event, chart, offsetMinutes, isShared: activeSelection.isShared });
@@ -149,9 +153,11 @@ export function createAstroEyeWorkspaceController({
       const event = await recordStore.getEvent(eventId);
       if (!event) throw new Error(`Unknown AstroEye event: ${eventId}`);
       const charts = await recordStore.listCharts({ eventId });
-      let chart = charts.find((entry) => entry.options?.houseSystem === houseSystem && entry.calculatedFor === event.utcStart);
+      const matching = charts.filter((entry) => entry.options?.houseSystem === houseSystem && entry.calculatedFor === event.utcStart);
+      let chart = matching.find(isSupportedChartCalculation);
       let chartIsSaved = Boolean(chart);
       if (!isCurrent()) return null;
+      if (!chart && matching.length) requireSupportedChartCalculation(matching[0]);
       if (!chart) {
         chart = calculateAstroEyeChart(event, { houseSystem });
         if (persistChart) { chart = await recordStore.saveChart(chart); chartIsSaved = true; }

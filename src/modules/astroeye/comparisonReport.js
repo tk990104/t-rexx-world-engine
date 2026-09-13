@@ -1,6 +1,7 @@
 import { compareCharts } from './chartComparison.js';
 import { compareCrossChartAspects, crossAspectSummary, CROSS_ASPECT_RULES, CROSS_ASPECT_SCOPE } from './crossChartAspects.js';
 import { filterCrossChartAspects, crossAspectFilterSummary } from './crossAspectFilters.js';
+import { chartCalculationVersion } from './calculation/modelVersion.js';
 
 // Quote free text so embedded line breaks cannot masquerade as report structure.
 const quote = (value) => JSON.stringify(value).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
@@ -17,6 +18,7 @@ export function serializeComparisonReport(pinned, current, { includeAspects = fa
     `Event title: ${quote(chart.title)}`,
     `Chart time (UTC): ${chart.calculatedFor}`,
     `Engine: ${quote(chart.engine)}; version: ${quote(chart.version)}`,
+    `Calculation model: ${chartCalculationVersion(chart)}`,
     `Zodiac: ${quote(chart.zodiac)}; reference frame: ${quote(chart.frame)}`,
     `House system: ${quote(chart.houseSystem)}`,
     '',

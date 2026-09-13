@@ -7,9 +7,11 @@ import { calculateMajorAspects } from './aspects.js';
 import { calculateHouses, houseForLongitude, HOUSE_SYSTEMS } from './houses.js';
 import { calculatePlanetaryHour } from './planetaryHours.js';
 import { zodiacPosition } from './zodiac.js';
+import { ASTROEYE_CALCULATION_VERSION, requireCalculationVersion } from './modelVersion.js';
 
 /** Build the first byte-stable AstroEye chart result from a canonical event. */
-export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign' } = {}) {
+export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign', calculationVersion = ASTROEYE_CALCULATION_VERSION } = {}) {
+  requireCalculationVersion(calculationVersion);
   const event = normalizeEvent(eventInput);
   if (!HOUSE_SYSTEMS.includes(houseSystem)) throw new RangeError(`Unsupported house system: ${houseSystem}`);
   const houses = calculateHouses({
@@ -31,6 +33,7 @@ export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign' 
 
   return Object.freeze({
     schemaVersion: 1,
+    calculationVersion,
     chartId: `astroeye:${event.id}:${event.utcStart}:tropical-geocentric:${houseSystem}`,
     eventId: event.id,
     calculatedFor: event.utcStart,

@@ -11,6 +11,7 @@ export function createNotebookChartReference(event, chart) {
     `Event: ${quote(snapshot.title)}`,
     `Chart time (UTC): ${snapshot.calculatedFor}`,
     `Engine: ${quote(snapshot.engine)}; version: ${quote(snapshot.version)}`,
+    `Calculation model: ${snapshot.calculationVersion}`,
     `Zodiac: ${quote(snapshot.zodiac)}; reference frame: ${quote(snapshot.frame)}`,
     `House system: ${quote(snapshot.houseSystem)}`,
     'Static reference to the displayed chart (may be an unsaved time preview). Not a chart backup or live link.',

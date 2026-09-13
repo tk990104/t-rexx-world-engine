@@ -11,6 +11,7 @@ import { eventTemplateDraft } from './eventTemplate.js';
 import { mountChartComparison } from './chartComparisonPanel.js';
 import { mountResearchNotebook } from './researchNotebookPanel.js';
 import { renderAngleCaution } from './angleCaution.js';
+import { chartCalculationVersion } from './calculation/modelVersion.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -469,6 +470,7 @@ export function mountAstroEyeWorkspace({
       ? chart.aspects.slice(0, 8).map((aspect) => `${aspect.left} ${aspect.aspect} ${aspect.right} (${aspect.orb.toFixed(2)}° ${aspect.phase})`).join(' · ')
       : 'No major aspects within the current orbs.';
     root.querySelector('[data-chart="provenance"]').textContent = `${chart.engine.id} ${chart.engine.version} · ${chart.options.zodiac} zodiac · ${chart.options.houseSystem} houses · calculated for ${chart.calculatedFor}${offsetMinutes ? ` · unsaved preview; original event ${event.utcStart}` : ''}${event.source.kind === 'provider' ? ` · ${event.source.provider} event ${event.source.sourceEventId} · fetched ${event.source.retrievedAt}` : ''}`;
+    root.querySelector('[data-chart="provenance"]').textContent += ` · calculation model ${chartCalculationVersion(chart)}${chart.calculationVersion === undefined ? ' (legacy untagged chart)' : ''}`;
   }
 
   function previewTime(offsetMinutes) {
