@@ -6,7 +6,7 @@ import { calculatePlanetaryHour } from '../src/modules/astroeye/calculation/plan
 export function readSunReferences() {
   return JSON.parse(readFileSync(new URL('../src/modules/astroeye/calculation/fixtures/usno-sun-boundaries.json', import.meta.url), 'utf8'));
 }
-export function parseSunReference(row) {
+export function parseSunReference(row, { allowPartial = false } = {}) {
   const fail = () => { throw new Error('Invalid USNO solar reference metadata or boundary data'); };
   const response = row?.response, data = response?.properties?.data;
   if (!row || typeof row.id !== 'string' || !row.id || !/^\d{4}-\d{2}-\d{2}$/.test(row.date)
@@ -46,6 +46,12 @@ export function parseSunReference(row) {
     const notices = [...absent, ...continuousDay];
     if (notices.length !== 1 || notices[0].time !== null || rises.length || sets.length) fail();
     return { id: row.id, status: absent.length ? 'polar-night' : 'polar-day', noon: utcAt('12:00') };
+  }
+  // Only the separate transition pack opts into single-boundary days. Ordinary
+  // references still fail if a rise or set disappears from damaged fixture data.
+  if (allowPartial && rises.length + sets.length === 1) {
+    const kind = rises.length ? 'rise' : 'set';
+    return { id: row.id, status: kind + '-only', [kind]: utcAt((rises[0] || sets[0]).time) };
   }
   if (rises.length !== 1 || sets.length !== 1) fail();
   const rise = utcAt(rises[0].time), set = utcAt(sets[0].time);

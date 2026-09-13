@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13: [70N seasonal-transition validation](architecture/astroeye-sun-transition-references.md) adds four independent USNO days. The last complete cycle's 24 hour midpoints pass, including a twelve-minute night; last-sunrise availability changes and first-returning-sunset unavailability pass. Both present and absent solar boundaries match; maximum sampled timing discrepancy is 17.435 seconds. Returning-sunrise references failed retrieval, so restoration and broader seasonal coverage remain open. No production calculations or user records changed.
+
 September 13: [southern polar-day reference validation](architecture/astroeye-sun-boundary-references.md) now accepts the USNO December 21 sample at 80S after a successful bounded retry. AstroEye reports unavailable at three sample instants without fabricated hour fields. The offline parser rejects contradictory or incomplete polar notices. Northern retrieval still failed, and seasonal-transition coverage remains open under A2. No application algorithm or user data changed.
 
 September 13: [65N solar-reference checks](architecture/astroeye-sun-boundary-references.md) extend the USNO pack to seven samples and 72 hour midpoints. A long-day/short-night pair agrees within 28.878 seconds under the unchanged 120-second screen; after-midnight ruler ownership and continuous-twilight handling pass. Polar-day retrieval failed with bounded retries, so external polar-day and seasonal-transition coverage remain open. No application calculations or saved records changed.

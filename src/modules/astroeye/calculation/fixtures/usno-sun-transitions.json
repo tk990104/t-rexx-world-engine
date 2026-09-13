@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "id": "usno-rstt-oneday",
+    "retrievedOn": "2026-09-13",
+    "documentation": "https://aa.usno.navy.mil/data/api",
+    "definitions": "https://aa.usno.navy.mil/faq/RST_defs",
+    "storage": "Selected API response fields; all solar entries retained as received. Moon, phase and label fields omitted.",
+    "selection": "Internal solar searches located candidate transition dates before independent USNO retrieval. Failed July 27/28 requests are excluded, not inferred.",
+    "timeConvention": "USNO UT1 with fixed offset zero, compared with UTC at minute precision for these modern dates."
+  },
+  "toleranceSeconds": 120,
+  "boundaryProbeSeconds": 240,
+  "cases": [
+    {
+      "id": "north-70-last-pair", "expectedStatus": "rise-set",
+      "date": "2024-05-15", "latitude": 70, "longitude": 0, "offsetHours": 0, "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-05-15&coords=70,0&tz=0",
+      "response": {"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":15,"day_of_week":"Wednesday","isdst":false,"month":5,"sundata":[{"phen":"Object continuously above the Twilight Limit","time":null},{"phen":"Rise","time":"00:33"},{"phen":"Upper Transit","time":"11:56"},{"phen":"Set","time":"23:50"}],"tz":0,"year":2024}},"type":"Feature"}
+    },
+    {
+      "id": "north-70-last-rise", "expectedStatus": "rise-only",
+      "date": "2024-05-16", "latitude": 70, "longitude": 0, "offsetHours": 0, "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-05-16&coords=70,0&tz=0",
+      "response": {"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":16,"day_of_week":"Thursday","isdst":false,"month":5,"sundata":[{"phen":"Object continuously above the Twilight Limit","time":null},{"phen":"Rise","time":"00:02"},{"phen":"Upper Transit","time":"11:56"},{"phen":"Lower Transit","time":"23:56"}],"tz":0,"year":2024}},"type":"Feature"}
+    },
+    {
+      "id": "north-70-continuous-day", "expectedStatus": "polar-day",
+      "date": "2024-05-17", "latitude": 70, "longitude": 0, "offsetHours": 0, "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-05-17&coords=70,0&tz=0",
+      "response": {"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":17,"day_of_week":"Friday","isdst":false,"month":5,"sundata":[{"phen":"Object continuously above the Horizon","time":null},{"phen":"Object continuously above the Twilight Limit","time":null},{"phen":"Upper Transit","time":"11:56"},{"phen":"Lower Transit","time":"23:56"}],"tz":0,"year":2024}},"type":"Feature"}
+    },
+    {
+      "id": "north-70-first-set", "expectedStatus": "set-only",
+      "date": "2024-07-26", "latitude": 70, "longitude": 0, "offsetHours": 0, "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-07-26&coords=70,0&tz=0",
+      "response": {"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":26,"day_of_week":"Friday","isdst":false,"month":7,"sundata":[{"phen":"Object continuously above the Twilight Limit","time":null},{"phen":"Lower Transit","time":"00:07"},{"phen":"Upper Transit","time":"12:07"},{"phen":"Set","time":"23:54"}],"tz":0,"year":2024}},"type":"Feature"}
+    }
+  ]
+}

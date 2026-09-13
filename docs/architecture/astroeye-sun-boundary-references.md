@@ -109,11 +109,17 @@ the user's saved records or browser.
 
 ## Remaining release work
 
+Follow-up: the separate [70N transition pack](astroeye-sun-transition-references.md)
+adds four independently retrieved days, including northern continuous daylight,
+the final sunrise and first returning sunset. Its 24 additional midpoint checks
+and explicit missing-boundary comparisons do not alter this eight-sample pack.
+
 **A2 remains open.** [Model 3](astroeye-planetary-hour-model-3.md) now has exact computed-edge
-contracts and additional timezone/DST checks. One independent southern polar-day
-sample is now accepted. Still needed: near-polar seasonal-transition samples and
-broader northern/seasonal coverage. The 65N short-night pair and one southern
-solstice day do not certify seasonal onset/exit or the full search window.
+contracts and additional timezone/DST checks. Southern and northern polar-day
+samples are now accepted, with targeted seasonal-onset/first-sunset coverage.
+Still needed: independently checked restoration after the returning sunrise and
+broader seasonal/geographic coverage. These samples do not certify an entire
+polar season or the full search window.
 The returned status string `exact` is an existing application label, not a claim that
 observed sunrise or all planetary-hour boundary times are scientifically exact.
 The unresolved precise polar angle/MC/cusp reference requirement in A1 is unchanged.
