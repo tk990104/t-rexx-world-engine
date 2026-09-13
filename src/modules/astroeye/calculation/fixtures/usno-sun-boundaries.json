@@ -36,6 +36,18 @@
       "response": {"apiversion":"4.0.1","geometry":{"coordinates":[151.2093,-33.8688],"type":"Point"},"properties":{"data":{"day":22,"day_of_week":"Saturday","isdst":false,"month":6,"sundata":[{"phen":"Begin Civil Twilight","time":"06:33"},{"phen":"Rise","time":"07:00"},{"phen":"Upper Transit","time":"11:57"},{"phen":"Set","time":"16:54"},{"phen":"End Civil Twilight","time":"17:22"}],"tz":10,"year":2024}},"type":"Feature"}
     },
     {
+      "id": "north-65-solstice-day",
+      "date": "2024-06-21", "latitude": 65, "longitude": 0, "offsetHours": 0, "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-06-21&coords=65,0&tz=0",
+      "response": {"apiversion":"4.0.1","geometry":{"coordinates":[0,65],"type":"Point"},"properties":{"data":{"day":21,"day_of_week":"Friday","isdst":false,"month":6,"sundata":[{"phen":"Object continuously above the Twilight Limit","time":null},{"phen":"Rise","time":"01:01"},{"phen":"Upper Transit","time":"12:02"},{"phen":"Set","time":"23:03"}],"tz":0,"year":2024}},"type":"Feature"}
+    },
+    {
+      "id": "north-65-next-day",
+      "date": "2024-06-22", "latitude": 65, "longitude": 0, "offsetHours": 0, "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-06-22&coords=65,0&tz=0",
+      "response": {"apiversion":"4.0.1","geometry":{"coordinates":[0,65],"type":"Point"},"properties":{"data":{"day":22,"day_of_week":"Saturday","isdst":false,"month":6,"sundata":[{"phen":"Object continuously above the Twilight Limit","time":null},{"phen":"Rise","time":"01:01"},{"phen":"Upper Transit","time":"12:02"},{"phen":"Set","time":"23:03"}],"tz":0,"year":2024}},"type":"Feature"}
+    },
+    {
       "id": "southern-polar-night",
       "date": "2024-06-21", "latitude": -80, "longitude": 0, "offsetHours": 0, "timeZone": "UTC",
       "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-06-21&coords=-80,0&tz=0",

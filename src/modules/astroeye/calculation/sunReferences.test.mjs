@@ -8,12 +8,14 @@ const sequences = [
     'Sun Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury'],
   ['sydney-winter-day', 'sydney-next-day', 'Venus', 'Saturn',
     'Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon'],
+  ['north-65-solstice-day', 'north-65-next-day', 'Venus', 'Saturn',
+    'Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon'],
 ];
 
 test('USNO sunrise/set samples pass the preselected two-minute screen; polar night remains unavailable', () => {
   const pack = readSunReferences(), before = JSON.stringify(pack);
   const results = compareSunReferences(pack);
-  assert.equal(results.filter((r) => r.status === 'rise-set').length, 4);
+  assert.equal(results.filter((r) => r.status === 'rise-set').length, 6);
   assert.ok(results.every((r) => r.passed), JSON.stringify(results));
   assert.equal(results.at(-1).status, 'polar-night');
   assert.equal(JSON.stringify(pack), before);
@@ -65,6 +67,22 @@ for (const [id, nextId, dayRuler, nextRuler, order] of sequences) {
     }
   });
 }
+
+test('continuous twilight is not polar day: 65N retains a short night and preceding sunrise ruler', () => {
+  const pack = readSunReferences(), row = pack.cases.find((r) => r.id === 'north-65-solstice-day');
+  const ref = parseSunReference(row), next = parseSunReference(pack.cases.find((r) => r.id === 'north-65-next-day'));
+  assert.equal(ref.status, 'rise-set');
+  assert.equal(Date.parse(ref.set) - Date.parse(ref.rise), (22 * 60 + 2) * 60000);
+  assert.equal(Date.parse(next.rise) - Date.parse(ref.set), 118 * 60000);
+  const hour = calculatePlanetaryHour({ ...row, utcInstant: '2024-06-22T00:02:00Z' });
+  assert.equal(hour.status, 'exact');
+  assert.equal(hour.period, 'night');
+  assert.equal(hour.dayRuler, 'Venus'); // Friday sunrise still owns Saturday pre-dawn.
+  assert.ok(hour.hourLengthMinutes < 10);
+  const missingRise = structuredClone(row);
+  missingRise.response.properties.data.sundata = missingRise.response.properties.data.sundata.filter((r) => r.phen !== 'Rise');
+  assert.throws(() => parseSunReference(missingRise), /USNO solar reference/);
+});
 
 test('shifted source times fail without widening the comparison tolerance', () => {
   const pack = readSunReferences();

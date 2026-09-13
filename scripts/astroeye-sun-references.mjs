@@ -54,8 +54,8 @@ export function parseSunReference(row) {
 export function compareSunReferences(pack = readSunReferences()) {
   if (pack?.schemaVersion !== 1 || pack.source?.id !== 'usno-rstt-oneday'
     || pack.source?.retrievedOn !== '2026-09-13' || pack.toleranceSeconds !== 120
-    || pack.boundaryProbeSeconds !== 240 || !Array.isArray(pack.cases) || pack.cases.length !== 5
-    || new Set(pack.cases.map((row) => row.id)).size !== 5) throw new Error('Unsupported solar reference contract');
+    || pack.boundaryProbeSeconds !== 240 || !Array.isArray(pack.cases) || pack.cases.length !== 7
+    || new Set(pack.cases.map((row) => row.id)).size !== 7) throw new Error('Unsupported solar reference contract');
   return pack.cases.map((row) => {
     const reference = parseSunReference(row);
     if (reference.status === 'polar-night') {

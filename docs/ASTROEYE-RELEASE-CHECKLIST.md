@@ -51,8 +51,9 @@ Existing standalone Chromium results do not certify the embedded preview host.
 
 Start with the existing [validation backlog](architecture/astroeye-validation.md).
 First A2 evidence: [USNO solar boundaries and planetary-hour checks](architecture/astroeye-sun-boundary-references.md)
-cover four rise/set days, 48 hour midpoints, rounded-boundary rollover probes and one
-southern polar-night case. Exact-instant boundaries, broader timezone/polar transitions
+now cover six rise/set days, 72 hour midpoints, rounded-boundary rollover probes and one
+southern polar-night case. The 65N solstice pair verifies long days, short nights and
+pre-dawn day ownership, not seasonal transitions or polar day. Broader polar transitions
 and accepted external polar-day data remain outstanding; A2 is not closed.
 The [exact-edge investigation](architecture/astroeye-planetary-hour-boundaries.md)
 reproduced query-anchor drift and non-containing intervals in legacy models.

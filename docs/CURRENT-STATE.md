@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13: [65N solar-reference checks](architecture/astroeye-sun-boundary-references.md) extend the USNO pack to seven samples and 72 hour midpoints. A long-day/short-night pair agrees within 28.878 seconds under the unchanged 120-second screen; after-midnight ruler ownership and continuous-twilight handling pass. Polar-day retrieval failed with bounded retries, so external polar-day and seasonal-transition coverage remain open. No application calculations or saved records changed.
+
 September 13: [calculation model 3](architecture/astroeye-planetary-hour-model-3.md) corrects planetary-hour boundary drift for new charts. Fixed UTC-day searches and integer half-open intervals assign each computed edge to the following hour. Older charts, previews, links and tours retain their original model; no migration occurs. The near-edge precision notice remains, and broader independent A2 coverage is still open.
 
 September 13: [planetary-hour edge safeguards](architecture/astroeye-planetary-hour-boundaries.md) show **Boundary uncertain** near calculated hour edges or for inconsistent timing metadata, and describe interior timings as estimates. Exact-edge probes exposed root-search drift and non-containing intervals in the preserved model-1/2 calculation. Saved numbers are unchanged; a stable, versioned numerical correction is still required before closing A2.
