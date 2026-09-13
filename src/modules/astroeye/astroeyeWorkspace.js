@@ -12,6 +12,7 @@ import { mountChartComparison } from './chartComparisonPanel.js';
 import { mountResearchNotebook } from './researchNotebookPanel.js';
 import { renderAngleCaution } from './angleCaution.js';
 import { chartCalculationVersion } from './calculation/modelVersion.js';
+import { renderPlanetaryHour } from './planetaryHourPresentation.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -156,6 +157,7 @@ export function mountAstroEyeWorkspace({
             <div><span>MIDHEAVEN</span><strong data-chart="midheaven"></strong></div>
             <div><span>PLANETARY HOUR</span><strong data-chart="planetary-hour"></strong></div>
           </div>
+          <p class="astroeye-help" data-chart="planetary-hour-notice" role="status"></p>
           <div class="astroeye-position-grid" data-chart="positions"></div>
           <div class="astroeye-aspects"><span>MAJOR ASPECTS</span><p data-chart="aspects"></p></div>
           <div class="astroeye-chart-actions">
@@ -452,9 +454,8 @@ export function mountAstroEyeWorkspace({
     const mc = chart.houses.angles.midheaven;
     root.querySelector('[data-chart="ascendant"]').textContent = `${asc.toFixed(2)}°`;
     root.querySelector('[data-chart="midheaven"]').textContent = `${mc.toFixed(2)}°`;
-    root.querySelector('[data-chart="planetary-hour"]').textContent = chart.planetaryHour.status === 'exact'
-      ? `${chart.planetaryHour.ruler} · ${chart.planetaryHour.period} ${chart.planetaryHour.hourNumber}`
-      : 'Unavailable at this latitude';
+    renderPlanetaryHour(root.querySelector('[data-chart="planetary-hour"]'),
+      root.querySelector('[data-chart="planetary-hour-notice"]'), chart);
     const positions = root.querySelector('[data-chart="positions"]');
     positions.replaceChildren();
     for (const body of ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']) {

@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13: [planetary-hour edge safeguards](architecture/astroeye-planetary-hour-boundaries.md) show **Boundary uncertain** near calculated hour edges or for inconsistent timing metadata, and describe interior timings as estimates. Exact-edge probes exposed root-search drift and non-containing intervals in the preserved model-1/2 calculation. Saved numbers are unchanged; a stable, versioned numerical correction is still required before closing A2.
+
 September 13: [USNO sunrise/sunset reference checks](architecture/astroeye-sun-boundary-references.md) add eight external solar-boundary comparisons, 48 unequal-hour midpoint checks, sunset/next-sunrise rollover probes and one polar-night sample. Maximum sampled time discrepancy is 17.886 seconds against a preselected 120-second screen. This is test-only progress on A2, not exact-boundary or release certification.
 
 September 13: [published polar behavior validation](architecture/astroeye-polar-reference-behavior.md) adds a 720-orientation check of Astrodienst's rounded 78N Ascendant ranges, motion directions and two jumps. It rejects the preserved model-1 defect and wrong/frozen outputs. This test-only addition does not change charts, certify precise polar UTC/MC/cusp accuracy or close A1.

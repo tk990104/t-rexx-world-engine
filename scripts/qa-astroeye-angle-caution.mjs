@@ -106,9 +106,32 @@ try {
   assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.modernBefore), true);
   assert.equal(await page.evaluate(() => JSON.stringify(window.angleQA.controller.selectionSnapshot()) === window.angleQA.selectionBefore), true);
   assert.match(await page.$eval('[data-chart="provenance"]', (node) => node.textContent), /calculation model 2/);
+  await page.evaluate(async () => {
+    await window.angleQA.controller.saveDraft({ id: 'hour-boundary', title: 'Synthetic hour edge',
+      sport: 'Demo', competition: 'QA', home: 'A', away: 'B', localDate: '2024-03-10',
+      localTime: '12:07:50', timeZone: 'America/New_York', venueName: 'Synthetic',
+      latitude: 40.7128, longitude: -74.006 });
+    await window.angleQA.workspace.selectSavedEvent('hour-boundary');
+    window.angleQA.hourBefore = await window.angleQA.recordStore.serializeRecords();
+  });
+  const hourNotice = '[data-chart="planetary-hour-notice"]';
+  assert.equal(await page.$eval('[data-chart="planetary-hour"]', (node) => node.textContent), 'Boundary uncertain');
+  assert.equal(await page.$eval(hourNotice, (node) => node.dataset.uncertain), 'true');
+  await page.$eval('[data-action="time-forward"]', (node) => node.click());
+  await page.waitForFunction(() => document.querySelector('[data-chart="planetary-hour-notice"]').dataset.uncertain === 'false');
+  assert.match(await page.$eval(hourNotice, (node) => node.textContent), /estimates/);
+  await page.$eval('[data-action="time-reset"]', (node) => node.click());
+  await page.waitForFunction(() => document.querySelector('[data-chart="planetary-hour-notice"]').dataset.uncertain === 'true');
+  await page.evaluate(async () => { window.angleQA.workspace.close(); await window.angleQA.workspace.open(); });
+  assert.equal(await page.$eval('[data-chart="planetary-hour"]', (node) => node.textContent), 'Boundary uncertain');
+  for (const width of [390, 1280]) {
+    await page.setViewport({ width, height: 844 });
+    assert.ok(await page.$eval(hourNotice, (node) => node.getClientRects().length > 0 && node.scrollWidth <= node.clientWidth + 1));
+  }
+  assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.hourBefore), true);
   assert.deepEqual(errors, []);
   await page.evaluate(() => window.angleQA.workspace.destroy());
-  console.log('PASS: legacy replay/cautions, model 2 form/report, mixed-model refusal, explicit boundary error, layouts, and record preservation.');
+  console.log('PASS: legacy/model 2 compatibility, polar errors, planetary-hour caution/preview/reset, layouts, and record preservation.');
 } finally {
   try { await browser?.close(); } finally { clearTimeout(deadline); }
 }
