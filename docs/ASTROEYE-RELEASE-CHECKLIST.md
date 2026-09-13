@@ -54,6 +54,11 @@ The user-approved [1900–2100 UTC date-range policy](architecture/astroeye-supp
 now guards new chart calculations, previews and links while retaining stored archival
 records. This establishes handling, not universal accuracy. A3 remains open for
 independent range, station, zodiac-boundary and historical-zone samples.
+[Historical-zone conformance](architecture/astroeye-historical-time-zones.md) now
+covers sixteen IANA-derived cases, including second-level offsets, a 23-hour fold,
+a fifteen-minute gap and a skipped civil date. These are runtime conformance checks,
+not independent proof of historical timekeeping. A3 remains open for planetary
+range/station/zodiac reference work and final candidate verification.
 First A2 evidence: [USNO solar boundaries and planetary-hour checks](architecture/astroeye-sun-boundary-references.md)
 now cover six rise/set days, 72 hour midpoints, rounded-boundary rollover probes and
 southern polar-day/night cases. The 65N solstice pair verifies long days, short nights and

@@ -65,6 +65,10 @@ Remaining A3 work: independently sourced endpoint/older-date positions and motio
 station and zodiac-boundary cases, historical-zone conventions, then a complete
 candidate rerun. Existing sampled agreements alone do not close A3 or certify v0.1.
 
+Follow-up: [historical-zone conformance](astroeye-historical-time-zones.md) now
+records sixteen targeted IANA-derived cases and explicit runtime limitations. The
+planetary range/station/zodiac reference requirements remain outstanding.
+
 ## Checkpoint 49 verification — September 13, 2026
 
 All 314 platform tests passed in 21.14 seconds, including ten new range tests.
