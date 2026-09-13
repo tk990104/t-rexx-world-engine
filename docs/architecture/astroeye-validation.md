@@ -52,6 +52,9 @@ case, with explicit convention differences. Wider and polar A1 coverage remains 
 
 - Independent references for ASC/MC and supported house cusps.
 - Independent sunrise/sunset boundary checks and planetary-hour rollover checks.
+  The [first USNO reference slice](astroeye-sun-boundary-references.md) now covers
+  two city/day pairs and one polar-night case. Exact-instant boundaries and wider
+  timezone/polar transition coverage remain open.
 - More dates near planetary stations, zodiac boundaries, and historical time-zone transitions.
 - A defined supported date range, with additional samples before expanding accuracy claims.
 
