@@ -1,4 +1,5 @@
 import { normalizeEvent } from '../../domain/events/eventSchema.js';
+import { ASTROEYE_DATE_RANGE } from './calculation/dateRange.js';
 import { calculateAstroEyeChart } from './calculation/chart.js';
 import { ASTROEYE_CALCULATION_VERSION, requireCalculationVersion } from './calculation/modelVersion.js';
 
@@ -10,7 +11,8 @@ export function calculateTimePreview(event, offsetMinutes, { houseSystem = 'whol
   if (!Number.isInteger(offsetMinutes) || Math.abs(offsetMinutes) > TIME_EXPLORER_LIMIT_MINUTES) {
     throw new RangeError('Choose a whole-minute offset within six hours of the event.');
   }
-  const utcStart = new Date(Date.parse(event.utcStart) + offsetMinutes * 60000).toISOString();
+  ASTROEYE_DATE_RANGE.requireInstant(event.utcStart);
+  const utcStart = ASTROEYE_DATE_RANGE.requireInstant(new Date(Date.parse(event.utcStart) + offsetMinutes * 60000).toISOString());
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
     timeZone: event.scheduledLocal.timeZone, hourCycle: 'h23',
     year: 'numeric', month: '2-digit', day: '2-digit',

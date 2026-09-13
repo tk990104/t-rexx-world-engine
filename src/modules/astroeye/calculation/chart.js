@@ -1,4 +1,5 @@
 import { normalizeEvent } from '../../../domain/events/eventSchema.js';
+import { ASTROEYE_DATE_RANGE } from './dateRange.js';
 import {
   ASTRONOMY_ENGINE_SOURCE,
   calculateAstronomyEnginePositions,
@@ -13,6 +14,7 @@ import { ASTROEYE_CALCULATION_VERSION, requireCalculationVersion } from './model
 export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign', calculationVersion = ASTROEYE_CALCULATION_VERSION } = {}) {
   requireCalculationVersion(calculationVersion);
   const event = normalizeEvent(eventInput);
+  ASTROEYE_DATE_RANGE.requireInstant(event.utcStart);
   if (!HOUSE_SYSTEMS.includes(houseSystem)) throw new RangeError(`Unsupported house system: ${houseSystem}`);
   const houses = calculateHouses({
     utcInstant: event.utcStart,

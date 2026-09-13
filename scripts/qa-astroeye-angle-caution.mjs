@@ -129,9 +129,43 @@ try {
     assert.ok(await page.$eval(hourNotice, (node) => node.getClientRects().length > 0 && node.scrollWidth <= node.clientWidth + 1));
   }
   assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.hourBefore), true);
+  assert.match(await page.$eval('[data-role="date-range"]', (node) => node.textContent), /1900–2100 UTC/);
+  await page.evaluate(async () => {
+    window.angleQA.rangeBefore = await window.angleQA.recordStore.serializeRecords();
+    window.angleQA.rangeSelection = JSON.stringify(window.angleQA.controller.selectionSnapshot());
+    const form = document.querySelector('.astroeye-form');
+    for (const [name, value] of Object.entries({ localDate: '2101-01-01', localTime: '12:00', timeZone: 'UTC', latitude: 40, longitude: -75 })) {
+      const node = form.elements.namedItem(name); node.value = value; node.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    form.requestSubmit();
+  });
+  await page.waitForFunction(() => document.querySelector('.astroeye-live-status').textContent.includes('outside 1900–2100 UTC'));
+  assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.rangeBefore), true);
+  assert.equal(await page.evaluate(() => JSON.stringify(window.angleQA.controller.selectionSnapshot()) === window.angleQA.rangeSelection), true);
+  // Synthetic archival chart checks only display/storage behavior, not old-date math.
+  await page.evaluate(async () => {
+    const current = window.angleQA.controller.selectionSnapshot();
+    const oldEvent = structuredClone(current.event);
+    oldEvent.id = 'range-archive'; oldEvent.utcStart = '1899-12-31T12:00:00.000Z';
+    oldEvent.scheduledLocal = { date: '1899-12-31', time: '12:00:00', timeZone: 'UTC' };
+    const oldChart = { ...structuredClone(current.chart), eventId: oldEvent.id, chartId: 'range-archive-chart', calculatedFor: oldEvent.utcStart };
+    await window.angleQA.recordStore.saveEventWithChart(oldEvent, oldChart);
+    window.angleQA.archiveBefore = await window.angleQA.recordStore.serializeRecords();
+    await window.angleQA.workspace.selectSavedEvent(oldEvent.id);
+  });
+  const rangeNotice = '[data-chart="date-range-caution"]';
+  assert.match(await page.$eval(rangeNotice, (node) => node.textContent), /Stored values are unchanged/);
+  for (const width of [390, 1280]) {
+    await page.setViewport({ width, height: 844 });
+    assert.ok(await page.$eval(rangeNotice, (node) => !node.hidden && node.scrollWidth <= node.clientWidth + 1));
+  }
+  await page.evaluate(async () => window.angleQA.workspace.selectSavedEvent('hour-boundary'));
+  assert.equal(await page.$eval(rangeNotice, (node) => node.hidden), true);
+  assert.equal(await page.$eval(rangeNotice, (node) => node.textContent), '');
+  assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.archiveBefore), true);
   assert.deepEqual(errors, []);
   await page.evaluate(() => window.angleQA.workspace.destroy());
-  console.log('PASS: legacy/model 3 compatibility, polar errors, planetary-hour caution/preview/reset, layouts, and record preservation.');
+  console.log('PASS: legacy/model 3 compatibility, polar/hour cautions, date-range refusal/archive notices, layouts, and record preservation.');
 } finally {
   try { await browser?.close(); } finally { clearTimeout(deadline); }
 }

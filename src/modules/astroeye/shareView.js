@@ -1,4 +1,5 @@
 import { normalizeEvent } from '../../domain/events/eventSchema.js';
+import { ASTROEYE_DATE_RANGE } from './calculation/dateRange.js';
 import { ASTRONOMY_ENGINE_VERSION } from './calculation/astronomyEngineProvider.js';
 import { HOUSE_SYSTEMS } from './calculation/houses.js';
 import { TIME_EXPLORER_LIMIT_MINUTES } from './timeExplorer.js';
@@ -19,6 +20,8 @@ export function normalizeSharedView(input) {
     if (typeof input.event?.venue?.[key] !== 'number') throw new Error('Shared venue coordinates must be numbers.');
   }
   const event = normalizeEvent(input.event);
+  ASTROEYE_DATE_RANGE.requireInstant(event.utcStart);
+  ASTROEYE_DATE_RANGE.requireInstant(new Date(Date.parse(event.utcStart) + input.offsetMinutes * 60000).toISOString());
   if (input.skyEnabled != null && typeof input.skyEnabled !== 'boolean') throw new Error('Invalid shared event-sky option.');
   function checkStrings(value) {
     if (typeof value === 'string' && value.length > 512) throw new Error('Shared event text is too long. Use a records export instead.');

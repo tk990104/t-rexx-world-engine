@@ -1,4 +1,5 @@
 import { resolveZonedLocalTime } from '../../domain/events/eventSchema.js';
+import { ASTROEYE_DATE_RANGE } from './calculation/dateRange.js';
 
 /** Read-only description of the draft's exact start; never guesses a repeated hour. */
 export function describeDraftTime({ localDate = '', localTime = '', timeZone = '', utcStart = '' } = {}) {
@@ -13,6 +14,10 @@ export function describeDraftTime({ localDate = '', localTime = '', timeZone = '
     const index = resolution.status === 'exact' ? 0 : resolution.candidates.indexOf(utcStart);
     if (index < 0) return { state: 'ambiguous', resolution, text: 'This local time occurs more than once. Choose a repeated-hour occurrence to see its UTC start; no occurrence is guessed.' };
     const instant = resolution.candidates[index];
+    if (ASTROEYE_DATE_RANGE.assess(instant).status !== 'within-range') {
+      return { state: 'out-of-range', resolution, utcStart: instant,
+        text: `Draft resolves to ${instant}, outside the supported 1900–2100 UTC calculation range. Choose another time; no records have been changed.` };
+    }
     const offsetSeconds = (Date.parse(`${resolution.localDate}T${resolution.localTime}Z`) - Date.parse(instant)) / 1000;
     const absolute = Math.abs(offsetSeconds);
     const two = (value) => String(value).padStart(2, '0');

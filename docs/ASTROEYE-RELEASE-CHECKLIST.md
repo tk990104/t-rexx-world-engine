@@ -50,6 +50,10 @@ Existing standalone Chromium results do not certify the embedded preview host.
   sampled agreement, not universal accuracy or predictive validity.
 
 Start with the existing [validation backlog](architecture/astroeye-validation.md).
+The user-approved [1900–2100 UTC date-range policy](architecture/astroeye-supported-date-range.md)
+now guards new chart calculations, previews and links while retaining stored archival
+records. This establishes handling, not universal accuracy. A3 remains open for
+independent range, station, zodiac-boundary and historical-zone samples.
 First A2 evidence: [USNO solar boundaries and planetary-hour checks](architecture/astroeye-sun-boundary-references.md)
 now cover six rise/set days, 72 hour midpoints, rounded-boundary rollover probes and
 southern polar-day/night cases. The 65N solstice pair verifies long days, short nights and

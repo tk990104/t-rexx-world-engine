@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13: the user-approved [1900–2100 UTC calculation range](architecture/astroeye-supported-date-range.md) is enforced for new charts, previews and view links across all current models. Drafts explain out-of-range resolved UTC times. Stored archival charts remain selectable/exportable without migration and show a warning; new out-of-range calculations are refused. In-range math and model IDs are unchanged. A3 accuracy/reference work remains open.
+
 September 13: [internal returning-sunrise recovery checks](architecture/astroeye-sun-transition-references.md) verify unavailable-to-hour-1, all 24 resumed computed edges, fresh/warm/evicted cache agreement and stale display-notice clearing. July 27/28 external references remain unavailable; these tests are explicitly not independent accuracy evidence. A2 remains open, and supported-range work can proceed separately. No application code or user records changed.
 
 September 13: [70N seasonal-transition validation](architecture/astroeye-sun-transition-references.md) adds four independent USNO days. The last complete cycle's 24 hour midpoints pass, including a twelve-minute night; last-sunrise availability changes and first-returning-sunset unavailability pass. Both present and absent solar boundaries match; maximum sampled timing discrepancy is 17.435 seconds. Returning-sunrise references failed retrieval, so restoration and broader seasonal coverage remain open. No production calculations or user records changed.

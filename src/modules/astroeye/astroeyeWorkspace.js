@@ -1,6 +1,7 @@
 import './astroeyeWorkspace.css';
 
 import { describeDraftTime } from './draftTimeSummary.js';
+import { ASTROEYE_DATE_RANGE_NOTICE, savedChartDateNotice } from './calculation/dateRange.js';
 import { renderAstroEyeChartWheel } from './chartWheel.js';
 import { mountSportsSchedulePanel } from './sportsSchedulePanel.js';
 import { scheduleLocalTime } from './sportsSchedule.js';
@@ -105,6 +106,7 @@ export function mountAstroEyeWorkspace({
           <label>Competition<input name="competition" required value="NFL" autocomplete="off" /></label>
           <label>Away team<input name="away" required autocomplete="off" /></label>
           <label>Home team<input name="home" required autocomplete="off" /></label>
+          <p class="astroeye-help" data-role="date-range">${ASTROEYE_DATE_RANGE_NOTICE}</p>
           <label>Local date<input name="localDate" type="date" required /></label>
           <label>Local start time<input name="localTime" type="time" step="1" required /></label>
           <label class="astroeye-span-2">Venue time zone<input name="timeZone" required list="astroeye-time-zones" placeholder="America/New_York" autocomplete="off" /></label>
@@ -140,6 +142,7 @@ export function mountAstroEyeWorkspace({
         <div class="astroeye-chart" hidden>
           <div class="astroeye-chart-title"><strong data-chart="title"></strong><span data-chart="time"></span></div>
           <p class="astroeye-help" data-chart="angle-caution" role="status" hidden></p>
+          <p class="astroeye-help" data-chart="date-range-caution" role="status" hidden></p>
           <section class="astroeye-time-explorer" aria-labelledby="astroeye-time-heading">
             <div class="astroeye-time-heading"><h4 id="astroeye-time-heading">Time explorer</h4><span data-time="mode">EVENT START</span></div>
             <p data-time="instant"></p>
@@ -435,6 +438,9 @@ export function mountAstroEyeWorkspace({
     chartRoot.hidden = false;
     root.querySelector('[data-chart="title"]').textContent = event.title;
     renderAngleCaution(root.querySelector('[data-chart="angle-caution"]'), chart);
+    const dateNotice = root.querySelector('[data-chart="date-range-caution"]');
+    dateNotice.textContent = savedChartDateNotice(chart);
+    dateNotice.hidden = !dateNotice.textContent;
     root.querySelector('[data-chart="time"]').textContent = `${event.scheduledLocal.date} · ${event.scheduledLocal.time.slice(0, 5)} · ${event.scheduledLocal.timeZone}`;
     const slider = root.querySelector('#astroeye-time-offset');
     slider.value = offsetMinutes;
