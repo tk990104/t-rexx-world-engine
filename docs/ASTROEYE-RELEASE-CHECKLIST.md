@@ -66,6 +66,10 @@ screen (maximum 84.439692). Time-conversion diagnostics are not a fix. The raw
 range command fails and the platform suite reports this accuracy gate as TODO;
 A3 remains blocked pending a reviewed versioned time-convention correction,
 remaining bodies, station/zodiac samples and the complete candidate rerun.
+The [UTC/TT position adapter candidate](architecture/astroeye-utc-tt-candidate.md)
+passes both unchanged reference packs, including the late-2100 Moon. It is not
+activated in the app; A3 still requires new-model/provenance integration and
+browser checks, as well as the remaining coverage. The current-model TODO stays.
 First A2 evidence: [USNO solar boundaries and planetary-hour checks](architecture/astroeye-sun-boundary-references.md)
 now cover six rise/set days, 72 hour midpoints, rounded-boundary rollover probes and
 southern polar-day/night cases. The 65N solstice pair verifies long days, short nights and

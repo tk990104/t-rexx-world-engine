@@ -1,5 +1,9 @@
 # AstroEye historical and endpoint position references
 
+Follow-up: [checkpoint 52's UTC/TT candidate](astroeye-utc-tt-candidate.md) passes
+these unchanged references but is not yet activated in charts. The current-model
+failure described below remains accurate and visible.
+
 ## Checkpoint 51 — September 13, 2026
 
 Status: **A3 remains blocked; the late-2100 Moon coordinate check fails.** This

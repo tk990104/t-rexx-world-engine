@@ -48,6 +48,11 @@ export function calculateAstronomyEnginePositions(utcInstant) {
   const earlier = new Date(date.getTime() - 6 * 60 * 60 * 1000);
   const later = new Date(date.getTime() + 6 * 60 * 60 * 1000);
 
+  return calculatePositionSet(date, earlier, later);
+}
+
+/** Shared geocentric-only kernel. Caller owns the three input time conventions. */
+export function calculatePositionSet(date, earlier, later) {
   return ASTROEYE_BODIES.map((body) => {
     const current = eclipticCoordinates(body, date);
     const before = eclipticCoordinates(body, earlier);
