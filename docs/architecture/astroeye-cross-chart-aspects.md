@@ -12,9 +12,21 @@ The table displays pinned point, current point, aspect, separation and orb, with
 
 ## Ownership and export
 
-The view uses the two existing immutable snapshots. It has no storage, provider, network, camera or clock operations and introduces no dependency or database migration. Aspect labels come from the fixed existing definitions and render as text. Report format 2 includes matches, rules and pair counts only while the option is enabled. Disabled reports explicitly note the omitted section. Record backups, links and tours remain unchanged.
+### Aspect filters
+
+While cross-chart aspects are shown, **Aspect type** narrows results to one of the five existing types; **Maximum orb** offers standard limits, exact only (0°), 1°, 2°, 3° or 5°. Filters apply immediately to already-calculated matches, using unrounded values and inclusive maximum orb. They never expand a standard threshold: a 5° maximum still permits sextiles only within the standard 4°. Exact only means raw zero orb, not a nonzero value rounded to 0.00°.
+
+The view shows both the original match/valid/skipped pair counts and a separate filtered count. Zero filtered matches does not mean the source values were missing. The 12 same-point longitude rows remain unchanged. **Reset aspect filters** restores all types/standard limits and focuses Aspect type. Settings remain session-only, survive hide/show, panel close/reopen and chart/pin replacement, and reset when the pin is cleared or the panel is recreated. Filtering does not change the pin, selection, clock, camera or records.
+
+Report format 3 explicitly records the active filters and shown/total match counts, exporting only visible filtered aspect rows. It still includes every same-point longitude row and both chart metadata blocks. If aspects are hidden, neither aspect rows nor filter settings are included. Older format 1/2 text files remain readable; these reports are not importable event backups.
+
+The view uses the two existing immutable snapshots. It has no storage, provider, network, camera or clock operations and introduces no dependency or database migration. Aspect labels come from the fixed existing definitions and render as text. Report format 3 includes filtered matches, rules and pair counts only while the option is enabled. Disabled reports explicitly note the omitted section. Record backups, links and tours remain unchanged.
 
 ## Verification
+
+Filter checkpoint: 45 targeted tests, the comparison-only browser check, the existing integrated workspace/import browser check and the production build passed. Both browser checks completed separately under their unchanged 60-second watchdogs. The build retained existing externalization/bundle-size warnings; no live-globe or full inherited release-suite claim is made.
+
+The filter checkpoint adds pure unit coverage for filter validation, immutable settings, raw/inclusive orb boundaries, stable ordering, combined/empty filters, standard-limit preservation and filtered report contents. `scripts/qa-astroeye-comparison.mjs` is a separate comparison-only DOM check with synthetic snapshots and a 60-second watchdog. It checks type/orb controls, report parity, reset/clear, retained settings, unchanged snapshots, 390/1280 px layout, incompatible-state suppression and teardown. No native file-save dialog is exercised.
 
 40 targeted tests and the isolated browser regression passed. The production build passed with the existing node:fs externalization and bundle-size warnings. No full-globe or inherited release-suite claim is made.
 

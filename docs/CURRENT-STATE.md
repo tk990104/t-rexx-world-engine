@@ -4,9 +4,11 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+Cross-chart aspects now offer **Aspect type** and **Maximum orb** filters, explicit shown/total counts and a reset action. These session-only controls narrow existing matches without altering the pin or saved records. Report format 3 records the active filters and exports only the displayed aspect rows; all 12 longitude rows remain included.
+
 AstroEye now has a sticky shortcut bar with **Compare charts** and **Saved events**, so comparison no longer requires hunting below the chart wheel. With no chart open, Compare charts explains the prerequisite instead of navigating to hidden controls. Shortcuts move panel scroll/focus only and expand compact layout without changing event sky, selection or saved records. See [comparison navigation](architecture/astroeye-chart-comparison.md).
 
-Chart comparison now offers an opt-in cross-chart aspect view with explicit existing thresholds, valid/skipped pair counts and a bounded keyboard-scrollable table. It compares the two session-only snapshots without changing stored records or globe state. Plain-text comparison report format 2 includes aspects only while enabled. See [cross-chart aspect behavior and verification](architecture/astroeye-cross-chart-aspects.md). The upstream snapshot below is historical and is not a declaration that all inherited release gates have been rerun.
+Chart comparison now offers an opt-in cross-chart aspect view with explicit existing thresholds, valid/skipped pair counts and a bounded keyboard-scrollable table. It compares the two session-only snapshots without changing stored records or globe state. Plain-text comparison reports include aspects only while enabled. See [cross-chart aspect behavior and verification](architecture/astroeye-cross-chart-aspects.md). The upstream snapshot below is historical and is not a declaration that all inherited release gates have been rerun.
 
 > **2026-08-23 — first-run mission launcher** (`src/firstRunExperience.js`,
 > `#first-run-launcher`, styles at the tail of `style.css`). After startup

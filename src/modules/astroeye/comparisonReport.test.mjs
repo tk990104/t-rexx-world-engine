@@ -57,7 +57,7 @@ test('cross-chart report section is explicit opt-in and matches all displayed pa
     assert.match(report, /view not enabled/);
   }
   const report = serializeComparisonReport(left, right, { includeAspects: true });
-  assert.match(report, /Report format: 2/);
+  assert.match(report, /Report format: 3/);
   assert.match(report, /CROSS-CHART ASPECTS/);
   assert.match(report, /conjunction 0° ±8°/);
   assert.match(report, /No applying\/separating phase/);
@@ -71,4 +71,18 @@ test('opted-in report distinguishes no matches from missing values and refuses i
   const right = { ...current(), values: { Moon: 30 } };
   assert.match(serializeComparisonReport(left, right, { includeAspects: true }), /0 matches from 1 valid pairs; 143 pairs skipped/);
   assert.throws(() => serializeComparisonReport(left, { ...right, version: 'other' }, { includeAspects: true }), /unavailable/);
+});
+
+test('filtered report states its filters, exports only matching aspects and keeps 12 longitude rows', () => {
+  const left = pin(), right = current();
+  const report = serializeComparisonReport(left, right, { includeAspects: true, aspectFilters: { aspect: 'opposition', maxOrb: 1 } });
+  const [longitudes, aspects] = report.split('CROSS-CHART ASPECTS');
+  assert.equal(longitudes.split('\n').filter((line) => line.includes(' | ')).length, 13);
+  assert.match(aspects, /Filters: opposition; maximum orb 1°/);
+  assert.match(aspects, /Sun \| Moon \| opposition \| 179.00° \| 1.00°/);
+  assert.doesNotMatch(aspects, / \| conjunction \| /);
+  const expected = compareCrossChartAspects(left, right).rows.filter((row) => row.aspect === 'opposition' && row.orb <= 1);
+  assert.equal(aspects.split('\n').filter((line) => line.includes(' | ')).length, 1 + expected.length);
+  assert.throws(() => serializeComparisonReport(left, right, { includeAspects: true, aspectFilters: { maxOrb: -1 } }), /Maximum orb/);
+  assert.doesNotMatch(serializeComparisonReport(left, right, { aspectFilters: { aspect: 'opposition', maxOrb: 1 } }), /Filters: opposition/);
 });

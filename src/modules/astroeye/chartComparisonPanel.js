@@ -1,6 +1,7 @@
 import { captureComparison, compareCharts } from './chartComparison.js';
 import { serializeComparisonReport, downloadComparisonReport } from './comparisonReport.js';
 import { compareCrossChartAspects, crossAspectSummary, CROSS_ASPECT_RULES, CROSS_ASPECT_SCOPE } from './crossChartAspects.js';
+import { filterCrossChartAspects, normalizeCrossAspectFilters, crossAspectFilterSummary } from './crossAspectFilters.js';
 
 /** Session-only comparison UI: deliberately has no storage, clock or camera capabilities. */
 export function mountChartComparison(host, { downloadReport = downloadComparisonReport } = {}) {
@@ -16,6 +17,13 @@ export function mountChartComparison(host, { downloadReport = downloadComparison
     <table data-comparison="table" hidden><caption>Zodiac longitudes and shortest angular separation (0–180°)</caption><thead><tr><th scope="col">Point</th><th scope="col">Pinned</th><th scope="col">Current</th><th scope="col">Separation</th></tr></thead><tbody></tbody></table>
     <div class="astroeye-chart-actions"><button type="button" data-comparison="aspects-toggle" aria-pressed="false" disabled>Show cross-chart aspects</button></div>
     <section data-comparison="aspects" hidden aria-label="Cross-chart aspects">
+      <div class="astroeye-aspect-filters">
+        <label>Aspect type<select data-comparison="aspect-kind"><option value="all">All aspects</option><option value="conjunction">Conjunction</option><option value="sextile">Sextile</option><option value="square">Square</option><option value="trine">Trine</option><option value="opposition">Opposition</option></select></label>
+        <label>Maximum orb<select data-comparison="aspect-orb"><option value="standard">Standard limits</option><option value="0">Exact only (0°)</option><option value="1">1°</option><option value="2">2°</option><option value="3">3°</option><option value="5">5°</option></select></label>
+        <button type="button" data-comparison="reset-filters">Reset aspect filters</button>
+      </div>
+      <p class="astroeye-help">Filters narrow existing matches using unrounded values; they never widen the standard limits. The report includes only the filtered aspect rows. Same-point longitude rows are unchanged.</p>
+      <p class="astroeye-help" data-comparison="filter-summary" role="status"></p>
       <p class="astroeye-help" data-comparison="aspect-rules"></p>
       <p class="astroeye-help" data-comparison="aspect-scope"></p>
       <p class="astroeye-help" data-comparison="aspect-summary" role="status"></p>
@@ -24,6 +32,7 @@ export function mountChartComparison(host, { downloadReport = downloadComparison
     <p class="astroeye-help">Cross-chart aspects are optional and included in the report only while shown. These are geometric matches, not interpretations or predictions.</p>
     <p class="astroeye-help">One snapshot, this session only. Not included in event backups, links or tours; cleared on reload. The separate report downloads only when requested. Angular differences are not sports predictions or evidence of astrological effects.</p>`;
   let pinned = null, current = null, error = '', showAspects = false;
+  let aspectFilters = normalizeCrossAspectFilters();
   const node = (name) => host.querySelector(`[data-comparison="${name}"]`);
   const describe = (value) => `${value.title} · ${value.calculatedFor} · ${value.houseSystem} houses · ${value.engine} ${value.version} · ${value.zodiac} · ${value.frame}`;
   const degrees = (value) => value == null ? 'Unavailable' : `${value.toFixed(2)}°`;
@@ -44,11 +53,16 @@ export function mountChartComparison(host, { downloadReport = downloadComparison
     const aspectBody = node('aspect-table').querySelector('tbody');
     aspectBody.replaceChildren();
     node('aspect-summary').textContent = '';
+    node('filter-summary').textContent = '';
+    node('aspect-kind').value = aspectFilters.aspect;
+    node('aspect-orb').value = aspectFilters.maxOrb === null ? 'standard' : String(aspectFilters.maxOrb);
     if (showAspects && result.rows.length) {
-      const aspects = compareCrossChartAspects(pinned, current);
+      const allAspects = compareCrossChartAspects(pinned, current);
+      const aspects = filterCrossChartAspects(allAspects, aspectFilters);
       node('aspect-rules').textContent = `Inclusive orb limits: ${CROSS_ASPECT_RULES}.`;
       node('aspect-scope').textContent = CROSS_ASPECT_SCOPE;
-      node('aspect-summary').textContent = crossAspectSummary(aspects);
+      node('aspect-summary').textContent = crossAspectSummary(allAspects);
+      node('filter-summary').textContent = crossAspectFilterSummary(aspects);
       for (const row of aspects.rows) {
         const tr = document.createElement('tr');
         for (const value of [row.pinned, row.current, row.aspect, degrees(row.separation), degrees(row.orb)]) {
@@ -73,20 +87,32 @@ export function mountChartComparison(host, { downloadReport = downloadComparison
     const action = event.target.closest('button')?.dataset.comparison;
     if (action === 'export') {
       try {
-        downloadReport(serializeComparisonReport(pinned, current, { includeAspects: showAspects }));
+        downloadReport(serializeComparisonReport(pinned, current, { includeAspects: showAspects, aspectFilters }));
         node('export-status').textContent = 'Comparison report download requested. Saved events and pinned chart are unchanged.';
       } catch (cause) { node('export-status').textContent = cause.message || 'Could not download the comparison report.'; }
       return;
     }
     if (action === 'pin' && current) pinned = current;
-    else if (action === 'clear') { pinned = null; showAspects = false; }
+    else if (action === 'clear') { pinned = null; showAspects = false; aspectFilters = normalizeCrossAspectFilters(); }
+    else if (action === 'reset-filters') aspectFilters = normalizeCrossAspectFilters();
     else if (action === 'aspects-toggle' && pinned && current && compareCharts(pinned, current).rows.length) showAspects = !showAspects;
     else return;
     node('export-status').textContent = '';
     render();
     if (action === 'clear') node('pin').focus();
+    if (action === 'reset-filters') node('aspect-kind').focus();
+  }
+  function change(event) {
+    if (!['aspect-kind', 'aspect-orb'].includes(event.target.dataset.comparison)) return;
+    try {
+      aspectFilters = normalizeCrossAspectFilters({ aspect: node('aspect-kind').value,
+        maxOrb: node('aspect-orb').value === 'standard' ? null : Number(node('aspect-orb').value) });
+      render();
+      node('export-status').textContent = '';
+    } catch (cause) { render(); node('export-status').textContent = cause.message; }
   }
   host.addEventListener('click', click);
+  host.addEventListener('change', change);
   render();
   return Object.freeze({
     update(event, chart) {
@@ -98,6 +124,6 @@ export function mountChartComparison(host, { downloadReport = downloadComparison
       }
       render();
     },
-    destroy() { pinned = null; current = null; host.removeEventListener('click', click); host.replaceChildren(); },
+    destroy() { pinned = null; current = null; host.removeEventListener('click', click); host.removeEventListener('change', change); host.replaceChildren(); },
   });
 }

@@ -1,15 +1,17 @@
 import { compareCharts } from './chartComparison.js';
 import { compareCrossChartAspects, crossAspectSummary, CROSS_ASPECT_RULES, CROSS_ASPECT_SCOPE } from './crossChartAspects.js';
+import { filterCrossChartAspects, crossAspectFilterSummary } from './crossAspectFilters.js';
 
 // Quote free text so embedded line breaks cannot masquerade as report structure.
 const quote = (value) => JSON.stringify(value).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 const degrees = (value) => value == null ? 'Unavailable' : `${value.toFixed(2)}°`;
 
-export function serializeComparisonReport(pinned, current, { includeAspects = false } = {}) {
+export function serializeComparisonReport(pinned, current, { includeAspects = false, aspectFilters } = {}) {
   if (!pinned || !current) throw new Error('Pin a chart and open a current chart before exporting a comparison.');
   const result = compareCharts(pinned, current);
   if (!result.rows.length) throw new Error(result.warning);
-  const aspects = includeAspects === true ? compareCrossChartAspects(pinned, current) : null;
+  const allAspects = includeAspects === true ? compareCrossChartAspects(pinned, current) : null;
+  const aspects = allAspects ? filterCrossChartAspects(allAspects, aspectFilters) : null;
   const describe = (label, chart) => [
     label,
     `Event title: ${quote(chart.title)}`,
@@ -21,7 +23,7 @@ export function serializeComparisonReport(pinned, current, { includeAspects = fa
   ];
   return [
     'T-REXX WORLD ENGINE — ASTROEYE COMPARISON REPORT',
-    'Report format: 2',
+    'Report format: 3',
     'Read-only snapshot report. Not an event backup; cannot be imported into AstroEye.',
     '',
     ...describe('PINNED SNAPSHOT', pinned),
@@ -35,7 +37,8 @@ export function serializeComparisonReport(pinned, current, { includeAspects = fa
       'CROSS-CHART ASPECTS',
       `Inclusive orb limits: ${CROSS_ASPECT_RULES}.`,
       CROSS_ASPECT_SCOPE,
-      crossAspectSummary(aspects),
+      crossAspectSummary(allAspects),
+      crossAspectFilterSummary(aspects),
       'Pinned point | Current point | Aspect | Separation | Orb',
       ...aspects.rows.map((row) => `${row.pinned} | ${row.current} | ${row.aspect} | ${degrees(row.separation)} | ${degrees(row.orb)}`),
       '',
