@@ -1,5 +1,8 @@
 # UTC-to-TT position adapter candidate
 
+Superseded status: [checkpoint 53 activates this adapter in model 4](astroeye-calculation-model-4.md).
+The candidate-only statements below describe checkpoint 52, before activation.
+
 ## Checkpoint 52 — September 13, 2026
 
 The corrected adapter is implemented and passes both stored position-reference

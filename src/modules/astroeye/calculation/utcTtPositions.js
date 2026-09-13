@@ -1,7 +1,7 @@
 import { calculatePositionSet } from './astronomyEngineProvider.js';
 import { ephemerisTimeInfo, makePositionEphemerisTime, EPHEMERIS_TIME_POLICY } from './ephemerisTime.js';
 
-/** Explicit opt-in candidate. The chart/controller still uses calculation model 3. */
+/** Model-4 positions only; no synthetic TT clock is passed to angles or hours. */
 export function calculateUtcTtPositions(utcInstant) {
   const time = ephemerisTimeInfo(utcInstant);
   const epoch = Date.parse(time.inputInstant);

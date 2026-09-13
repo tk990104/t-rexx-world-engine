@@ -19,6 +19,7 @@ export function serializeComparisonReport(pinned, current, { includeAspects = fa
     `Chart time (UTC): ${chart.calculatedFor}`,
     `Engine: ${quote(chart.engine)}; version: ${quote(chart.version)}`,
     `Calculation model: ${chartCalculationVersion(chart)}`,
+    ...(chart.timeNote ? [`Time policy: ${quote(chart.timeNote)}`] : []),
     `Zodiac: ${quote(chart.zodiac)}; reference frame: ${quote(chart.frame)}`,
     `House system: ${quote(chart.houseSystem)}`,
     '',

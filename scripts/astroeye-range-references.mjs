@@ -56,7 +56,7 @@ export function compareMoonTimeConventions() {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (!process.argv[2]) {
     const results = RANGE_BODIES.map(compareRangeReference);
-    console.log(JSON.stringify({ results, moonTimeConventionDiagnostic: compareMoonTimeConventions() }, null, 2));
+    console.log(JSON.stringify({ legacyCalculationModels: [1, 2, 3], results, moonTimeConventionDiagnostic: compareMoonTimeConventions() }, null, 2));
     if (results.some((r) => !r.passed)) process.exitCode = 1;
   } else {
     const body = process.argv[3];

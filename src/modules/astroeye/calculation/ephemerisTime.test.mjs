@@ -85,7 +85,7 @@ for (const range of [false, true]) {
     });
   }
 }
-test('candidate does not activate a chart model or change any legacy chart bytes', () => {
+test('activated position policy does not change any legacy chart bytes', () => {
   const charts = [];
   for (const localDate of ['1900-01-01','1950-06-21','2026-09-13','2100-12-31']) {
     calculateUtcTtPositions(`${localDate}T12:00:00Z`);
@@ -96,7 +96,7 @@ test('candidate does not activate a chart model or change any legacy chart bytes
     }
   }
   assert.equal(createHash('sha256').update(JSON.stringify(charts)).digest('hex'), '9d60b7ccb4c1d062f6b1b0effa222b8e694c53eb72ca0d3717b5455f8b317f67');
-  assert.equal(ASTROEYE_CALCULATION_VERSION, 3);
-  assert.throws(() => requireCalculationVersion(4), /Unsupported/);
+  assert.equal(ASTROEYE_CALCULATION_VERSION, 4);
+  assert.throws(() => requireCalculationVersion(5), /Unsupported/);
   assert.equal(compareRangeReference('Moon').passed, false, 'Existing model discrepancy is not hidden by the candidate');
 });

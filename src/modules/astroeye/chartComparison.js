@@ -1,5 +1,7 @@
 import { needsAngleCaution, HIGH_LATITUDE_ANGLE_CAUTION } from './angleCaution.js';
-import { chartCalculationVersion } from './calculation/modelVersion.js';
+import { chartCalculationVersion, requireSupportedChartCalculation } from './calculation/modelVersion.js';
+import { chartTimePolicyNote } from './calculation/timeConventions.js';
+import { EPHEMERIS_TIME_POLICY } from './calculation/ephemerisTime.js';
 
 const BODIES = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
 
@@ -14,6 +16,7 @@ function text(value, field) {
 
 /** Copy only comparison inputs; the pin never retains mutable live chart objects. */
 export function captureComparison(event, chart) {
+  if (chartCalculationVersion(chart) === 4) requireSupportedChartCalculation(chart);
   if (typeof chart?.calculatedFor !== 'string' || !chart.calculatedFor.trim()) throw new Error('Comparison requires a valid chart time.');
   const time = new Date(chart?.calculatedFor);
   if (!Number.isFinite(time.getTime())) throw new Error('Comparison requires a valid chart time.');
@@ -22,6 +25,7 @@ export function captureComparison(event, chart) {
   values.Midheaven = longitude(chart.houses?.angles?.midheaven);
   return Object.freeze({ title: text(event?.title, 'an event title'), calculatedFor: time.toISOString(),
     calculationVersion: chartCalculationVersion(chart),
+    ...(chartCalculationVersion(chart) === 4 ? { positionTimePolicy: EPHEMERIS_TIME_POLICY.id, timeNote: chartTimePolicyNote(chart) } : {}),
     engine: text(chart.engine?.id, 'an engine'), version: text(chart.engine?.version, 'an engine version'),
     zodiac: text(chart.options?.zodiac, 'a zodiac'), frame: text(chart.options?.referenceFrame, 'a reference frame'),
     houseSystem: text(chart.options?.houseSystem, 'a house system'),
@@ -33,6 +37,9 @@ export function compareCharts(pinned, current) {
   try { modelMismatch = chartCalculationVersion(pinned) !== chartCalculationVersion(current); }
   catch { modelMismatch = true; }
   if (modelMismatch) return { rows: [], warning: 'Calculation model versions differ or are invalid. Numeric comparison is unavailable.' };
+  if (chartCalculationVersion(pinned) === 4 && [pinned, current].some((snapshot) => snapshot.positionTimePolicy !== EPHEMERIS_TIME_POLICY.id)) {
+    return { rows: [], warning: 'Position time policies differ or are missing. Numeric comparison is unavailable.' };
+  }
   if (['engine', 'version', 'zodiac', 'frame'].some((key) => pinned[key] !== current[key])) {
     return { rows: [], warning: 'Calculation conventions or engine versions differ. Numeric comparison is unavailable.' };
   }

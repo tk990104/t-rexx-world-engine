@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { horizonsUrl, parseHorizonsResponse, readReference, SAMPLE_INSTANTS, POSITION_LIMIT_ARCSECONDS, MOTION_LIMIT_DEGREES_PER_DAY } from '../../../../scripts/astroeye-horizons.mjs';
 import { RANGE_BODIES, RANGE_CENTERS, RANGE_SAMPLES, validateRangeReference, readRangeReference, compareRangeReference, compareMoonTimeConventions } from '../../../../scripts/astroeye-range-references.mjs';
 import { calculateAstronomyEnginePositions } from './astronomyEngineProvider.js';
+import { compareUtcTtReference } from '../../../../scripts/astroeye-utc-tt-validation.mjs';
 
 for (const body of RANGE_BODIES) {
   test(`range reference provenance and nine exact epochs: ${body}`, () => {
@@ -16,9 +17,8 @@ for (const body of RANGE_BODIES) {
     assert.match(fixture.response.result, /Times PRIOR to 1962 are UT1/);
     assert.match(fixture.response.result, /last known leap-second is used as a constant/);
   });
-  test(`range coordinate accuracy gate: ${body}`, body === 'Moon'
-    ? { todo: 'A3 release blocker: default model exceeds 60 arcseconds at the three late-2100 Moon samples; reconcile time conventions in a versioned model.' } : {}, () => {
-    const result = compareRangeReference(body);
+  test(`model-4 range coordinate accuracy gate: ${body}`, () => {
+    const result = compareUtcTtReference(body, { range: true });
     for (const sample of result.samples) {
       assert.ok(sample.longitudeErrorArcseconds <= POSITION_LIMIT_ARCSECONDS,
         `${body} ${sample.instant}: longitude error ${sample.longitudeErrorArcseconds} arcseconds`);
@@ -41,7 +41,7 @@ test('range motion screening passes all nine center samples without changing lim
   }
 });
 
-test('raw range screening explicitly reports the late-2100 Moon failure', () => {
+test('legacy-model range screening preserves the late-2100 Moon discrepancy', () => {
   const result = compareRangeReference('Moon');
   assert.equal(result.passed, false);
   assert.deepEqual(result.samples.filter((s) => s.longitudeErrorArcseconds > POSITION_LIMIT_ARCSECONDS).map((s) => s.instant), RANGE_SAMPLES.slice(6));
@@ -61,7 +61,7 @@ test('time-convention diagnostic explains most of the Moon gap without mutating 
   assert.equal(compareRangeReference('Moon').passed, false);
 });
 
-test('range command exits nonzero for the unresolved accuracy gate', () => {
+test('legacy-model range diagnostic exits nonzero for its preserved discrepancy', () => {
   const command = fileURLToPath(new URL('../../../../scripts/astroeye-range-references.mjs', import.meta.url));
   const result = spawnSync(process.execPath, [command], { timeout: 15000, encoding: 'utf8', windowsHide: true });
   assert.ifError(result.error);

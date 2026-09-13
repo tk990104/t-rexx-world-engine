@@ -79,7 +79,7 @@ test('polar absence stays unavailable; invalid observer, zone, cache and model i
     assert.equal(calculatePlanetaryHour({ utcInstant: '2024-06-21T12:00:00Z', latitude, longitude: 0, timeZone: 'UTC' }).status, 'unavailable');
   }
   for (const change of [{ latitude: null }, { longitude: Infinity }, { timeZone: '' }, { timeZone: 'Bad/Zone' },
-    { utcInstant: 'invalid' }, { calculationVersion: 4 }]) {
+    { utcInstant: 'invalid' }, { calculationVersion: 5 }]) {
     assert.throws(() => calculatePlanetaryHour({ ...fixtures[0], utcInstant: fixtures[0].seed, ...change }));
   }
   assert.throws(() => createStablePlanetaryHourCalculator({ cacheLimit: 0 }), /cache/);
@@ -100,7 +100,7 @@ test('all twenty model-3 regression charts preserve the established sampled fing
   for (const sample of ASTROEYE_REGRESSION_CASES) {
     const event = eventFromRegressionCase(sample);
     const old = calculateAstroEyeChart(event, { calculationVersion: 2 });
-    const modern = calculateAstroEyeChart(event);
+    const modern = calculateAstroEyeChart(event, { calculationVersion: 3 });
     assert.equal(modern.calculationVersion, 3);
     assert.deepEqual(chartRegressionFingerprint(modern), chartRegressionFingerprint(old), sample.id);
     assert.deepEqual(modern.houses, old.houses, 'model 3 does not change angles or cusps');

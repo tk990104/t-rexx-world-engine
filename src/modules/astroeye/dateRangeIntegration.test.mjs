@@ -22,14 +22,14 @@ test('approved 1900–2100 range applies to every calculation model and shared p
   assert.equal(ASTROEYE_DATE_RANGE.endExclusive, '2101-01-01T00:00:00.000Z');
   for (const [date, time] of [['1900-01-01', '00:00:00'], ['2100-12-31', '23:59:59']]) {
     const event = eventAt(date, time);
-    for (const calculationVersion of [1, 2, 3]) {
+    for (const calculationVersion of [1, 2, 3, 4]) {
       assert.equal(calculateAstroEyeChart(event, { calculationVersion }).calculatedFor, event.utcStart);
       assert.equal(createSharedView(event, { calculationVersion }).event.utcStart, event.utcStart);
     }
   }
   for (const date of ['1899-12-31', '2101-01-01']) {
     const event = eventAt(date);
-    for (const calculationVersion of [1, 2, 3]) {
+    for (const calculationVersion of [1, 2, 3, 4]) {
       assert.throws(() => calculateAstroEyeChart(event, { calculationVersion }), /outside 1900–2100 UTC/);
       assert.throws(() => createSharedView(event, { calculationVersion }), /outside 1900–2100 UTC/);
       assert.throws(() => calculateTimePreview(event, 0, { calculationVersion }), /outside 1900–2100 UTC/);
@@ -43,7 +43,7 @@ test('preview and link guards enforce both event and displayed time at UTC bound
     assert.throws(() => createSharedView(event, { offsetMinutes: offset }), /outside 1900–2100 UTC/);
     const shared = createSharedView(event);
     assert.throws(() => normalizeSharedView({ ...shared, offsetMinutes: offset }), /outside 1900–2100 UTC/);
-    assert.equal(calculateTimePreview(event, -offset).calculationVersion, 3);
+    assert.equal(calculateTimePreview(event, -offset).calculationVersion, 4);
   }
 });
 
@@ -75,7 +75,7 @@ test('rejected saves and previews leave records, selection and world time unchan
     assert.deepEqual(moduleState.get('astroeye'), state);
     // Synthetic archival payload: test storage/selection, not numerical accuracy.
     const oldEvent = eventAt('1899-12-31');
-    const oldChart = { ...structuredClone(selection.chart), chartId: 'synthetic-archive', calculatedFor: oldEvent.utcStart };
+    const oldChart = { ...calculateAstroEyeChart(selection.event, { calculationVersion: 3 }), chartId: 'synthetic-archive', calculatedFor: oldEvent.utcStart };
     await recordStore.saveEventWithChart(oldEvent, oldChart);
     const archive = await recordStore.serializeRecords();
     const selected = await controller.selectEvent(oldEvent.id, { navigate: false });

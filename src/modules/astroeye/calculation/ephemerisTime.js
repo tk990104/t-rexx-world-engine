@@ -1,9 +1,9 @@
 import * as Astronomy from 'astronomy-engine';
 import offsetData from './fixtures/utc-offsets-2026-09-13.json' with { type: 'json' };
 
-// Candidate policy only. Do not silently refresh this table under a saved model ID.
+// Pinned model-4 position policy. Never refresh the table under a saved model ID.
 export const EPHEMERIS_TIME_POLICY = Object.freeze({
-  id: 'utc-tt-2026-09-13-v1', status: 'candidate',
+  id: 'utc-tt-2026-09-13-v1', status: 'model-4',
   historical: 'Before 1962: UT1-like civil input with Espenak-Meeus estimated delta T.',
   utc: 'From 1962: TT = UTC + published TAI-UTC offset + 32.184 seconds.',
   future: 'Beyond the source snapshot, hold the last published leap-second offset; future UTC is provisional.',

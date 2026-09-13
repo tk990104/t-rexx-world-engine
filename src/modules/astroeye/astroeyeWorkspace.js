@@ -14,6 +14,7 @@ import { mountResearchNotebook } from './researchNotebookPanel.js';
 import { renderAngleCaution } from './angleCaution.js';
 import { chartCalculationVersion } from './calculation/modelVersion.js';
 import { renderPlanetaryHour } from './planetaryHourPresentation.js';
+import { chartTimePolicyNote } from './calculation/timeConventions.js';
 
 function requireController(controller) {
   const methods = ['saveDraft', 'selectEvent', 'deleteEvent', 'listEvents', 'serializeRecords', 'importRecords', 'previewTime', 'refocusSelected', 'shareSnapshot', 'restoreSharedView', 'saveSharedCopy'];
@@ -142,6 +143,7 @@ export function mountAstroEyeWorkspace({
         <div class="astroeye-chart" hidden>
           <div class="astroeye-chart-title"><strong data-chart="title"></strong><span data-chart="time"></span></div>
           <p class="astroeye-help" data-chart="angle-caution" role="status" hidden></p>
+          <p class="astroeye-help" data-chart="time-policy" role="status" hidden></p>
           <p class="astroeye-help" data-chart="date-range-caution" role="status" hidden></p>
           <section class="astroeye-time-explorer" aria-labelledby="astroeye-time-heading">
             <div class="astroeye-time-heading"><h4 id="astroeye-time-heading">Time explorer</h4><span data-time="mode">EVENT START</span></div>
@@ -438,6 +440,9 @@ export function mountAstroEyeWorkspace({
     chartRoot.hidden = false;
     root.querySelector('[data-chart="title"]').textContent = event.title;
     renderAngleCaution(root.querySelector('[data-chart="angle-caution"]'), chart);
+    const timeNotice = root.querySelector('[data-chart="time-policy"]');
+    timeNotice.textContent = chartTimePolicyNote(chart);
+    timeNotice.hidden = !timeNotice.textContent;
     const dateNotice = root.querySelector('[data-chart="date-range-caution"]');
     dateNotice.textContent = savedChartDateNotice(chart);
     dateNotice.hidden = !dateNotice.textContent;

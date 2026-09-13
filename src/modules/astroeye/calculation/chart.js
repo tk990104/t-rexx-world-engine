@@ -9,6 +9,8 @@ import { calculateHouses, houseForLongitude, HOUSE_SYSTEMS } from './houses.js';
 import { calculatePlanetaryHour } from './planetaryHours.js';
 import { zodiacPosition } from './zodiac.js';
 import { ASTROEYE_CALCULATION_VERSION, requireCalculationVersion } from './modelVersion.js';
+import { calculateUtcTtPositions } from './utcTtPositions.js';
+import { model4TimeConventions } from './timeConventions.js';
 
 /** Build the first byte-stable AstroEye chart result from a canonical event. */
 export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign', calculationVersion = ASTROEYE_CALCULATION_VERSION } = {}) {
@@ -23,7 +25,9 @@ export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign',
     system: houseSystem,
     calculationVersion,
   });
-  const positions = calculateAstronomyEnginePositions(event.utcStart).map((position) => {
+  const positionSet = calculationVersion === 4
+    ? calculateUtcTtPositions(event.utcStart).positions : calculateAstronomyEnginePositions(event.utcStart);
+  const positions = positionSet.map((position) => {
     const zodiac = zodiacPosition(position.longitude);
     return Object.freeze({
       ...position,
@@ -37,6 +41,7 @@ export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign',
   return Object.freeze({
     schemaVersion: 1,
     calculationVersion,
+    ...(calculationVersion === 4 ? { timeConventions: model4TimeConventions(event.utcStart) } : {}),
     chartId: `astroeye:${event.id}:${event.utcStart}:tropical-geocentric:${houseSystem}${calculationVersion === 1 ? '' : ':model-' + calculationVersion}`,
     eventId: event.id,
     calculatedFor: event.utcStart,

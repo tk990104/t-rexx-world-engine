@@ -1,8 +1,8 @@
 # AstroEye historical and endpoint position references
 
-Follow-up: [checkpoint 52's UTC/TT candidate](astroeye-utc-tt-candidate.md) passes
-these unchanged references but is not yet activated in charts. The current-model
-failure described below remains accurate and visible.
+Follow-up: [model 4](astroeye-calculation-model-4.md) now activates the corrected
+adapter and passes these unchanged references. The old failure below describes
+models 1–3 and remains visible in the explicitly labeled legacy diagnostic.
 
 ## Checkpoint 51 — September 13, 2026
 

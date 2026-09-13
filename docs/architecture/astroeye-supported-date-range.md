@@ -1,5 +1,10 @@
 # AstroEye calculation date range
 
+Current follow-up: [model 4](astroeye-calculation-model-4.md) corrects position time
+conversion within this unchanged date policy and preserves models 1–3. The
+checkpoint-51 Moon discrepancy below is now a legacy-only diagnostic; remaining
+range/station/zodiac coverage and broader validation are still open.
+
 ## Approved scope
 
 On September 13, 2026 the user selected **1900–2100 inclusive** as the first-release

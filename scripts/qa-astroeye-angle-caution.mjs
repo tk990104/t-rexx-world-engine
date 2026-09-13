@@ -76,7 +76,7 @@ try {
   });
   assert.equal(await page.$eval(warning, (node) => node.hidden), false);
   assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.before), true);
-  // Exercise actual form submission and rendering for a new model 3 polar chart.
+  // Exercise actual form submission and rendering for a new model 4 polar chart.
   await page.evaluate(async () => {
     const Astronomy = await import('/node_modules/astronomy-engine/esm/astronomy.js');
     const date = new Date('2026-09-13T12:00:00Z');
@@ -88,12 +88,12 @@ try {
       venueName: 'Test only', latitude: 80, longitude })) form.elements.namedItem(name).value = value;
     form.requestSubmit();
   });
-  await page.waitForFunction(() => document.querySelector('[data-chart="provenance"]').textContent.includes('calculation model 3'));
+  await page.waitForFunction(() => document.querySelector('[data-chart="provenance"]').textContent.includes('calculation model 4'));
   assert.match(await page.$eval('[data-comparison="warning"]', (node) => node.textContent), /model versions/);
   assert.equal(await page.$eval('[data-comparison="export"]', (node) => node.disabled), true);
   await page.$eval('[data-comparison="pin"]', (node) => node.click());
   await page.$eval('[data-comparison="export"]', (node) => node.click());
-  assert.equal((await page.evaluate(() => window.angleQA.downloads.at(-1))).split('Calculation model: 3').length - 1, 2);
+  assert.equal((await page.evaluate(() => window.angleQA.downloads.at(-1))).split('Calculation model: 4').length - 1, 2);
   await page.evaluate(async () => {
     window.angleQA.modernBefore = await window.angleQA.recordStore.serializeRecords();
     window.angleQA.selectionBefore = JSON.stringify(window.angleQA.controller.selectionSnapshot());
@@ -105,7 +105,7 @@ try {
   await page.waitForFunction(() => document.querySelector('.astroeye-live-status').textContent.includes('Angles unavailable'));
   assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.modernBefore), true);
   assert.equal(await page.evaluate(() => JSON.stringify(window.angleQA.controller.selectionSnapshot()) === window.angleQA.selectionBefore), true);
-  assert.match(await page.$eval('[data-chart="provenance"]', (node) => node.textContent), /calculation model 3/);
+  assert.match(await page.$eval('[data-chart="provenance"]', (node) => node.textContent), /calculation model 4/);
   await page.evaluate(async () => {
     await window.angleQA.controller.saveDraft({ id: 'hour-boundary', title: 'Synthetic hour edge',
       sport: 'Demo', competition: 'QA', home: 'A', away: 'B', localDate: '2024-03-10',
@@ -148,7 +148,8 @@ try {
     const oldEvent = structuredClone(current.event);
     oldEvent.id = 'range-archive'; oldEvent.utcStart = '1899-12-31T12:00:00.000Z';
     oldEvent.scheduledLocal = { date: '1899-12-31', time: '12:00:00', timeZone: 'UTC' };
-    const oldChart = { ...structuredClone(current.chart), eventId: oldEvent.id, chartId: 'range-archive-chart', calculatedFor: oldEvent.utcStart };
+    const { calculateAstroEyeChart } = await import('/src/modules/astroeye/calculation/chart.js');
+    const oldChart = { ...calculateAstroEyeChart(current.event, { calculationVersion: 3 }), eventId: oldEvent.id, chartId: 'range-archive-chart', calculatedFor: oldEvent.utcStart };
     await window.angleQA.recordStore.saveEventWithChart(oldEvent, oldChart);
     window.angleQA.archiveBefore = await window.angleQA.recordStore.serializeRecords();
     await window.angleQA.workspace.selectSavedEvent(oldEvent.id);
@@ -163,9 +164,46 @@ try {
   assert.equal(await page.$eval(rangeNotice, (node) => node.hidden), true);
   assert.equal(await page.$eval(rangeNotice, (node) => node.textContent), '');
   assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.archiveBefore), true);
+  // Model 4 policy notices: real rendering, synthetic records in this fresh browser only.
+  await page.evaluate(async () => {
+    for (const [id, date] of [['time-future', '2100-12-31'], ['time-historical', '1900-01-01']]) {
+      await window.angleQA.controller.saveDraft({ id, title: id, sport: 'Demo', competition: 'QA',
+        home: 'A', away: 'B', localDate: date, localTime: '12:00', timeZone: 'UTC',
+        venueName: 'Synthetic', latitude: 40, longitude: -75 });
+    }
+    await window.angleQA.workspace.selectSavedEvent('time-future');
+    window.angleQA.timeBefore = await window.angleQA.recordStore.serializeRecords();
+  });
+  const timeNotice = '[data-chart="time-policy"]';
+  assert.match(await page.$eval(timeNotice, (node) => node.textContent), /Future leap seconds are unknown/);
+  assert.match(await page.$eval(timeNotice, (node) => node.textContent), /69.184000 seconds/);
+  const futureMoon = await page.evaluate(() => window.angleQA.controller.selectionSnapshot().chart.positions.find((p) => p.body === 'Moon').longitude);
+  assert.ok(Math.abs(futureMoon - 286.6914784) * 3600 < 2);
+  for (const width of [390, 1280]) {
+    await page.setViewport({ width, height: 844 });
+    await page.$eval('#astroeye-workspace', (node) => { node.dataset.skyCompact = 'true'; });
+    assert.ok(await page.$eval(timeNotice, (node) => !node.hidden && getComputedStyle(node).display !== 'none'
+      && node.getClientRects().length > 0 && node.scrollWidth <= node.clientWidth + 1));
+    await page.$eval('#astroeye-workspace', (node) => { delete node.dataset.skyCompact; });
+  }
+  await page.$eval('[data-comparison="pin"]', (node) => node.click());
+  await page.$eval('[data-action="time-forward"]', (node) => node.click());
+  await page.waitForFunction(() => window.angleQA.controller.selectionSnapshot().chart.calculatedFor === '2100-12-31T12:15:00.000Z');
+  assert.match(await page.$eval(timeNotice, (node) => node.textContent), /Future timing is provisional/);
+  await page.$eval('[data-comparison="export"]', (node) => node.click());
+  assert.match(await page.evaluate(() => window.angleQA.downloads.at(-1)), /Future leap seconds are unknown/);
+  assert.equal(await page.evaluate(() => window.angleQA.controller.shareSnapshot().calculationVersion), 4);
+  await page.evaluate(() => window.angleQA.workspace.selectSavedEvent('time-historical'));
+  assert.match(await page.$eval(timeNotice, (node) => node.textContent), /historical timing is approximate/);
+  assert.ok(!(await page.$eval(timeNotice, (node) => node.textContent)).includes('Future leap seconds'));
+  await page.evaluate(() => window.angleQA.workspace.selectSavedEvent('ordinary'));
+  assert.equal(await page.$eval(timeNotice, (node) => node.hidden), true);
+  assert.equal(await page.$eval(timeNotice, (node) => node.textContent), '');
+  assert.equal(await page.$eval('[data-comparison="export"]', (node) => node.disabled), true);
+  assert.equal(await page.evaluate(async () => (await window.angleQA.recordStore.serializeRecords()) === window.angleQA.timeBefore), true);
   assert.deepEqual(errors, []);
   await page.evaluate(() => window.angleQA.workspace.destroy());
-  console.log('PASS: legacy/model 3 compatibility, polar/hour cautions, date-range refusal/archive notices, layouts, and record preservation.');
+  console.log('PASS: legacy/model 4 compatibility, UTC/TT notices and corrected Moon, reports/previews, polar/hour cautions, date-range/archive notices, layouts and record preservation.');
 } finally {
   try { await browser?.close(); } finally { clearTimeout(deadline); }
 }

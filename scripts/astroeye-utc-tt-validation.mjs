@@ -25,7 +25,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (process.argv.length !== 2) throw new Error('Offline only: node scripts/astroeye-utc-tt-validation.mjs');
   const results = [...Object.keys(HORIZONS_TARGETS).map((body) => compareUtcTtReference(body)),
     ...RANGE_BODIES.map((body) => compareUtcTtReference(body, { range: true }))];
-  console.log(JSON.stringify({ candidateOnly: true, summaries: results.map((r) => ({ body: r.body, range: r.range,
+  console.log(JSON.stringify({ calculationVersion: 4, summaries: results.map((r) => ({ body: r.body, range: r.range,
     positionCount: r.samples.length, motionCount: r.motions.length,
     maxLongitudeErrorArcseconds: Math.max(...r.samples.map((s) => s.longitudeErrorArcseconds)),
     maxLatitudeErrorArcseconds: Math.max(...r.samples.map((s) => s.latitudeErrorArcseconds)),

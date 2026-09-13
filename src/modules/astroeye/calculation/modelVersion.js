@@ -1,7 +1,8 @@
 import { ASTRONOMY_ENGINE_SOURCE } from './astronomyEngineProvider.js';
+import { hasModel4TimeConventions } from './timeConventions.js';
 
-// Older models remain replayable; model 3 adds stable planetary-hour boundaries.
-export const ASTROEYE_CALCULATION_VERSION = 3;
+// Model 4 corrects position time conversion; older models remain replayable.
+export const ASTROEYE_CALCULATION_VERSION = 4;
 
 /** Only omission denotes legacy v1. Explicit null, strings and invalid numbers do not. */
 export function chartCalculationVersion(chart) {
@@ -12,13 +13,14 @@ export function chartCalculationVersion(chart) {
 }
 
 export function requireCalculationVersion(version) {
-  if (![1, 2, 3].includes(version)) throw new RangeError('Unsupported AstroEye calculation version.');
+  if (![1, 2, 3, 4].includes(version)) throw new RangeError('Unsupported AstroEye calculation version.');
   return version;
 }
 
 export function isSupportedChartCalculation(chart) {
   try {
     return Boolean(requireCalculationVersion(chartCalculationVersion(chart)))
+      && (chartCalculationVersion(chart) !== 4 || hasModel4TimeConventions(chart))
       && chart?.engine?.id === ASTRONOMY_ENGINE_SOURCE.id
       && chart?.engine?.version === ASTRONOMY_ENGINE_SOURCE.version
       && chart?.options?.zodiac === 'tropical'
