@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "https://github.com/0xStarcat/CircularNatalHoroscopeJS",
+    "commit": "76e150f64a3525797afe5b7ce118c2c63a1d59bd",
+    "retrievedOn": "2026-09-13",
+    "license": "Unlicense",
+    "files": ["tests/Horoscope.test.js", "tests/Origin.test.js", "src/utilities/astronomy.js", "src/Horoscope.js", "LICENSE"],
+    "scope": "Published numeric inputs and assertions only. No package installed and no reference library code executed or copied."
+  },
+  "conventions": {
+    "zodiac": "tropical",
+    "referenceSiderealTime": "mean; Meeus polynomial in the source",
+    "referenceObliquityDegrees": 23.4367,
+    "referenceObliquityModel": "fixed default, not date-dependent true obliquity",
+    "longitudePositive": "east",
+    "utcDerivation": "UTC hours are explicitly asserted in tests/Origin.test.js, not inferred from city names. Source month 6 means July.",
+    "roundingDegrees": 0.0001,
+    "matchedOrientationToleranceArcseconds": 0.36,
+    "dateComparisonToleranceArcseconds": 60,
+    "toleranceRationale": "Chosen before comparing: 0.36 arcseconds is twice the four-decimal-degree rounding half-step. The 60 arcsecond date-based threshold is a coarse discrepancy screen allowing different sidereal/obliquity conventions for these two non-polar 2019 cases, not a validated error bound or product accuracy claim. Whole Sign cusps must agree exactly."
+  },
+  "cases": [
+    {
+      "id": "published-los-angeles-2019",
+      "utcInstant": "2019-07-20T17:10:00.000Z",
+      "latitude": 34.052235,
+      "longitude": -118.243683,
+      "referenceLocalSiderealDegrees": 77.45133355539292,
+      "ascendant": 169.4304,
+      "midheaven": 78.4576,
+      "cusps": {
+        "equal": [169.4304, 199.4304, 229.4304, 259.4304, 289.4304, 319.4304, 349.4304, 19.4304, 49.4304, 79.4304, 109.4304, 139.4304],
+        "whole-sign": [150, 180, 210, 240, 270, 300, 330, 0, 30, 60, 90, 120]
+      }
+    },
+    {
+      "id": "published-buenos-aires-2019",
+      "utcInstant": "2019-07-20T13:10:00.000Z",
+      "latitude": -34.603722,
+      "longitude": -58.381592,
+      "referenceLocalSiderealDegrees": 77.14914988121018,
+      "ascendant": 160.2684,
+      "midheaven": 78.1782,
+      "cusps": null
+    }
+  ]
+}

@@ -39,6 +39,10 @@ that a wrong antipode or a one-arcsecond perturbation exceeds the fixture tolera
 
 ## Remaining A1 work — gate stays open
 
+Update: [published date/location comparisons](astroeye-published-chart-references.md)
+now cover two ASC/MC cases and a complete Equal/Whole Sign cusp case. The first
+bullet below is partly addressed, not complete; polar and wider coverage remain open.
+
 - Independently sourced, date/location-based ASC/MC and full house-cusp fixtures,
   with agreed coordinate, time-scale and obliquity conventions and tolerances.
 - External examples in both hemispheres and across longitude/zodiac wrap.

@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13: [published date/location angle and cusp comparisons](architecture/astroeye-published-chart-references.md) now check northern/southern ASC/MC examples and a full Equal/Whole Sign cusp case offline. The checks distinguish matched-orientation agreement from date-based convention differences; A1 remains open for polar and wider coverage. No runtime code changed in this checkpoint.
+
 The first [angle-reference validation slice](architecture/astroeye-angle-validation.md) adds a published horizon-intersection fixture and geometric checks across hemispheres, wrap and both supported cusp rules. All 218 platform tests passed. A1 remains open: these checks do not independently certify date-to-angle calculations, MC/house cusp references or polar branch semantics.
 
 The [AstroEye v0.1 release checklist](ASTROEYE-RELEASE-CHECKLIST.md) now sets a bounded finish line: 15 open acceptance gates across calculation validation, voice, durable event annotations, end-to-end usability and release engineering. This is a planning checkpoint, not a release certification; the next implementation step is independent angle/house validation.

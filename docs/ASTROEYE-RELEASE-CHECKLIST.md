@@ -51,8 +51,10 @@ Existing standalone Chromium results do not certify the embedded preview host.
 
 Start with the existing [validation backlog](architecture/astroeye-validation.md).
 First A1 evidence: [published horizon example and geometric regression checks](architecture/astroeye-angle-validation.md).
-This partial reference slice leaves A1 open; independent date/location, MC and cusp
-references and polar branch validation are still required.
+That first slice covers orientation geometry only; subsequent evidence is listed below.
+Follow-up A1 evidence: [two published date/location ASC/MC cases and a full two-system cusp case](architecture/astroeye-published-chart-references.md).
+These pass convention-aware comparisons; A1 remains open for polar/near-degenerate
+behavior and broader independent quadrant, boundary and geographic/date coverage.
 Keep reference retrieval separate from offline tests and normal app startup. No Swiss
 Ephemeris integration or license purchase is included in this work package.
 

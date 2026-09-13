@@ -46,6 +46,9 @@ The responses collected on 2026-09-10 UTC report API signature 1.2, although the
 The first [angle geometry reference slice](astroeye-angle-validation.md) now passes
 one independently published horizon-intersection example and separate internal
 geometry/cusp-rule regressions. It does not close the remaining items below.
+The subsequent [published chart-reference pack](astroeye-published-chart-references.md)
+adds two date/location ASC/MC comparisons and all Equal/Whole Sign cusps for one
+case, with explicit convention differences. Wider and polar A1 coverage remains open.
 
 - Independent references for ASC/MC and supported house cusps.
 - Independent sunrise/sunset boundary checks and planetary-hour rollover checks.
