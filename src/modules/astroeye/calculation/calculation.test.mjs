@@ -109,7 +109,7 @@ test('planetary hours fail explicitly during polar day instead of inventing boun
     timeZone: 'Arctic/Longyearbyen',
   });
   assert.equal(hour.status, 'unavailable');
-  assert.match(hour.reason, /No sunrise\/sunset boundary/);
+  assert.match(hour.reason, /No complete sunrise–sunset–sunrise interval/);
 });
 
 test('chart output records engine provenance and is byte-stable', () => {

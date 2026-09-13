@@ -1,7 +1,7 @@
 // Conservative display guard, not an astronomical error bound.
 export const PLANETARY_HOUR_EDGE_NOTICE_MS = 1000;
 export const PLANETARY_HOUR_ESTIMATE_NOTICE = 'Calculated from sunrise and sunset; times are estimates, not observed boundaries.';
-export const PLANETARY_HOUR_BOUNDARY_NOTICE = 'Boundary uncertain: this instant is near a calculated hour edge. Current models may assign either neighboring hour. Saved results have not been changed.';
+export const PLANETARY_HOUR_BOUNDARY_NOTICE = 'Boundary uncertain: this instant is near a calculated hour edge. Astronomical timing precision is limited; legacy models also have boundary-assignment defects. Saved results have not been changed.';
 
 export function planetaryHourPresentation(chart) {
   const hour = chart?.planetaryHour;

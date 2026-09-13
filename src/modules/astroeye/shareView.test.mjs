@@ -41,7 +41,7 @@ test('payload allowlist discards unrelated fields rather than sharing hidden met
 });
 
 test('unknown versions, invalid offsets, unsupported houses and malformed coordinates fail closed', () => {
-  for (const change of [{ version: 2 }, { calculationVersion: 3 }, { engineVersion: '0.0.0' },
+  for (const change of [{ version: 2 }, { calculationVersion: 4 }, { engineVersion: '0.0.0' },
     { offsetMinutes: 361 }, { offsetMinutes: '15' }, { offsetMinutes: 1.5 }, { houseSystem: 'placidus' },
     { event: { ...event, venue: { ...event.venue, latitude: '' } } },
     { event: { ...event, venue: { ...event.venue, latitude: 91 } } },

@@ -1,4 +1,6 @@
 import * as Astronomy from 'astronomy-engine';
+import { ASTROEYE_CALCULATION_VERSION, requireCalculationVersion } from './modelVersion.js';
+import { calculateStablePlanetaryHour } from './stablePlanetaryHours.js';
 
 const CHALDEAN_ORDER = Object.freeze(['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon']);
 const DAY_RULERS = Object.freeze({
@@ -20,7 +22,9 @@ function rulerAt(dayRuler, sequenceOffset) {
 }
 
 /** Traditional unequal planetary hour at an event instant. */
-export function calculatePlanetaryHour({ utcInstant, latitude, longitude, timeZone }) {
+export function calculatePlanetaryHour({ utcInstant, latitude, longitude, timeZone, calculationVersion = ASTROEYE_CALCULATION_VERSION }) {
+  requireCalculationVersion(calculationVersion);
+  if (calculationVersion >= 3) return calculateStablePlanetaryHour({ utcInstant, latitude, longitude, timeZone });
   const instant = new Date(utcInstant);
   if (!Number.isFinite(instant.getTime())) throw new TypeError('utcInstant must be a valid date');
   const observer = new Astronomy.Observer(Number(latitude), Number(longitude), 0);

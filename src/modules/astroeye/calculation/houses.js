@@ -51,7 +51,7 @@ export function calculateAnglesFromOrientation(localSiderealDegrees, latitude, t
     -Math.cos(theta),
     Math.sin(theta) * Math.cos(epsilon) + Math.tan(phi) * Math.sin(epsilon),
   )) + 180);
-  if (calculationVersion === 2) {
+  if (calculationVersion >= 2) {
     // The horizon normal projected onto the ecliptic vanishes when the planes
     // coincide. Scale by cos(latitude) so this guard also works near the poles.
     const intersectionMagnitude = Math.hypot(

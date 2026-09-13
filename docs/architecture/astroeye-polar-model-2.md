@@ -1,5 +1,9 @@
 # Polar correction — calculation model 2
 
+This documents the historical model-2 checkpoint. New charts now use
+[model 3](astroeye-planetary-hour-model-3.md), retaining these corrected angles
+while adding stable planetary-hour boundaries. Model 2 remains replayable.
+
 ## Scope
 
 New manual/provider-reviewed event saves and templates use model 2. Astronomy Engine

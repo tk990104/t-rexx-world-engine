@@ -35,7 +35,7 @@ export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign',
   return Object.freeze({
     schemaVersion: 1,
     calculationVersion,
-    chartId: `astroeye:${event.id}:${event.utcStart}:tropical-geocentric:${houseSystem}${calculationVersion === 1 ? '' : ':model-2'}`,
+    chartId: `astroeye:${event.id}:${event.utcStart}:tropical-geocentric:${houseSystem}${calculationVersion === 1 ? '' : ':model-' + calculationVersion}`,
     eventId: event.id,
     calculatedFor: event.utcStart,
     location: Object.freeze({
@@ -56,6 +56,7 @@ export function calculateAstroEyeChart(eventInput, { houseSystem = 'whole-sign',
     houses,
     aspects: calculateMajorAspects(positions),
     planetaryHour: calculatePlanetaryHour({
+      calculationVersion,
       utcInstant: event.utcStart,
       latitude: event.venue.latitude,
       longitude: event.venue.longitude,

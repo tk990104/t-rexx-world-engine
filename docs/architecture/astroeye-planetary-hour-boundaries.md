@@ -1,5 +1,12 @@
 # Planetary-hour edge investigation and display safeguard
 
+## Update — corrected for new charts
+
+[Calculation model 3](astroeye-planetary-hour-model-3.md) now uses fixed solar-search
+anchors and integer half-open partitions. The investigation below describes preserved
+model-1/2 behavior. The UI precision notice remains, but new charts no longer use the
+defective legacy boundary algorithm. Broader A2 reference coverage remains open.
+
 ## Confirmed defects — models 1 and 2
 
 On 2026-09-13, exact-edge probes reproduced two consistency defects in the existing

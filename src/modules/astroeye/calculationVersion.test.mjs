@@ -33,15 +33,16 @@ async function setup() {
   return { recordStore, controller, saved, moduleState, worldClock, presented };
 }
 
-test('new charts default to model 2 with a distinct identity while explicit v1 remains available', () => {
+test('new charts default to model 3 with distinct identities while both older models remain available', () => {
   const chart = calculateAstroEyeChart(event, { calculationVersion: 1 });
   const modern = calculateAstroEyeChart(event);
-  assert.equal(modern.calculationVersion, 2);
-  assert.equal(modern.chartId, chart.chartId + ':model-2');
+  assert.equal(modern.calculationVersion, 3);
+  assert.equal(modern.chartId, chart.chartId + ':model-3');
+  assert.equal(calculateAstroEyeChart(event, { calculationVersion: 2 }).chartId, chart.chartId + ':model-2');
   assert.equal(chart.calculationVersion, 1);
   assert.equal(chart.chartId, `astroeye:${event.id}:${event.utcStart}:tropical-geocentric:whole-sign`);
   assert.equal(calculateTimePreview(event, 15, { calculationVersion: 1 }).calculationVersion, 1);
-  for (const calculationVersion of [3, null, '1', 0]) {
+  for (const calculationVersion of [4, null, '1', 0]) {
     assert.throws(() => calculateAstroEyeChart(event, { calculationVersion }), /calculation version/);
     assert.throws(() => calculateTimePreview(event, 15, { calculationVersion }), /calculation version/);
   }
@@ -74,7 +75,7 @@ test('unsupported matching cache records cannot overwrite storage or change curr
     const beforeView = ctx.controller.selectionSnapshot(), beforeState = ctx.moduleState.get('astroeye');
     const beforeTime = ctx.worldClock.now().toISOString(), presentations = ctx.presented.length;
     for (const mutate of [
-      (chart) => { chart.calculationVersion = 3; },
+      (chart) => { chart.calculationVersion = 4; },
       (chart) => { chart.calculationVersion = null; },
       (chart) => { chart.engine.version = 'future'; },
       (chart) => { chart.engine.id = 'other'; },
@@ -96,7 +97,7 @@ test('unsupported matching cache records cannot overwrite storage or change curr
 test('supported cache entry is chosen even when an unsupported entry has the same time and house system', async () => {
   const ctx = await setup();
   try {
-    await ctx.recordStore.saveChart({ ...ctx.saved.chart, chartId: '000-future', calculationVersion: 3 });
+    await ctx.recordStore.saveChart({ ...ctx.saved.chart, chartId: '000-future', calculationVersion: 4 });
     const before = await ctx.recordStore.serializeRecords();
     assert.equal((await ctx.controller.selectEvent(event.id)).chart.chartId, ctx.saved.chart.chartId);
     assert.equal(await ctx.recordStore.serializeRecords(), before);
@@ -123,19 +124,19 @@ test('future share and tour versions refuse restoration before any writes or sta
   try {
     const before = await ctx.recordStore.serializeRecords(), selected = ctx.controller.selectionSnapshot();
     const share = ctx.controller.shareSnapshot();
-    assert.throws(() => createSharedView(event, { calculationVersion: 3 }), /version/);
-    assert.throws(() => createAstroEyeTour({ ...share, calculationVersion: 3 }), /version/);
-    await assert.rejects(ctx.controller.restoreSharedView({ ...share, calculationVersion: 3 }), /version/);
+    assert.throws(() => createSharedView(event, { calculationVersion: 4 }), /version/);
+    assert.throws(() => createAstroEyeTour({ ...share, calculationVersion: 4 }), /version/);
+    await assert.rejects(ctx.controller.restoreSharedView({ ...share, calculationVersion: 4 }), /version/);
     assert.equal(await ctx.recordStore.serializeRecords(), before);
     assert.deepEqual(ctx.controller.selectionSnapshot(), selected);
   } finally { await ctx.recordStore.close(); }
 });
 
-test('both model links and tours replay their own math without writes, including time previews', async () => {
+test('all three model links and tours replay their own math without writes, including time previews', async () => {
   const ctx = await setup();
   try {
     const before = await ctx.recordStore.serializeRecords();
-    for (const calculationVersion of [1, 2]) {
+    for (const calculationVersion of [1, 2, 3]) {
       const share = createSharedView(event, { calculationVersion, offsetMinutes: 15 });
       const tour = createAstroEyeTour(share, { id: 'two-model-tour' });
       assert.equal(tour.shots[0].modules.astroeye.calculationVersion, calculationVersion);
@@ -150,6 +151,35 @@ test('both model links and tours replay their own math without writes, including
   } finally { await ctx.recordStore.close(); }
 });
 
+test('model 2 saved charts preserve their math through selection, additional houses and previews', async () => {
+  const ctx = await setup();
+  try {
+    const second = eventFromDraft({ ...draft, id: 'model-two-saved' });
+    const chart = calculateAstroEyeChart(second, { calculationVersion: 2 });
+    await ctx.recordStore.saveEventWithChart(second, chart);
+    const before = await ctx.recordStore.serializeRecords();
+    assert.equal((await ctx.controller.selectEvent(second.id)).chart.calculationVersion, 2);
+    assert.equal(ctx.controller.previewTime(15).chart.calculationVersion, 2);
+    assert.equal(ctx.controller.shareSnapshot().calculationVersion, 2);
+    assert.equal(await ctx.recordStore.serializeRecords(), before);
+    assert.equal((await ctx.controller.selectEvent(second.id, { houseSystem: 'equal' })).chart.calculationVersion, 2);
+    assert.deepEqual(await ctx.recordStore.getChart(chart.chartId), chart);
+  } finally { await ctx.recordStore.close(); }
+});
+
+test('saving an explicit shared copy retains each requested model instead of upgrading it', async () => {
+  const ctx = await setup();
+  try {
+    for (const calculationVersion of [1, 2, 3]) {
+      await ctx.controller.restoreSharedView(createSharedView(event, { calculationVersion }));
+      const saved = await ctx.controller.saveSharedCopy();
+      assert.equal(saved.chart.calculationVersion, calculationVersion);
+      assert.notEqual(saved.event.id, event.id);
+    }
+    assert.deepEqual(await ctx.recordStore.getChart(ctx.saved.chart.chartId), ctx.saved.chart);
+  } finally { await ctx.recordStore.close(); }
+});
+
 test('new model saves have distinct cache identities and leave old chart bytes intact', async () => {
   const ctx = await setup();
   try {
@@ -160,8 +190,8 @@ test('new model saves have distinct cache identities and leave old chart bytes i
     assert.equal(charts.length, 2);
     assert.equal(JSON.stringify(charts.find((chart) => chart.chartId === ctx.saved.chart.chartId)), original);
     const newSelection = await ctx.controller.saveDraft({ ...draft, id: 'new-model-event' });
-    assert.equal(newSelection.chart.calculationVersion, 2);
-    assert.equal(ctx.controller.previewTime(15).chart.calculationVersion, 2);
+    assert.equal(newSelection.chart.calculationVersion, 3);
+    assert.equal(ctx.controller.previewTime(15).chart.calculationVersion, 3);
   } finally { await ctx.recordStore.close(); }
 });
 

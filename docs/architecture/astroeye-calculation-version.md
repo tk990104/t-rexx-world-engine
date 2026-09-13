@@ -1,12 +1,13 @@
 # Calculation model version foundation
 
-## Current behavior — model 2
+## Current behavior — model 3
 
-New drafts now use **calculation model 2**, with chart IDs ending in `:model-2`.
-Explicit model 1 and untagged legacy records remain supported without migration.
-Shares and tours accept both versions and preserve the input version; missing link
+New drafts now use **calculation model 3**, with chart IDs ending in `:model-3`.
+Explicit models 1/2 and untagged legacy records remain supported without migration.
+Shares and tours accept all three versions and preserve the input version; missing link
 versions and unsupported future versions are rejected. Comparisons still refuse
-mixed models. See [the correction and compatibility contract](astroeye-polar-model-2.md).
+mixed models. See [stable planetary hours and compatibility](astroeye-planetary-hour-model-3.md)
+and the earlier [polar correction](astroeye-polar-model-2.md).
 
 The remainder of this document records checkpoint 39's **historical model-1 foundation**,
 including its then-current test counts and prerequisites. Model 2 implements the

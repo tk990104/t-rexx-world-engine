@@ -1,7 +1,7 @@
 import { ASTRONOMY_ENGINE_SOURCE } from './astronomyEngineProvider.js';
 
-// Model 1 remains replayable; new calculations use the eastern-intersection model.
-export const ASTROEYE_CALCULATION_VERSION = 2;
+// Older models remain replayable; model 3 adds stable planetary-hour boundaries.
+export const ASTROEYE_CALCULATION_VERSION = 3;
 
 /** Only omission denotes legacy v1. Explicit null, strings and invalid numbers do not. */
 export function chartCalculationVersion(chart) {
@@ -12,7 +12,7 @@ export function chartCalculationVersion(chart) {
 }
 
 export function requireCalculationVersion(version) {
-  if (version !== 1 && version !== 2) throw new RangeError('Unsupported AstroEye calculation version.');
+  if (![1, 2, 3].includes(version)) throw new RangeError('Unsupported AstroEye calculation version.');
   return version;
 }
 

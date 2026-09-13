@@ -26,7 +26,7 @@ for (const regressionCase of ASTROEYE_REGRESSION_CASES) {
   });
   test(`model 2 calculation regression: ${regressionCase.id}`, () => {
     const event = eventFromRegressionCase(regressionCase);
-    const first = calculateAstroEyeChart(event), second = calculateAstroEyeChart(event);
+    const first = calculateAstroEyeChart(event, { calculationVersion: 2 }), second = calculateAstroEyeChart(event, { calculationVersion: 2 });
     assert.equal(serializeAstroEyeChart(first), serializeAstroEyeChart(second));
     // This internal pack's sole western branch is retained above as a v1 snapshot.
     // This is a regression expectation, not an external accuracy reference.

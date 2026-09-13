@@ -25,7 +25,7 @@ test('model 2 preserves ordinary orientations exactly and refuses unknown versio
         calculateAnglesFromOrientation(theta, latitude, 23.44, { calculationVersion: 1 }));
     }
   }
-  for (const calculationVersion of [0, 3, null, '2']) {
+  for (const calculationVersion of [0, 4, null, '2']) {
     assert.throws(() => calculateAnglesFromOrientation(270, 80, 23.44, { calculationVersion }), /version/);
   }
 });

@@ -54,10 +54,12 @@ First A2 evidence: [USNO solar boundaries and planetary-hour checks](architectur
 cover four rise/set days, 48 hour midpoints, rounded-boundary rollover probes and one
 southern polar-night case. Exact-instant boundaries, broader timezone/polar transitions
 and accepted external polar-day data remain outstanding; A2 is not closed.
-**A2 known blocker:** [exact-edge investigation](architecture/astroeye-planetary-hour-boundaries.md)
-reproduces query-anchor drift and intervals ending at the requested instant. The
-workspace now suppresses definitive ruler labels near an edge or for inconsistent
-timing metadata. This display safeguard does not correct the numerical model.
+The [exact-edge investigation](architecture/astroeye-planetary-hour-boundaries.md)
+reproduced query-anchor drift and non-containing intervals in legacy models.
+[Model 3](architecture/astroeye-planetary-hour-model-3.md) corrects those defects for
+new charts using fixed solar roots and integer half-open partitions; old models
+remain replayable. Exact computed-edge tests now pass. Broader independent polar-day
+and near-polar transition coverage remain outstanding, so A2 stays open.
 First A1 evidence: [published horizon example and geometric regression checks](architecture/astroeye-angle-validation.md).
 That first slice covers orientation geometry only; subsequent evidence is listed below.
 Follow-up A1 evidence: [two published date/location ASC/MC cases and a full two-system cusp case](architecture/astroeye-published-chart-references.md).

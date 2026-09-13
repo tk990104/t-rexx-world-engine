@@ -9,7 +9,7 @@ export const ASTROEYE_SHARE_MAX_LENGTH = 8192;
 
 /** Explicit allowlist: links contain calculation inputs, never executable charts or credentials. */
 export function normalizeSharedView(input) {
-  if (!input || input.version !== 1 || ![1, 2].includes(input.calculationVersion)) throw new Error('Unsupported AstroEye link version.');
+  if (!input || input.version !== 1 || ![1, 2, 3].includes(input.calculationVersion)) throw new Error('Unsupported AstroEye link version.');
   if (input.engineVersion !== ASTRONOMY_ENGINE_VERSION) throw new Error('This link requires a different calculation engine version.');
   if (!HOUSE_SYSTEMS.includes(input.houseSystem)) throw new Error('Unsupported shared house system.');
   if (!Number.isInteger(input.offsetMinutes) || Math.abs(input.offsetMinutes) > TIME_EXPLORER_LIMIT_MINUTES) {

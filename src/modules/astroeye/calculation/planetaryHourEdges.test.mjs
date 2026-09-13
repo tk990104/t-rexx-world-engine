@@ -5,7 +5,7 @@ import { calculatePlanetaryHour } from './planetaryHours.js';
 import { planetaryHourPresentation } from '../planetaryHourPresentation.js';
 
 const location = { latitude: 40.7128, longitude: -74.006, timeZone: 'America/New_York' };
-const at = (utcInstant) => calculatePlanetaryHour({ ...location, utcInstant });
+const at = (utcInstant) => calculatePlanetaryHour({ ...location, utcInstant, calculationVersion: 2 });
 
 // Deliberate characterization of defects in the preserved model-1/2 hour math.
 // Passing these tests is NOT a passing exact-boundary acceptance gate.
