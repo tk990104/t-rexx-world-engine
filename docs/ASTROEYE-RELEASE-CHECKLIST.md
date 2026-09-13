@@ -68,6 +68,10 @@ four independent days: a final rise/set pair, last sunrise, continuous daylight
 and first returning sunset. It verifies 24 additional midpoints, absent boundaries
 and the exact computed switch to unavailable. Returning-sunrise restoration and
 broader seasonal coverage remain unverified; A2 is not closed.
+Internal returning-sunrise recovery checks now pass for the unavailable-to-hour-1
+switch, all 24 resumed computed edges, cache/navigation-order independence and
+presentation clearing. They are not external July 27/28 reference evidence; A2
+remains open. A3 work can proceed independently of the failed reference retrieval.
 First A1 evidence: [published horizon example and geometric regression checks](architecture/astroeye-angle-validation.md).
 That first slice covers orientation geometry only; subsequent evidence is listed below.
 Follow-up A1 evidence: [two published date/location ASC/MC cases and a full two-system cusp case](architecture/astroeye-published-chart-references.md).

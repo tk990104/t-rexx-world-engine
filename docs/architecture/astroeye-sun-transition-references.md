@@ -76,3 +76,31 @@ All 301 platform tests passed in 22.69 seconds, including six new transition tes
 The standalone four-day comparison passed. The combined solar-reference and
 transition subset passed all twenty tests. No production build or browser check
 was repeated for this test/documentation-only checkpoint.
+
+## Internal recovery follow-up — checkpoint 48
+
+July 27/28 reference retrieval again failed with TLS handshake errors; the web
+retrieval fallback also returned no data. No new external reference was accepted.
+The separate `sunRecovery.test.mjs` is explicitly labeled **internal consistency
+only**, and its calculated timestamps were not added to the USNO fixture pack.
+
+At 70N, July 27's computed first sunrise changes unavailable to hour 1, owned by
+Saturday/Saturn. One millisecond before it remains unavailable with no fabricated
+hour fields; exactly at and one millisecond after it give the same first hour.
+All 24 subsequent computed edges pass before/exact/after checks and fresh-cache
+agreement; the next sunrise starts Sunday/Sun's planetary day.
+
+Forward, reverse and repeated date navigation across continuous daylight and the
+resumed cycle yields identical results with fresh, warm and one-entry caches.
+Inputs and result snapshots are not mutated. A presentation-unit check traverses
+Unavailable → Boundary uncertain → interior hour and back, confirming stale text
+and uncertainty flags clear. This is not a browser walkthrough.
+
+These checks establish deterministic recovery, not external timing accuracy.
+Returning-sunrise reference validation and A2 remain open. Avoid blocking unrelated
+work on repeated retrieval attempts; supported-date-range work in A3 can proceed
+while the external-reference gap remains explicitly documented.
+
+Checkpoint 48 verification: all 304 platform tests passed in 21.20 seconds. The
+three-test internal recovery subset also passed independently. No build or browser
+check was repeated for these test/documentation-only changes.
