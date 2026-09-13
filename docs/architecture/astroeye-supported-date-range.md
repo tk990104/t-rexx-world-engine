@@ -69,6 +69,13 @@ Follow-up: [historical-zone conformance](astroeye-historical-time-zones.md) now
 records sixteen targeted IANA-derived cases and explicit runtime limitations. The
 planetary range/station/zodiac reference requirements remain outstanding.
 
+Checkpoint 51: the [first older/endpoint position pack](astroeye-range-reference-checks.md)
+now covers Sun, Moon and Mercury. It exposes a late-2100 Moon longitude discrepancy
+above the unchanged tolerance. The 1900–2100 range remains the approved application
+policy, not a claim of validated precision throughout it. A3 is explicitly blocked
+on time-convention reconciliation and remaining coverage; production math and saved
+charts are unchanged.
+
 ## Checkpoint 49 verification — September 13, 2026
 
 All 314 platform tests passed in 21.14 seconds, including ten new range tests.

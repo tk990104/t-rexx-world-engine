@@ -59,6 +59,13 @@ covers sixteen IANA-derived cases, including second-level offsets, a 23-hour fol
 a fifteen-minute gap and a skipped civil date. These are runtime conformance checks,
 not independent proof of historical timekeeping. A3 remains open for planetary
 range/station/zodiac reference work and final candidate verification.
+[Historical/endpoint position references](architecture/astroeye-range-reference-checks.md)
+now add Sun, Moon and Mercury at three older/endpoint centers. Sun/Mercury pass,
+but the three late-2100 Moon longitude samples exceed the unchanged 60-arcsecond
+screen (maximum 84.439692). Time-conversion diagnostics are not a fix. The raw
+range command fails and the platform suite reports this accuracy gate as TODO;
+A3 remains blocked pending a reviewed versioned time-convention correction,
+remaining bodies, station/zodiac samples and the complete candidate rerun.
 First A2 evidence: [USNO solar boundaries and planetary-hour checks](architecture/astroeye-sun-boundary-references.md)
 now cover six rise/set days, 72 hour midpoints, rounded-boundary rollover probes and
 southern polar-day/night cases. The 65N solstice pair verifies long days, short nights and

@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13: [historical/endpoint position references](architecture/astroeye-range-reference-checks.md) add 27 independent Sun/Moon/Mercury samples. Sun and Mercury pass the unchanged 60-arcsecond screen; three late-2100 Moon longitudes fail (maximum 84.439692 arcseconds). A diagnostic strongly implicates differing UT-to-TT conventions, but no production math or saved records changed. The standalone range command exits 1, and the platform suite explicitly reports the Moon accuracy gate as TODO. A3 remains a release blocker; this is not full-range certification.
+
 September 13: [historical time-zone conformance](architecture/astroeye-historical-time-zones.md) adds sixteen IANA-derived cases for Kathmandu, Kwajalein and Samoa: second offsets, non-hour folds/gaps and a skipped date. Canonical records, draft summaries, shared views and selected time previews are checked. This is tzdb conformance, not independent historical or ephemeris certification; A3 remains open. Application code and user data are unchanged.
 
 September 13: the user-approved [1900–2100 UTC calculation range](architecture/astroeye-supported-date-range.md) is enforced for new charts, previews and view links across all current models. Drafts explain out-of-range resolved UTC times. Stored archival charts remain selectable/exportable without migration and show a warning; new out-of-range calculations are refused. In-range math and model IDs are unchanged. A3 accuracy/reference work remains open.

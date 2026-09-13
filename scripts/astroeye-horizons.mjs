@@ -16,7 +16,16 @@ export const REFERENCE_INSTANTS = Object.freeze([
 export const SAMPLE_INSTANTS = Object.freeze(REFERENCE_INSTANTS.flatMap((instant) =>
   [-6, 0, 6].map((hours) => new Date(Date.parse(instant) + hours * 3600000).toISOString())));
 
-export function horizonsUrl(body) {
+function requireSampleInstants(instants) {
+  if (!Array.isArray(instants) || !instants.length || instants.length > 100
+    || Array.from(instants).some((instant, index) => typeof instant !== 'string' || !Number.isFinite(Date.parse(instant))
+      || new Date(instant).toISOString() !== instant || (index > 0 && Date.parse(instant) <= Date.parse(instants[index - 1])))) {
+    throw new Error('Invalid Horizons sample instants');
+  }
+}
+
+export function horizonsUrl(body, sampleInstants = SAMPLE_INSTANTS) {
+  requireSampleInstants(sampleInstants);
   if (!Object.hasOwn(HORIZONS_TARGETS, body)) throw new RangeError('Unknown reference body');
   const quote = (value) => `'${value}'`;
   const parameters = {
@@ -24,7 +33,7 @@ export function horizonsUrl(body) {
     OBJ_DATA: quote('NO'), MAKE_EPHEM: quote('YES'), EPHEM_TYPE: quote('OBSERVER'),
     CENTER: quote('500@399'), QUANTITIES: quote('31'),
     TIME_TYPE: quote('UT'), TLIST_TYPE: quote('JD'),
-    TLIST: SAMPLE_INSTANTS.map((instant) => quote(Date.parse(instant) / 86400000 + 2440587.5)).join(' '),
+    TLIST: sampleInstants.map((instant) => quote(Date.parse(instant) / 86400000 + 2440587.5)).join(' '),
     CAL_FORMAT: quote('JD'), TIME_DIGITS: quote('FRACSEC'),
     CSV_FORMAT: quote('YES'), EXTRA_PREC: quote('YES'), APPARENT: quote('AIRLESS'),
   };
@@ -32,7 +41,8 @@ export function horizonsUrl(body) {
 }
 
 /** Parse quantity 31 only; reject API errors, missing rows, or changed columns. */
-export function parseHorizonsResponse(response, body) {
+export function parseHorizonsResponse(response, body, sampleInstants = SAMPLE_INSTANTS) {
+  requireSampleInstants(sampleInstants);
   if (!Object.hasOwn(HORIZONS_TARGETS, body)) throw new RangeError('Unknown reference body');
   if (response.error) throw new Error(`Horizons: ${response.error}`);
   if (!response.signature?.version || typeof response.result !== 'string') {
@@ -63,9 +73,9 @@ export function parseHorizonsResponse(response, body) {
     }
     return { jd, longitude, latitude };
   });
-  if (rows.length !== SAMPLE_INSTANTS.length) throw new Error('Horizons sample count mismatch');
+  if (rows.length !== sampleInstants.length) throw new Error('Horizons sample count mismatch');
   return rows.map((row, index) => {
-    const instant = SAMPLE_INSTANTS[index];
+    const instant = sampleInstants[index];
     const expectedJd = Date.parse(instant) / 86400000 + 2440587.5;
     if (Math.abs(row.jd - expectedJd) > 1e-7) throw new Error('Horizons epoch mismatch');
     return { instant, ...row };
