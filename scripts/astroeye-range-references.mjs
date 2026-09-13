@@ -4,7 +4,13 @@ import * as Astronomy from 'astronomy-engine';
 import { horizonsUrl, parseHorizonsResponse, signedDelta, POSITION_LIMIT_ARCSECONDS, MOTION_LIMIT_DEGREES_PER_DAY } from './astroeye-horizons.mjs';
 import { calculateAstronomyEnginePositions } from '../src/modules/astroeye/calculation/astronomyEngineProvider.js';
 
-export const RANGE_BODIES = Object.freeze(['Sun', 'Moon', 'Mercury']);
+export const RANGE_BODIES = Object.freeze(['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']);
+// Reviewed September 13 snapshot headers; merged planet-center sources differ.
+export const RANGE_REFERENCE_SOURCES = Object.freeze(Object.fromEntries([
+  ['Sun', 'DE441'], ['Moon', 'DE441'], ['Mercury', 'DE441'], ['Venus', 'DE441'],
+  ['Mars', 'mar099'], ['Jupiter', 'jup365_merged'], ['Saturn', 'sat441l'],
+  ['Uranus', 'ura184_merged'], ['Neptune', 'nep098_merged'], ['Pluto', 'plu060_merged'],
+].map(([body, target]) => [body, Object.freeze({ target, center: body === 'Neptune' ? target : 'DE441' })])));
 export const RANGE_CENTERS = Object.freeze(['1900-01-01T12:00:00.000Z', '1950-06-21T12:00:00.000Z', '2100-12-31T12:00:00.000Z']);
 export const RANGE_SAMPLES = Object.freeze(RANGE_CENTERS.flatMap((instant) => [-6, 0, 6].map((hours) => new Date(Date.parse(instant) + hours * 3600000).toISOString())));
 export function validateRangeReference(fixture, body) {
@@ -16,6 +22,14 @@ export function validateRangeReference(fixture, body) {
   if (!/Center-site name:\s*GEOCENTRIC/.test(fixture.response.result)
     || !/Atmos refraction:\s*NO \(AIRLESS\)/.test(fixture.response.result)
     || !/Date_________JDUT/.test(fixture.response.result)) throw new Error('Range reference conventions mismatch');
+  const source = RANGE_REFERENCE_SOURCES[body];
+  const headerSource = (label) => fixture.response.result.split('\n')
+    .find((line) => line.startsWith(label))?.match(/\{source: ([^}]+)\}/)?.[1];
+  if (headerSource('Target body name:') !== source.target
+    || headerSource('Center body name:') !== source.center
+    || !/^EOP file\s*:\s*eop\.260911\.p261208\s*$/m.test(fixture.response.result)) {
+    throw new Error('Range reference source snapshot mismatch');
+  }
   return parseHorizonsResponse(fixture.response, body, RANGE_SAMPLES);
 }
 export function readRangeReference(body) {
@@ -60,7 +74,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     if (results.some((r) => !r.passed)) process.exitCode = 1;
   } else {
     const body = process.argv[3];
-    if (process.argv[2] !== '--fetch' || !RANGE_BODIES.includes(body)) throw new Error('Usage: node scripts/astroeye-range-references.mjs [--fetch Sun|Moon|Mercury]');
+    if (process.argv[2] !== '--fetch' || !RANGE_BODIES.includes(body)) throw new Error(`Usage: node scripts/astroeye-range-references.mjs [--fetch ${RANGE_BODIES.join('|')}]`);
     const requestUrl = horizonsUrl(body, RANGE_SAMPLES);
     const response = await fetch(requestUrl, { signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw new Error(`Horizons HTTP ${response.status}; stop without retry`);

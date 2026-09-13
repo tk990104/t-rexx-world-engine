@@ -2,10 +2,17 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { horizonsUrl, parseHorizonsResponse, readReference, SAMPLE_INSTANTS, POSITION_LIMIT_ARCSECONDS, MOTION_LIMIT_DEGREES_PER_DAY } from '../../../../scripts/astroeye-horizons.mjs';
-import { RANGE_BODIES, RANGE_CENTERS, RANGE_SAMPLES, validateRangeReference, readRangeReference, compareRangeReference, compareMoonTimeConventions } from '../../../../scripts/astroeye-range-references.mjs';
+import { HORIZONS_TARGETS, horizonsUrl, parseHorizonsResponse, readReference, SAMPLE_INSTANTS, POSITION_LIMIT_ARCSECONDS, MOTION_LIMIT_DEGREES_PER_DAY } from '../../../../scripts/astroeye-horizons.mjs';
+import { RANGE_BODIES, RANGE_REFERENCE_SOURCES, RANGE_CENTERS, RANGE_SAMPLES, validateRangeReference, readRangeReference, compareRangeReference, compareMoonTimeConventions } from '../../../../scripts/astroeye-range-references.mjs';
 import { calculateAstronomyEnginePositions } from './astronomyEngineProvider.js';
 import { compareUtcTtReference } from '../../../../scripts/astroeye-utc-tt-validation.mjs';
+
+test('range pack covers all ten supported bodies with 90 positions and 30 motion centers', () => {
+  assert.deepEqual(RANGE_BODIES, Object.keys(HORIZONS_TARGETS));
+  assert.equal(RANGE_BODIES.length * RANGE_SAMPLES.length, 90);
+  assert.equal(RANGE_BODIES.length * RANGE_CENTERS.length, 30);
+  assert.ok(Object.isFrozen(RANGE_REFERENCE_SOURCES));
+});
 
 for (const body of RANGE_BODIES) {
   test(`range reference provenance and nine exact epochs: ${body}`, () => {
@@ -13,7 +20,11 @@ for (const body of RANGE_BODIES) {
     assert.equal(fixture.rows.length, 9);
     assert.deepEqual(fixture.rows.map((row) => row.instant), RANGE_SAMPLES);
     assert.equal(fixture.requestUrl, horizonsUrl(body, RANGE_SAMPLES));
-    assert.match(fixture.response.result, /source: DE441/);
+    for (const [label, source] of [['Target', RANGE_REFERENCE_SOURCES[body].target], ['Center', RANGE_REFERENCE_SOURCES[body].center]]) {
+      const header = fixture.response.result.split('\n').find((line) => line.startsWith(`${label} body name:`));
+      assert.equal(header.match(/\{source: ([^}]+)\}/)[1], source);
+    }
+    assert.ok(Object.isFrozen(RANGE_REFERENCE_SOURCES[body]));
     assert.match(fixture.response.result, /Times PRIOR to 1962 are UT1/);
     assert.match(fixture.response.result, /last known leap-second is used as a constant/);
   });
@@ -28,11 +39,11 @@ for (const body of RANGE_BODIES) {
   });
 }
 
-test('range motion screening passes all nine center samples without changing limits', () => {
+test('model-4 range motion screening passes all thirty center samples without changing limits', () => {
   assert.equal(POSITION_LIMIT_ARCSECONDS, 60);
   assert.equal(MOTION_LIMIT_DEGREES_PER_DAY, 0.07);
   for (const body of RANGE_BODIES) {
-    const { motions } = compareRangeReference(body);
+    const { motions } = compareUtcTtReference(body, { range: true });
     assert.deepEqual(motions.map((motion) => motion.instant), RANGE_CENTERS);
     for (const motion of motions) {
       assert.ok(motion.errorDegreesPerDay <= MOTION_LIMIT_DEGREES_PER_DAY);
@@ -66,7 +77,9 @@ test('legacy-model range diagnostic exits nonzero for its preserved discrepancy'
   const result = spawnSync(process.execPath, [command], { timeout: 15000, encoding: 'utf8', windowsHide: true });
   assert.ifError(result.error);
   assert.equal(result.status, 1, result.stderr);
-  assert.deepEqual(JSON.parse(result.stdout).results.map((r) => [r.body, r.passed]), [['Sun', true], ['Moon', false], ['Mercury', true]]);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(report.legacyCalculationModels, [1, 2, 3]);
+  assert.deepEqual(report.results.map((r) => [r.body, r.passed]), RANGE_BODIES.map((body) => [body, body !== 'Moon']));
 });
 
 test('range collector rejects substituted provenance and conventions', () => {
@@ -78,13 +91,16 @@ test('range collector rejects substituted provenance and conventions', () => {
     (f) => { f.response.result = f.response.result.replace('GEOCENTRIC', 'TOPOCENTRIC'); },
     (f) => { f.response.result = f.response.result.replace('NO (AIRLESS)', 'YES'); },
     (f) => { f.response.result = f.response.result.replace('Date_________JDUT', 'Date_________JDTDB'); },
+    (f) => { f.response.result = f.response.result.replace('{source: DE441}', '{source: DE440}'); },
+    (f) => { f.response.result = f.response.result.replace(/(Center body name:[^\n]*)DE441/, '$1DE440'); },
+    (f) => { f.response.result = f.response.result.replace('eop.260911.p261208', 'eop.other'); },
   ];
   for (const change of changes) {
     const fixture = structuredClone(original);
     change(fixture);
     assert.throws(() => validateRangeReference(fixture, 'Sun'), /mismatch/);
   }
-  assert.throws(() => readRangeReference('Pluto'), /Unsupported/);
+  assert.throws(() => readRangeReference('Earth'), /Unsupported/);
 });
 
 test('custom-epoch parser rejects wrong targets, missing rows, epochs and columns', () => {

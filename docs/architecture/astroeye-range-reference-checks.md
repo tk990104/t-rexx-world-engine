@@ -1,5 +1,9 @@
 # AstroEye historical and endpoint position references
 
+Checkpoint 54: [ten-body range references](astroeye-ten-body-range-references.md)
+now extend the pack to 90 positions and 30 motion screens, all passing model 4.
+The checkpoint-51 counts, failures and TODO descriptions below are historical.
+
 Follow-up: [model 4](astroeye-calculation-model-4.md) now activates the corrected
 adapter and passes these unchanged references. The old failure below describes
 models 1–3 and remains visible in the explicitly labeled legacy diagnostic.

@@ -20,7 +20,7 @@ import { signedDelta, POSITION_LIMIT_ARCSECONDS } from '../../../scripts/astroey
 const draft = { id: 'model-four', title: 'Synthetic model four', sport: 'Demo', competition: 'QA', home: 'A', away: 'B',
   localDate: '2100-12-31', localTime: '12:00:00', timeZone: 'UTC', venueName: 'Synthetic', latitude: 40, longitude: -75 };
 const event = eventFromDraft(draft);
-test('default full charts pass all 27 independent range position samples', () => {
+test('default full charts pass all 90 independent range position samples', () => {
   for (const body of RANGE_BODIES) for (const row of readRangeReference(body).rows) {
     const input = eventFromDraft({ ...draft, localDate: row.instant.slice(0, 10), localTime: row.instant.slice(11, 19) });
     const chart = calculateAstroEyeChart(input);

@@ -1,5 +1,11 @@
 # AstroEye calculation model 4
 
+Follow-up checkpoint 54: [ten-body range references](astroeye-ten-body-range-references.md)
+now pass 90 full-chart range positions; both packs total 240 positions and 80
+motion screens. All 392 platform tests pass. The activation-checkpoint results
+below are historical; remaining range work is station/zodiac sampling and final
+candidate verification, not the seven-body extension (now complete).
+
 ## Activated September 13, 2026 — checkpoint 53
 
 New charts default to model 4. It activates the tested

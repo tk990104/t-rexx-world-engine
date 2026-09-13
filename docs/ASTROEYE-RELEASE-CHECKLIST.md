@@ -59,14 +59,15 @@ covers sixteen IANA-derived cases, including second-level offsets, a 23-hour fol
 a fifteen-minute gap and a skipped civil date. These are runtime conformance checks,
 not independent proof of historical timekeeping. A3 remains open for planetary
 range/station/zodiac reference work and final candidate verification.
-[Historical/endpoint position references](architecture/astroeye-range-reference-checks.md)
-cover Sun, Moon and Mercury at three older/endpoint centers. The late-2100 Moon
+[Historical/endpoint position references](architecture/astroeye-ten-body-range-references.md)
+now cover all ten bodies at three older/endpoint centers. The late-2100 Moon
 discrepancy in models 1–3 is preserved as an explicitly labeled legacy diagnostic.
 [Model 4](architecture/astroeye-calculation-model-4.md) now activates corrected
 UTC/TT positions with provenance, compatibility checks and visible time-policy notes.
-All 177 stored positions and 59 motion checks pass unchanged limits; full chart
-and browser integration checks also pass. The active-model Moon TODO is resolved.
-A3 remains open for the remaining seven bodies' range references, station/zodiac
+All 240 stored positions and 80 motion checks pass unchanged limits; full charts
+pass all 90 range positions. All 392 platform tests pass; prior model-4 browser
+integration checks passed at checkpoint 53 and were not rerun for this offline-only
+extension. The active-model Moon TODO is resolved. A3 remains open for station/zodiac
 samples and the complete candidate rerun. Angles, sky rotation and planetary hours
 retain their model-3 time approximations; this does not close A1 or A2.
 First A2 evidence: [USNO solar boundaries and planetary-hour checks](architecture/astroeye-sun-boundary-references.md)
