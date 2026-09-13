@@ -66,6 +66,14 @@ try {
   };
   const saved = () => page.evaluate(() => window.importQA.recordStore.serializeRecords());
   const before = await saved();
+  const initialSelection = await page.evaluate(() => window.importQA.controller.selectionSnapshot());
+  await click('compare-charts');
+  assert.equal(await page.evaluate(() => document.activeElement.className), 'astroeye-empty');
+  assert.match(await page.$eval('.astroeye-empty', (node) => node.textContent), /first save an event or choose one/);
+  await click('find-saved-events');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.role), 'saved-events-heading');
+  assert.equal(await saved(), before);
+  assert.deepEqual(await page.evaluate(() => window.importQA.controller.selectionSnapshot()), initialSelection);
   await choose();
   assert.equal(await saved(), before);
   assert.match(await page.$eval('[data-role="import-summary"]', (node) => node.textContent), /Events: 1 to add · 1 to overwrite/);
@@ -132,6 +140,29 @@ try {
   await click('time-forward');
   const comparisonRecords = await saved();
   const selectionAtPin = await page.evaluate(() => window.importQA.controller.selectionSnapshot());
+  await click('compare-charts');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.role), 'chart-comparison');
+  assert.equal(await page.$eval('[data-comparison="pinned"]', (node) => node.textContent), 'No chart pinned.');
+  for (const width of [390, 1280]) {
+    await page.setViewport({ width, height: 844 });
+    await page.evaluate(() => { document.querySelector('#astroeye-workspace').dataset.skyCompact = 'true'; });
+    await click('compare-charts');
+    const bounds = await page.evaluate(() => {
+      const root = document.querySelector('#astroeye-workspace');
+      const nav = root.querySelector('.astroeye-quick-nav').getBoundingClientRect();
+      const target = root.querySelector('[data-role="chart-comparison"]').getBoundingClientRect();
+      return { expanded: !root.dataset.skyCompact, navTop: nav.top, rootTop: root.getBoundingClientRect().top,
+        navBottom: nav.bottom, targetTop: target.top, overflow: root.scrollWidth > root.clientWidth + 1 };
+    });
+    assert.equal(bounds.expanded, true);
+    assert.equal(bounds.overflow, false);
+    assert.ok(Math.abs(bounds.navTop - bounds.rootTop) <= 2);
+    assert.ok(bounds.targetTop >= bounds.navBottom && bounds.targetTop < bounds.navBottom + 30);
+  }
+  await page.setViewport({ width: 390, height: 844 });
+  assert.equal(await saved(), comparisonRecords);
+  assert.deepEqual(await page.evaluate(() => window.importQA.controller.selectionSnapshot()), selectionAtPin);
+  console.log('PASS: discoverable comparison/saved-event shortcuts, empty guidance, focused targets below sticky navigation, compact expansion and mobile/desktop bounds without selection, pin or record changes.');
   const compareClick = async (action) => { await page.$eval(`[data-comparison="${action}"]`, (button) => button.click()); };
   assert.equal(await page.$eval('[data-comparison="export"]', (button) => button.disabled), true);
   assert.equal(await page.$eval('[data-comparison="aspects-toggle"]', (button) => button.disabled), true);

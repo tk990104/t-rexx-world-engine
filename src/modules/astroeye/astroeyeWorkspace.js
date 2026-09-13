@@ -81,6 +81,10 @@ export function mountAstroEyeWorkspace({
       </div>
       <button class="astroeye-icon-button" type="button" data-action="close" aria-label="Close AstroEye">×</button>
     </header>
+    <nav class="astroeye-quick-nav" aria-label="AstroEye shortcuts">
+      <button type="button" data-action="compare-charts">Compare charts</button>
+      <button type="button" data-action="find-saved-events">Saved events</button>
+    </nav>
     <div class="astroeye-body">
       <section class="astroeye-entry" aria-labelledby="astroeye-event-heading">
         <div class="astroeye-schedule" data-role="schedule"></div>
@@ -125,7 +129,7 @@ export function mountAstroEyeWorkspace({
           <div><span>02</span><h3 id="astroeye-chart-heading">Event chart</h3></div>
           <span class="astroeye-status-dot">READY</span>
         </div>
-        <div class="astroeye-empty">Save an event or choose one below to calculate its chart.</div>
+        <div class="astroeye-empty" tabindex="-1">To compare charts, first save an event or choose one from Saved events. Then use Compare charts → Pin this chart, and select another event or change the Time explorer. Nothing is pinned automatically.</div>
         <div class="astroeye-chart" hidden>
           <div class="astroeye-chart-title"><strong data-chart="title"></strong><span data-chart="time"></span></div>
           <section class="astroeye-time-explorer" aria-labelledby="astroeye-time-heading">
@@ -155,7 +159,7 @@ export function mountAstroEyeWorkspace({
             <button type="button" data-action="save-shared" hidden>Save a copy</button>
           </div>
           <p class="astroeye-help">Use as template replaces unsaved form entries with the event’s original start and venue details. It does not change saved records until you review and save a new event.</p>
-          <section class="astroeye-comparison" data-role="chart-comparison" aria-label="Chart comparison"></section>
+          <section class="astroeye-comparison" data-role="chart-comparison" aria-label="Chart comparison" tabindex="-1"></section>
           <section class="astroeye-tour-controls" aria-label="AstroEye Director tour">
             <h4>Event tour</h4>
             <p class="astroeye-help">World → region → venue at this chart time. Adds three editable shots to Director without replacing existing scenes. Preview only: no video is recorded; live feeds stay live.</p>
@@ -175,7 +179,7 @@ export function mountAstroEyeWorkspace({
           </section>
           <p class="astroeye-provenance" data-chart="provenance"></p>
         </div>
-        <div class="astroeye-saved-header"><h3>Saved events</h3><div><button type="button" data-action="export">Export all</button><button type="button" data-action="import">Import</button></div></div>
+        <div class="astroeye-saved-header"><h3 data-role="saved-events-heading" tabindex="-1">Saved events</h3><div><button type="button" data-action="export">Export all</button><button type="button" data-action="import">Import</button></div></div>
         <section class="astroeye-deletion-undo" data-role="deletion-undo" aria-label="Recover last deleted event" hidden>
           <p data-role="deletion-undo-description" class="astroeye-help"></p>
           <button type="button" data-action="undo-delete">Undo last deletion</button>
@@ -574,11 +578,23 @@ export function mountAstroEyeWorkspace({
     if (button) await selectSavedEvent(button.dataset.eventId);
   });
 
+  function focusWorkspaceSection(target) {
+    // Expand only the panel, as Full chart does; do not alter event sky or globe state.
+    delete root.dataset.skyCompact;
+    target.focus({ preventScroll: true });
+    const navigationHeight = root.querySelector('.astroeye-quick-nav').getBoundingClientRect().height;
+    root.scrollTop += target.getBoundingClientRect().top - root.getBoundingClientRect().top - navigationHeight - 12;
+  }
+
   root.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;
     if (action === 'close') resetImportReview();
-    if (action === 'saved-map' && savedEventLayer && !root.dataset.busy) {
+    if (action === 'compare-charts') {
+      focusWorkspaceSection(selected ? root.querySelector('[data-role="chart-comparison"]') : empty);
+    } else if (action === 'find-saved-events') {
+      focusWorkspaceSection(root.querySelector('[data-role="saved-events-heading"]'));
+    } else if (action === 'saved-map' && savedEventLayer && !root.dataset.busy) {
       await savedEventLayer.setEnabled(!savedEventLayer.state().enabled);
     } else if (action === 'frame-saved-map' && onViewSavedEvents && !root.dataset.busy) {
       try {

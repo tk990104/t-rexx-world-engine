@@ -18,6 +18,9 @@
 }
 
 .astroeye-workspace[hidden] { display: none; }
+.astroeye-quick-nav { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px; background: #100d20; border-bottom: 1px solid rgba(120,231,255,.3); }
+.astroeye-quick-nav button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--astro-cyan); border-radius: 7px; background: #1b2337; color: #fff; font: inherit; font-size: 12px; cursor: pointer; }
+.astroeye-quick-nav :focus-visible, .astroeye-comparison:focus-visible, .astroeye-empty:focus-visible, [data-role="saved-events-heading"]:focus-visible { outline: 2px solid var(--astro-cyan); outline-offset: 2px; }
 .astroeye-workspace[data-sky-compact="true"] { top: auto; left: auto; right: 16px; bottom: 70px; width: min(340px, calc(100vw - 32px)); max-height: 370px; }
 .astroeye-workspace[data-sky-compact="true"] .astroeye-body { display: block; }
 .astroeye-workspace[data-sky-compact="true"] .astroeye-entry,

@@ -1,5 +1,11 @@
 # Pin and compare chart positions
 
+Use the **Compare charts** shortcut directly below AstroEye's header. The shortcut bar stays visible while scrolling and also offers **Saved events**. With an open event chart, Compare charts scrolls to and focuses the comparison section; without one, it focuses instructions explaining how to save/select an event first. It never automatically pins or selects a chart. Saved events jumps to the list heading without changing the current selection. Either shortcut expands a compact Event sky panel like Full chart, without switching off event sky or changing globe state.
+
+The navigation regression checks empty guidance, focused destinations below the sticky bar, compact-panel expansion, 390/1280 px layouts and unchanged stored records, selection and pin state. It runs inside the existing isolated browser check with its 60-second watchdog.
+
+Navigation checkpoint verification: production build passed with existing warnings. The first browser run completed assertions but exceeded its watchdog during cleanup; one retry without a concurrent build passed, including cleanup, under the unchanged limit. No live-globe or full inherited release-suite run was performed.
+
 Open a chart and use **Chart comparison → Pin this chart**. Then choose another saved event or move the time explorer. The pinned snapshot retains its exact chart time, including an unsaved preview offset. **Replace pinned chart** captures the newly displayed chart; **Clear pinned chart** removes the snapshot and returns keyboard focus to Pin.
 
 The table compares Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto, Ascendant and Midheaven. Each row shows pinned longitude, current longitude and shortest unsigned angular separation from 0 to 180 degrees. Display precision is two decimal places; calculations are not rounded before subtraction. Missing or invalid values display Unavailable rather than zero.
