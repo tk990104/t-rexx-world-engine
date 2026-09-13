@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+Research notes now offers **Download note draft (.txt)** to preserve the editor's current text without saving or overwriting the notebook. It includes unsaved edits and remains usable after a save conflict, whose warning stays visible. The file is plaintext, not an importable world-record backup. See [draft recovery boundaries](architecture/astroeye-research-notebook.md).
+
 Research notes now offers **Append current chart reference**: a reviewable, unsaved text block containing the displayed event title, exact UTC chart time and calculation conventions. It preserves time-explorer previews without copying coordinates, selecting/pinning charts or automatically saving. The block stays static as charts change; overflow refuses the entire append. See [notebook chart references](architecture/astroeye-research-notebook.md).
 
 **Research notes** opens a local notebook across events, loaded on request and saved explicitly. Full backups include saved notes; matching-event exports, comparison reports, links and tours do not. Atomic stale-write protection preserves drafts when storage has changed. Notes are not encrypted or cloud-synced, and unsaved text does not survive reload. See [notebook boundaries and verification](architecture/astroeye-research-notebook.md).

@@ -63,6 +63,7 @@ export function mountAstroEyeWorkspace({
   onViewSavedEvents = null,
   downloadRecords = downloadJson,
   downloadComparison,
+  downloadNotebookDraft,
 } = {}) {
   requireController(controller);
   if (!host?.append) throw new TypeError('AstroEye workspace host must be a DOM element');
@@ -304,7 +305,7 @@ export function mountAstroEyeWorkspace({
   let selected = null;
   const comparison = mountChartComparison(root.querySelector('[data-role="chart-comparison"]'), { downloadReport: downloadComparison });
   const notebookHost = root.querySelector('[data-role="research-notebook"]');
-  const notebookPanel = researchNotebook ? mountResearchNotebook(notebookHost, { notebook: researchNotebook }) : null;
+  const notebookPanel = researchNotebook ? mountResearchNotebook(notebookHost, { notebook: researchNotebook, downloadDraft: downloadNotebookDraft }) : null;
   notebookPanel?.updateChart(null, null);
   root.querySelector('[data-action="research-notes"]').hidden = !notebookPanel;
   let userInteracted = false;

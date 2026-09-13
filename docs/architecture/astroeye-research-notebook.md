@@ -4,6 +4,10 @@ Choose **Research notes** in AstroEye's sticky shortcut bar. The notebook is one
 
 ## User workflow
 
+**Download note draft (.txt)** downloads the editor's current text, including unsaved edits, as `t-rexx-research-note-draft.txt`. It adds no metadata/header and includes no records outside the editor. This UTF-8 plaintext file is not an importable world-record backup; to recover a draft, copy its contents into the editor and explicitly save. The action is available for any nonempty loaded draft, including after a storage conflict. It does not save, discard edits, change the saved baseline or resolve the conflict. Download status is separate so a storage-conflict warning remains visible. The UI says download requested, not that a file was successfully saved to disk. Review personal details before sharing.
+
+Empty drafts and pending reads/writes disable download. The payload validates the 10,000-character limit without truncation. Dispatch creates a temporary Blob URL and revokes it after one second; no upload, clipboard access, new dependency or database migration is introduced.
+
 Notes are loaded only when the notebook is first opened. **Save notes** explicitly writes the current draft; editing alone does not save. Unsaved edits survive closing/reopening AstroEye within the same page, but not page reload, app restart or destruction of the panel. A visible count and unsaved indicator distinguish drafts. There is no autosave or unload prompt.
 
 **Reload saved notes** asks for confirmation before discarding a changed draft. Save failures keep the draft editable. If saved notes changed in another tab or through import, saving refuses the overwrite and asks the user to copy their draft somewhere safe before reloading. Saving an empty draft deliberately replaces the note text with an empty string; it does not delete event records. Editing is disabled during a pending read/write. An already-requested save may finish after closing or destroying the panel; late results cannot redraw a destroyed panel.
@@ -25,6 +29,10 @@ The notebook uses the existing IndexedDB `workspaces` store with ID `astroeye-re
 `createResearchNotebook` exposes only notebook load/save capabilities to its panel. `saveWorkspaceIfUnchanged` compares the entire expected workspace record against the current one inside a single IndexedDB read/write transaction before writing. A null baseline means the record must still be absent. Concurrent first saves therefore cannot overwrite each other. Extra supported-record metadata is preserved; unsupported versions/types refuse notebook editing without altering the original record.
 
 ## Verification
+
+Draft-download checkpoint: 20 targeted download/reference/notebook/storage tests passed. The isolated notebook browser test verified the exact unsaved payload, empty guard, simulated download failure, retained dirty state, retained conflict warning and unchanged saved records. It captures the download callback rather than exercising a native download dialog or certifying a file on disk.
+
+The integrated workspace browser regression and production build passed for this checkpoint too. Both browser checks retained 60-second watchdogs; build warnings were the existing externalization/bundle-size warnings.
 
 Chart-reference checkpoint: 40 targeted reference/notebook/storage/controller tests passed. The isolated notebook browser check verifies exact preview time, preserving existing text, no writes or selection change from append, no automatic update of inserted text, focus and all-or-nothing overflow refusal. Existing notebook checks also pass. Native user data and full-globe rendering are not used.
 

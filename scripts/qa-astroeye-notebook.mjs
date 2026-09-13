@@ -35,9 +35,12 @@ try {
     await controller.saveDraft({ id: 'sample', title: 'Sample', sport: 'Demo', competition: 'Cup', home: 'Home', away: 'Away',
       localDate: '2026-09-12', localTime: '12:00', timeZone: 'UTC', venueName: 'Arena', latitude: 40, longitude: -75 });
     let reads = 0;
-    const workspace = mountAstroEyeWorkspace({ controller, researchNotebook: { save: notebook.save, load: () => { reads++; return notebook.load(); } } });
+    const downloads = [];
+    let failDownload = false;
+    const workspace = mountAstroEyeWorkspace({ controller, researchNotebook: { save: notebook.save, load: () => { reads++; return notebook.load(); } },
+      downloadNotebookDraft: (file) => { if (failDownload) throw new Error('Simulated download failure'); downloads.push(file); } });
     await workspace.open();
-    window.noteQA = { workspace, notebook, records, controller, reads: () => reads,
+    window.noteQA = { workspace, notebook, records, controller, downloads, setDownloadFailure: (value) => { failDownload = value; }, reads: () => reads,
       before: await records.exportRecords(), selection: controller.selectionSnapshot() };
   });
   const value = () => page.$eval('.astroeye-research-notebook textarea', (node) => node.value);
@@ -48,6 +51,7 @@ try {
   assert.equal(await page.evaluate(() => window.noteQA.reads()), 0);
   await page.$eval('[data-action="research-notes"]', (node) => node.click()); await settle();
   assert.equal(await page.evaluate(() => document.activeElement.dataset.role), 'research-notebook');
+  assert.equal(await page.$eval('[data-note="download"]', (node) => node.disabled), true);
   assert.equal(await page.$eval('[data-note="append-reference"]', (node) => node.disabled), true);
   await page.evaluate(() => window.noteQA.workspace.selectSavedEvent('sample'));
   const chartAction = async (name) => {
@@ -75,6 +79,18 @@ try {
   console.log('PASS: append-current-reference preserves draft and exact preview time, makes no writes/selection changes, stays static across previews and refuses overflow without truncation.');
   const text = 'Observation <img src=x onerror=alert(1)>\nKeep this note private.';
   await edit(text);
+  const beforeDownload = await page.evaluate(() => window.noteQA.records.serializeRecords());
+  await click('download');
+  assert.deepEqual(await page.evaluate(() => window.noteQA.downloads.at(-1)), { text, filename: 't-rexx-research-note-draft.txt', mimeType: 'text/plain;charset=utf-8' });
+  assert.equal(await page.evaluate(() => window.noteQA.records.serializeRecords()), beforeDownload);
+  assert.equal(await value(), text);
+  assert.equal(await page.$eval('[data-note="save"]', (node) => node.disabled), false);
+  assert.match(await page.$eval('[data-note="download-status"]', (node) => node.textContent), /download requested/);
+  await page.evaluate(() => window.noteQA.setDownloadFailure(true));
+  await click('download');
+  assert.match(await page.$eval('[data-note="download-status"]', (node) => node.textContent), /Simulated download failure/);
+  assert.equal(await value(), text);
+  await page.evaluate(() => window.noteQA.setDownloadFailure(false));
   assert.equal(await page.evaluate(() => window.noteQA.notebook.load()), null);
   await page.evaluate(async () => { window.noteQA.workspace.close(); await window.noteQA.workspace.open(); });
   assert.equal(await value(), text);
@@ -90,6 +106,12 @@ try {
   });
   await click('save'); assert.match(await status(), /changed in storage/);
   assert.equal(await value(), 'Unsaved draft');
+  const beforeConflictDownload = await page.evaluate(() => window.noteQA.records.serializeRecords());
+  await click('download');
+  assert.equal(await page.evaluate(() => window.noteQA.downloads.at(-1).text), 'Unsaved draft');
+  assert.equal(await page.evaluate(() => window.noteQA.records.serializeRecords()), beforeConflictDownload);
+  assert.match(await status(), /changed in storage/);
+  assert.equal(await page.$eval('[data-note="save"]', (node) => node.disabled), false);
   assert.equal(await page.evaluate(async () => (await window.noteQA.notebook.load()).text), 'Newer notes from another tab');
   page.once('dialog', (dialog) => { void dialog.accept(); }); await click('reload');
   assert.equal(await value(), 'Newer notes from another tab');
@@ -106,5 +128,6 @@ try {
   assert.deepEqual(JSON.parse(matching).workspaces, []);
   await page.evaluate(async () => { window.noteQA.workspace.destroy(); await window.noteQA.records.close(); });
   assert.deepEqual(errors, []);
+  console.log('PASS: exact unsaved draft download payload, empty guard, failure preserves text, conflict message/baseline retained and no saved-record changes. Native file saving is not exercised.');
   console.log('PASS: lazy load, explicit save, draft retained across close, literal text, conflict keeps draft/newer notes, reload confirmation, full-backup inclusion/matching-export exclusion, unchanged event/chart/selection and mobile/desktop bounds.');
 } finally { await browser?.close(); clearTimeout(deadline); }
