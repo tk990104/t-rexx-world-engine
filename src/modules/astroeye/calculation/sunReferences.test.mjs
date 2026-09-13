@@ -12,12 +12,13 @@ const sequences = [
     'Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon Saturn Jupiter Mars Sun Venus Mercury Moon'],
 ];
 
-test('USNO sunrise/set samples pass the preselected two-minute screen; polar night remains unavailable', () => {
+test('USNO sunrise/set samples pass the preselected two-minute screen; polar day and night remain unavailable', () => {
   const pack = readSunReferences(), before = JSON.stringify(pack);
   const results = compareSunReferences(pack);
   assert.equal(results.filter((r) => r.status === 'rise-set').length, 6);
   assert.ok(results.every((r) => r.passed), JSON.stringify(results));
   assert.equal(results.at(-1).status, 'polar-night');
+  assert.equal(results.filter((r) => r.status === 'polar-day').length, 1);
   assert.equal(JSON.stringify(pack), before);
 });
 
@@ -82,6 +83,49 @@ test('continuous twilight is not polar day: 65N retains a short night and preced
   const missingRise = structuredClone(row);
   missingRise.response.properties.data.sundata = missingRise.response.properties.data.sundata.filter((r) => r.phen !== 'Rise');
   assert.throws(() => parseSunReference(missingRise), /USNO solar reference/);
+});
+
+test('southern USNO continuous daylight is accepted without treating transit times as rise/set', () => {
+  const row = readSunReferences().cases.find((r) => r.id === 'southern-polar-day');
+  assert.deepEqual(parseSunReference(row), { id: row.id, status: 'polar-day', noon: '2024-12-21T12:00:00.000Z' });
+  for (const time of ['00:00:00.000', '12:00:00.000', '23:59:59.999']) {
+    const hour = calculatePlanetaryHour({ ...row, utcInstant: `${row.date}T${time}Z` });
+    assert.equal(hour.status, 'unavailable');
+    assert.match(hour.reason, /No complete sunrise–sunset–sunrise interval/);
+    for (const field of ['ruler', 'dayRuler', 'start', 'end', 'hourNumber']) assert.equal(Object.hasOwn(hour, field), false);
+  }
+});
+
+test('polar reference notices reject duplicates, contradictions and spurious boundaries', () => {
+  for (const id of ['southern-polar-day', 'southern-polar-night']) {
+    for (const mutate of [
+      (entries) => { entries.push({ ...entries[0] }); },
+      (entries) => { entries[0].time = '00:00'; },
+      (entries) => { entries[0].time = undefined; },
+      (entries) => { entries.push({ phen: 'Rise', time: '01:00' }); },
+      (entries) => { entries.push({ phen: 'Set', time: '23:00' }); },
+      (entries) => { entries.push({ phen: id === 'southern-polar-day' ? 'Object continuously below the Horizon' : 'Object continuously above the Horizon', time: null }); },
+      (entries) => { entries.shift(); }, // Twilight/transit alone is not a polar-day/night reference.
+    ]) {
+      const row = readSunReferences().cases.find((r) => r.id === id);
+      mutate(row.response.properties.data.sundata);
+      assert.throws(() => parseSunReference(row), /USNO solar reference/);
+    }
+  }
+});
+
+test('polar-day source metadata must still match its requested date, coordinates and zone', () => {
+  for (const mutate of [
+    (r) => { r.response.geometry.coordinates[1] = 80; },
+    (r) => { r.response.properties.data.month = 6; },
+    (r) => { r.response.properties.data.day_of_week = 'Friday'; },
+    (r) => { r.timeZone = 'Asia/Tokyo'; },
+    (r) => { r.response.error = 'failed request'; },
+  ]) {
+    const row = readSunReferences().cases.find((r) => r.id === 'southern-polar-day');
+    mutate(row);
+    assert.throws(() => parseSunReference(row), /USNO solar reference/);
+  }
 });
 
 test('shifted source times fail without widening the comparison tolerance', () => {

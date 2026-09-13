@@ -41,9 +41,11 @@ export function parseSunReference(row) {
   const rises = data.sundata.filter((entry) => entry.phen === 'Rise');
   const sets = data.sundata.filter((entry) => entry.phen === 'Set');
   const absent = data.sundata.filter((entry) => entry.phen === 'Object continuously below the Horizon');
-  if (absent.length) {
-    if (absent.length !== 1 || absent[0].time !== null || rises.length || sets.length) fail();
-    return { id: row.id, status: 'polar-night', noon: utcAt('12:00') };
+  const continuousDay = data.sundata.filter((entry) => entry.phen === 'Object continuously above the Horizon');
+  if (absent.length || continuousDay.length) {
+    const notices = [...absent, ...continuousDay];
+    if (notices.length !== 1 || notices[0].time !== null || rises.length || sets.length) fail();
+    return { id: row.id, status: absent.length ? 'polar-night' : 'polar-day', noon: utcAt('12:00') };
   }
   if (rises.length !== 1 || sets.length !== 1) fail();
   const rise = utcAt(rises[0].time), set = utcAt(sets[0].time);
@@ -54,11 +56,11 @@ export function parseSunReference(row) {
 export function compareSunReferences(pack = readSunReferences()) {
   if (pack?.schemaVersion !== 1 || pack.source?.id !== 'usno-rstt-oneday'
     || pack.source?.retrievedOn !== '2026-09-13' || pack.toleranceSeconds !== 120
-    || pack.boundaryProbeSeconds !== 240 || !Array.isArray(pack.cases) || pack.cases.length !== 7
-    || new Set(pack.cases.map((row) => row.id)).size !== 7) throw new Error('Unsupported solar reference contract');
+    || pack.boundaryProbeSeconds !== 240 || !Array.isArray(pack.cases) || pack.cases.length !== 8
+    || new Set(pack.cases.map((row) => row.id)).size !== 8) throw new Error('Unsupported solar reference contract');
   return pack.cases.map((row) => {
     const reference = parseSunReference(row);
-    if (reference.status === 'polar-night') {
+    if (reference.status === 'polar-night' || reference.status === 'polar-day') {
       const hour = calculatePlanetaryHour({ ...row, utcInstant: reference.noon });
       return { id: row.id, status: reference.status, passed: hour.status === 'unavailable' };
     }

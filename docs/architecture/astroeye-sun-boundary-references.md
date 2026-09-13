@@ -2,7 +2,7 @@
 
 ## Source and scope
 
-Seven selected-field responses from the [U.S. Naval Observatory one-day
+Eight selected-field responses from the [U.S. Naval Observatory one-day
 service](https://aa.usno.navy.mil/data/api) were retrieved on 2026-09-13. API signature
 4.0.1, request URL, coordinates, local date, weekday, fixed offset, DST flag and solar
 entries are retained. Moon/phase/label fields are omitted explicitly. These are
@@ -12,6 +12,7 @@ synthetic calculation samples, not user events.
 - Sydney: 2024-06-21 and 2024-06-22, offset +10, Australia/Sydney.
 - Latitude +65, longitude 0: 2024-06-21 and 2024-06-22, offset 0, UTC.
 - Latitude -80, longitude 0: 2024-06-21, offset 0, UTC, continuous solar absence.
+- Latitude -80, longitude 0: 2024-12-21, offset 0, UTC, continuous daylight.
 
 The northern +80-degree request failed with a transport EOF twice. It was not accepted
 as a fixture. A failed PowerShell loop iteration retained the previous response in
@@ -24,6 +25,12 @@ and -80 December 21 polar-day requests failed through PowerShell and one bounded
 curl retry per request (TLS handshake failures/timeouts); neither was accepted.
 Reference collection never bypassed certificate verification. The new +65 samples
 are long-day/short-night evidence, not polar-day or seasonal-transition coverage.
+
+Checkpoint 46's single bounded retry per missing reference succeeded for southern
+polar day on December 21. Its coordinates, date, weekday, offset and API version
+match the request, and all solar entries are retained. The northern request still
+failed with a TLS handshake error; it remains excluded. Earlier failure notes above
+are historical retrieval attempts, not the current status of the southern sample.
 
 ## Conventions and tolerance
 
@@ -60,6 +67,15 @@ The southern polar-night sample returns planetary-hour unavailable, consistent w
 the reference's continuous-absence result. This single-day reference does not certify
 the implementation's entire two-day search window.
 
+The southern polar-day sample also returns planetary-hour unavailable at midnight,
+noon and the last millisecond of the reference date. No ruler, hour number or hour
+endpoints are fabricated. Transit entries are not sunrise/set boundaries. The parser
+requires one explicit continuous-above-horizon notice; it rejects duplicate notices,
+conflicting above/below notices, rise/set entries alongside a polar notice, and a
+missing or non-null notice time. Twilight-only data remains insufficient. These
+checks cover one externally referenced date, not every instant of a polar season
+or the entire surrounding two-day search range.
+
 For each consecutive-day pair, tests divide the independent rounded rise/set/next-rise interval
 into 12 day and 12 night segments. At all **72 segment midpoints**, AstroEye returns
 the expected hour number, period, conventional ruler sequence and day ruler; each
@@ -94,9 +110,10 @@ the user's saved records or browser.
 ## Remaining release work
 
 **A2 remains open.** [Model 3](astroeye-planetary-hour-model-3.md) now has exact computed-edge
-contracts and additional timezone/DST checks. Still needed: near-polar seasonal-transition
-samples and accepted independent polar-day coverage. Existing internal polar-day tests
-and the new 65N short-night cases are not external polar-day certification.
+contracts and additional timezone/DST checks. One independent southern polar-day
+sample is now accepted. Still needed: near-polar seasonal-transition samples and
+broader northern/seasonal coverage. The 65N short-night pair and one southern
+solstice day do not certify seasonal onset/exit or the full search window.
 The returned status string `exact` is an existing application label, not a claim that
 observed sunrise or all planetary-hour boundary times are scientifically exact.
 The unresolved precise polar angle/MC/cusp reference requirement in A1 is unchanged.
@@ -115,3 +132,11 @@ sampled discrepancy of 28.878 seconds. The three new tests cover the 65N full-cy
 midpoints, rollover probes and continuous-twilight/short-night distinction. No
 production build or browser check was repeated for this test/documentation-only
 checkpoint. The application algorithm and user records are unchanged.
+
+## Checkpoint 46 verification — 2026-09-13
+
+All **295 platform tests** passed in 19.70 seconds, including fourteen solar-reference
+tests. The standalone eight-sample offline comparison passed. Three new tests cover
+southern continuous daylight, invalid/contradictory polar notices and polar-source
+metadata mismatches. Existing solar time tolerances were unchanged. No production
+build or browser check was repeated for these test/documentation-only changes.
