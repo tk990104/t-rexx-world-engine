@@ -43,6 +43,10 @@ The responses collected on 2026-09-10 UTC report API signature 1.2, although the
 
 ## Remaining validation
 
+The first [angle geometry reference slice](astroeye-angle-validation.md) now passes
+one independently published horizon-intersection example and separate internal
+geometry/cusp-rule regressions. It does not close the remaining items below.
+
 - Independent references for ASC/MC and supported house cusps.
 - Independent sunrise/sunset boundary checks and planetary-hour rollover checks.
 - More dates near planetary stations, zodiac boundaries, and historical time-zone transitions.

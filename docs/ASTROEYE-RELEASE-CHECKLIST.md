@@ -50,6 +50,9 @@ Existing standalone Chromium results do not certify the embedded preview host.
   sampled agreement, not universal accuracy or predictive validity.
 
 Start with the existing [validation backlog](architecture/astroeye-validation.md).
+First A1 evidence: [published horizon example and geometric regression checks](architecture/astroeye-angle-validation.md).
+This partial reference slice leaves A1 open; independent date/location, MC and cusp
+references and polar branch validation are still required.
 Keep reference retrieval separate from offline tests and normal app startup. No Swiss
 Ephemeris integration or license purchase is included in this work package.
 

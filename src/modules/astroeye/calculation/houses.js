@@ -23,10 +23,24 @@ export function calculateAngles(utcInstant, latitude, longitude) {
   if (Math.abs(lat) === 90) throw new RangeError('Ascendant is undefined exactly at a geographic pole');
 
   const siderealDegrees = normalizeLongitude(Astronomy.SiderealTime(date) * 15 + lon);
-  const theta = radians(siderealDegrees);
   const obliquity = Astronomy.e_tilt(Astronomy.MakeTime(date)).tobl;
+  return calculateAnglesFromOrientation(siderealDegrees, lat, obliquity);
+}
+
+/** Pure geometry seam for independently published orientation reference cases. */
+export function calculateAnglesFromOrientation(localSiderealDegrees, latitude, trueObliquityDegrees) {
+  if (![localSiderealDegrees, latitude, trueObliquityDegrees].every(Number.isFinite)) {
+    throw new TypeError('Orientation inputs must be finite numbers');
+  }
+  if (Math.abs(latitude) >= 90) throw new RangeError('Orientation latitude must be strictly between -90 and 90');
+  if (trueObliquityDegrees <= 0 || trueObliquityDegrees >= 90) {
+    throw new RangeError('Obliquity must be strictly between 0 and 90');
+  }
+  const siderealDegrees = normalizeLongitude(localSiderealDegrees);
+  const obliquity = trueObliquityDegrees;
+  const theta = radians(siderealDegrees);
   const epsilon = radians(obliquity);
-  const phi = radians(lat);
+  const phi = radians(latitude);
 
   const ascendant = normalizeLongitude(degrees(Math.atan2(
     -Math.cos(theta),

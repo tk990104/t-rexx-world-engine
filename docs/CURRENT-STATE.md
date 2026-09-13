@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+The first [angle-reference validation slice](architecture/astroeye-angle-validation.md) adds a published horizon-intersection fixture and geometric checks across hemispheres, wrap and both supported cusp rules. All 218 platform tests passed. A1 remains open: these checks do not independently certify date-to-angle calculations, MC/house cusp references or polar branch semantics.
+
 The [AstroEye v0.1 release checklist](ASTROEYE-RELEASE-CHECKLIST.md) now sets a bounded finish line: 15 open acceptance gates across calculation validation, voice, durable event annotations, end-to-end usability and release engineering. This is a planning checkpoint, not a release certification; the next implementation step is independent angle/house validation.
 
 `npm run qa:astroeye-browser-safety` now verifies real Chromium text-file downloads and the notebook's native leave-warning lifecycle with synthetic data in a fresh browser. The check passed; the user's embedded preview host is not certified by it. See [browser safety coverage](architecture/astroeye-browser-safety.md).

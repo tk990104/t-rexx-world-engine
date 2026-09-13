@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "title": "PyMeeus 0.5.12 Coordinates.ecliptic_horizon published example",
+    "url": "https://pymeeus.readthedocs.io/en/latest/_modules/pymeeus/Coordinates.html#ecliptic_horizon",
+    "retrievedOn": "2026-09-12",
+    "scope": "Numeric example only; no library code or dependency is included."
+  },
+  "input": {
+    "localSiderealDegrees": 75,
+    "latitude": 51,
+    "trueObliquityDegrees": 23.44
+  },
+  "horizonIntersectionsDms": [[169, 21, 29.9], [349, 21, 29.9]],
+  "toleranceArcseconds": 0.1,
+  "conventions": "Source sidereal input is 5 hours, converted to 75 degrees. Source gives two antipodal horizon intersections, not an identified Ascendant or Midheaven. No date, geographic longitude, atmosphere or sidereal-time model is specified. Tolerance is twice the 0.05 arcsecond half-step of the printed 0.1 arcsecond rounding; fixed before running the comparison."
+}
