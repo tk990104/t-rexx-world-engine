@@ -103,6 +103,9 @@ exit; earlier forced-cleanup reports remain historical. Embedded-host and live c
 remain open.
 
 Complete remaining host checks without exposing real saved records.
+Checkpoint 69 provides a [local prerequisite diagnostic](astroeye-host-compatibility.md)
+that can be run manually in the embedded browser. The browser-control tool currently
+fails to initialize; the isolated diagnostic-page check is not actual host acceptance.
 Before any live test, explicitly agree on provider, microphone use, outgoing
 audio/transcript/tool/map context, session length and possible metered charges. Use
 synthetic records and a small command sequence; record outcomes without storing

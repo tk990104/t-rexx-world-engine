@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>T-Rexx World Engine — Browser check</title>
+  <link rel="stylesheet" href="./astroeye-host.css">
+  <script type="module" src="./astroeye-host.mjs"></script>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">T-REXX WORLD ENGINE · LOCAL DIAGNOSTICS</p>
+    <h1>Check this browser</h1>
+    <p>This separate page checks features used by AstroEye and optional voice controls.
+      It does not open the globe or your saved-event database.</p>
+    <p>No microphone prompt, recording, speech playback, provider request, or stored-data
+      read or write. The graphics check briefly creates and releases a blank WebGL context.</p>
+    <button id="run" type="button">Run local feature checks</button>
+    <p id="status" role="status" aria-live="polite">Not run. Nothing is tested until you press the button.</p>
+    <ul id="checks" aria-label="Browser feature results"></ul>
+    <section id="results" hidden>
+      <h2>What this means</h2>
+      <p>“Detected” means a prerequisite exists, not that the feature works end to end.
+        Storage persistence, microphone permissions, voice recognition, provider access,
+        chart accuracy, embedded-host behavior and performance still need separate tests.</p>
+      <p>Missing voice features do not by themselves prevent manual AstroEye use.
+        If graphics, storage APIs or named time zones are missing, manual use may also be affected.</p>
+      <label for="report">Optional report — select and copy this text to share the results</label>
+      <textarea id="report" rows="12" readonly spellcheck="false"></textarea>
+      <p>The report contains only these checks, not your browser identity, location, keys or records.
+        Nothing is sent automatically.</p>
+    </section>
+    <noscript>JavaScript is unavailable or blocked. No checks were run.</noscript>
+  </main>
+</body>
+</html>
