@@ -669,6 +669,15 @@ export function initFreeVoice({
       };
       recognition.onerror = (event) => {
         if (!listening || recognition !== session) return;
+        // Permission/device failures need a deliberate retry, not onend's
+        // automatic restart loop. Invalidate callbacks before aborting.
+        if (['not-allowed', 'service-not-allowed', 'audio-capture'].includes(event.error)) {
+          listening = false;
+          recognition = null;
+          activeTurn?.abort();
+          agent.reset();
+          try { session.abort?.(); } catch { /* already stopped */ }
+        }
         // 'no-speech' fires constantly during a pause and is not an error worth
         // reporting; anything else is.
         if (event.error !== 'no-speech' && event.error !== 'aborted') {

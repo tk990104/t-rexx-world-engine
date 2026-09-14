@@ -183,6 +183,13 @@ transport, cancellation and disclosure work is implemented; V1 review and V2/V3
 acceptance remain open, especially host UI and authorized live-provider checks.
 Checkpoint 60/61 transport-pending statements above are historical.
 
+Checkpoint 63 adds [isolated browser failure evidence](architecture/astroeye-voice-transports.md#checkpoint-63--simulated-browser-failures)
+for missing providers, throttling, microphone denial, privacy disclosure and manual
+chart use after failure. Permanent speech errors no longer auto-retry. All 782
+regression tests and the bounded Chromium harness pass. This does not exercise the
+embedded host, the full fallback MIC binding or a live provider; V1/V2 review and
+remaining V3 acceptance stay open. No release gate is closed.
+
 ## 3. Persistent event-linked map research
 
 - [ ] **R1 — Record contract:** define a versioned local annotation record with stable ID,

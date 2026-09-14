@@ -30,6 +30,8 @@ try {
     const { EventBus } = await import('/src/core/eventBus.js');
     const { ModuleStateCoordinator } = await import('/src/core/moduleState.js');
     const { WorldClock } = await import('/src/core/worldClock.js');
+    const { initFreeVoice } = await import('/src/voice/freeVoice.js');
+    const { initGevVoiceCommands } = await import('/src/voice/gevRealtime.js');
     const check = (condition, message) => { if (!condition) throw new Error(message); };
     const store = createWorldRecordStore({ databaseName: 'qa-astroeye-commands-isolated' });
     const eventBus = new EventBus(), controller = createAstroEyeWorkspaceController({ recordStore: store,
@@ -77,9 +79,70 @@ try {
     check(controller.selectionSnapshot().offsetMinutes === 30, 'Cancelled selection changed preview');
     check((await run('close')).ok && workspace.root.hidden && !state.enabled, 'Close did not restore sky/workspace');
     check(await store.serializeRecords() === before, 'Commands changed durable records');
+    // Isolated, synthetic voice failures: no native microphone or AI requests.
+    const speechSessions = [], utterances = [], voiceStates = [], requests = [];
+    class MockRecognition {
+      constructor() { speechSessions.push(this); this.starts = 0; }
+      start() { this.starts++; } stop() {} abort() { this.onend?.(); }
+    }
+    const speech = { getVoices: () => [], addEventListener() {}, cancel() {}, speak: (u) => utterances.push(u.text) };
+    Object.defineProperty(window, 'SpeechRecognition', { configurable: true, value: MockRecognition });
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: speech });
+    const viewer = { __gevViewTargetPrewarmInstalled: true,
+      clock: { onTick: { addEventListener: () => () => {} } },
+      scene: { canvas: { addEventListener() {}, removeEventListener() {} } } };
+    let tokenAvailable = false, microphoneAttempts = 0;
+    const nativeFetch = window.fetch;
+    window.fetch = async (url, options = {}) => {
+      requests.push({ url: String(url), body: options.body || '' });
+      if (String(url).startsWith('/api/realtime/token')) {
+        return new Response(JSON.stringify(tokenAvailable ? { value: 'synthetic-token-not-a-credential' } : { error: 'QA provider not configured' }), { status: tokenAvailable ? 200 : 503 });
+      }
+      if (String(url) === '/api/openrouter/chat') return new Response('{}', { status: 429 });
+      throw new Error('Unexpected fetch in isolated voice QA');
+    };
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+      getUserMedia: async () => { microphoneAttempts++; throw new DOMException('QA microphone denied', 'NotAllowedError'); },
+    } });
+    const voice = initFreeVoice({ viewer, commandRegistry: registry });
+    voice.onStateChange((status, text) => voiceStates.push({ status, text }));
+    voice.setAiAvailable(false);
+    await voice.handle('open astroeye');
+    check(!workspace.root.hidden && requests.length === 0, 'Direct command needed an AI provider');
+    await voice.handle('what can you tell me about this chart?');
+    check(requests.length === 0 && voiceStates.at(-1).text.includes('NO AI MODEL'), 'Missing-provider fallback failed');
+    voice.setAiAvailable(true);
+    const snapshot = JSON.stringify(controller.selectionSnapshot());
+    await voice.handle('what can you tell me about this chart?');
+    check(JSON.stringify(controller.selectionSnapshot()) === snapshot, 'Provider failure changed chart');
+    check(voiceStates.at(-1).status === 'idle', 'Provider failure stranded UI');
+    check(!requests.some((r) => r.body.includes('Private QA venue') || r.body.includes('qa-one')), 'Prompt leaked saved fields');
+    for (const error of ['not-allowed', 'service-not-allowed', 'audio-capture']) {
+      check(voice.start(), 'Synthetic recognition failed to start');
+      const session = speechSessions.at(-1);
+      session.onerror({ error }); session.onend();
+      check(!voice.isListening() && session.starts === 1, 'Denied speech restarted automatically');
+      check(voiceStates.at(-1).status === 'error', 'Denied speech lost error state');
+    }
+    const realtime = initGevVoiceCommands({ viewer, commandRegistry: registry });
+    realtime.debugLog = () => {};
+    check(document.querySelector('#gev-voice-button').title.includes('Saved collections and notebooks are not attached'), 'Voice disclosure missing');
+    await realtime.start();
+    check(realtime.status === 'error' && microphoneAttempts === 0, 'Missing token did not fail before microphone');
+    check(document.querySelector('#gev-voice-detail').textContent === 'VOICE UNAVAILABLE', 'Token error UI missing');
+    tokenAvailable = true;
+    await realtime.start();
+    check(realtime.status === 'error' && microphoneAttempts === 1 && realtime.stream === null, 'Microphone denial left active resources');
+    check(document.querySelector('#gev-voice-error-detail').textContent.includes('QA microphone denied'), 'Microphone error detail missing');
+    // Manual chart controls still work following both failed voice paths.
+    workspace.root.querySelector('[data-action="time-reset"]').click();
+    check(controller.selectionSnapshot().offsetMinutes === 0, 'Voice failure disabled manual time reset');
+    check(await store.serializeRecords() === before, 'Voice failures changed durable records');
+    voice.stop(); realtime.stop({ removeUi: true }); window.fetch = nativeFetch;
     installed.dispose(); check(registry.list().length === 0, 'Command teardown left registrations');
     workspace.destroy(); await store.close();
-    return { commands: 7, recordBytesUnchanged: true, manualCancellation: true, cameraGuard: true, uiAndSkyTimeSynchronized: true };
+    return { commands: 7, recordBytesUnchanged: true, manualCancellation: true, cameraGuard: true, uiAndSkyTimeSynchronized: true,
+      simulatedVoiceFailures: true, manualUiAfterVoiceFailure: true, nativeMicrophoneUsed: false };
   });
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ ...result, browser: await browser.version(), passed: true }));

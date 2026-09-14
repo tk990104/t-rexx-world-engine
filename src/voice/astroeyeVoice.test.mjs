@@ -134,6 +134,34 @@ test('callbacks from a stopped or replaced browser speech session cannot start c
   } finally { globalThis.window = oldWindow; globalThis.speechSynthesis = oldSpeech; h.commands.dispose(); }
 });
 
+test('permanent speech errors stop automatic restarts and permit an explicit retry', () => {
+  const oldWindow = globalThis.window, oldSpeech = globalThis.speechSynthesis;
+  const sessions = [], states = [];
+  class Recognition {
+    constructor() { sessions.push(this); this.starts = 0; this.aborts = 0; }
+    start() { this.starts++; } stop() {} abort() { this.aborts++; this.onend(); }
+  }
+  const speech = { getVoices: () => [], addEventListener() {}, cancel() {} };
+  globalThis.window = { SpeechRecognition: Recognition, speechSynthesis: speech };
+  globalThis.speechSynthesis = speech;
+  const h = harness();
+  try {
+    const viewer = { __gevViewTargetPrewarmInstalled: true, clock: { onTick: { addEventListener: () => () => {} } }, scene: { canvas: { addEventListener() {}, removeEventListener() {} } } };
+    const voice = initFreeVoice({ commandRegistry: h.registry, viewer });
+    voice.onStateChange((state, text) => states.push({ state, text }));
+    for (const error of ['not-allowed', 'service-not-allowed', 'audio-capture']) {
+      assert.equal(voice.start(), true);
+      const session = sessions.at(-1);
+      session.onerror({ error }); session.onend();
+      assert.equal(voice.isListening(), false);
+      assert.equal(session.starts, 1); assert.equal(session.aborts, 1);
+      assert.equal(states.at(-1).state, 'error');
+      assert.match(states.at(-1).text, new RegExp(error));
+    }
+    assert.equal(voice.start(), true); voice.stop();
+  } finally { globalThis.window = oldWindow; globalThis.speechSynthesis = oldSpeech; h.commands.dispose(); }
+});
+
 test('free voice direct phrases require no fetch and stop cancels an in-flight workspace command', async () => {
   const oldWindow = globalThis.window, oldSpeech = globalThis.speechSynthesis, oldFetch = globalThis.fetch;
   const open = deferred(), entered = deferred(); let committed = false;

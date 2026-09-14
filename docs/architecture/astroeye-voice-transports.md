@@ -89,3 +89,42 @@ V1 acceptance review and V2/V3 acceptance remain open: embedded-host UI checks,
 additional provider/microphone failure coverage, and an explicitly authorized,
 cost-disclosed live session are still required. A1/A2 calculation release blockers
 remain mandatory; this transport wiring does not change A3's numerical candidate.
+
+## Checkpoint 63 — simulated browser failures
+
+September 14, 2026. The isolated `qa-astroeye-commands.mjs` harness now exercises
+both voice paths alongside the real rendered workspace/controller and synthetic
+IndexedDB records. It does not load the application bootstrap or use the user's
+preview profile. Speech recognition, synthesis, token/chat responses and microphone
+access are mocked; external/API network requests are blocked by interception.
+
+Verified in Chrome 145.0.7632.77:
+
+- Exact free-voice commands still open AstroEye without an AI-model request.
+- Missing free-model configuration reports its limitation; a simulated HTTP 429
+  leaves the selection unchanged and returns the state observer to idle.
+- The free-model request does not include the synthetic saved venue or record ID.
+- Realtime's missing-token case shows VOICE UNAVAILABLE before microphone access.
+  A simulated NotAllowedError displays its detail and leaves no active stream.
+- The microphone button carries the data-sharing disclosure.
+- Manual time reset still works after the voice failures; durable synthetic records
+  remain byte-identical. Existing seven-command, camera, sky and cancellation checks
+  continue to pass.
+
+Fixed a permanent-error retry loop in browser speech recognition: `not-allowed`,
+`service-not-allowed` and `audio-capture` now stop listening, invalidate the recognition
+session, abort the pending turn and clear conversation state. Their late `onend`
+callbacks cannot restart recognition. An explicit user retry starts a fresh session.
+One new unit test checks all three errors, error reporting and explicit retry.
+
+Verification: 782 combined voice/platform/radio-schema tests passed (77.83 seconds),
+with no failures, skips or TODOs. The sandboxed browser automation connection reset;
+one permission-enabled retry passed under the existing 60-second watchdog.
+Production build passed (248 modules, 37.10 seconds, existing node:fs/chunk warnings).
+
+This is isolated Chromium interaction evidence, not certification of the embedded
+ChatGPT browser or a live provider. The free-voice state callback is observed directly;
+the full application's fallback MIC binding is not exercised by this harness.
+No actual microphone, live AI request, saved user records, credential changes or
+publication were involved. V1/V2 acceptance review, embedded-host validation and
+V3's explicitly authorized live smoke check remain open. No release gate is closed.
