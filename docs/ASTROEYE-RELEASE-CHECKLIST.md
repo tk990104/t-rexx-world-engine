@@ -2,7 +2,7 @@
 
 Scope baseline: 2026-09-12, implementation checkpoint 34 (`92edee7`).
 
-**Status: pre-release; A3 verified for the current candidate, 14 acceptance gates remain open across five work packages.**
+**Status: pre-release; A3, V1 and V2 accepted for their reviewed candidates; 12 acceptance gates remain open across five work packages.**
 These are grouped outcomes, not an estimate of commits or development days. Existing
 features and earlier passing tests are useful evidence, but do not close a release
 gate until the complete criterion has been verified on the release candidate.
@@ -148,12 +148,12 @@ annual USNO web retrieval attempts yielded no new reference data.
 
 ## 2. AstroEye voice commands
 
-- [ ] **V1 — Bounded command contract:** register open/close workspace, select a saved
+- [x] **V1 — Bounded command contract:** register open/close workspace, select a saved
   event, fly to its venue, set chart preview time, toggle event sky and summarize the
   displayed calculation. Validate arguments, distinguish ambiguous/missing events and
   respect preview bounds and camera/Director ownership. No save/delete/import/export
   command is in this release scope; summaries make no unsupported predictions.
-- [ ] **V2 — Both transport paths:** wire the canonical command definitions into the
+- [x] **V2 — Both transport paths:** wire the canonical command definitions into the
   existing Realtime and free-voice paths, with parity/dispatch/error tests. Treat event,
   provider and note text as data, never instructions. Do not attach the saved collection
   or notebook to model context implicitly; review the minimum data sent for each action.
@@ -161,6 +161,12 @@ annual USNO web retrieval attempts yielded no new reference data.
   microphone denial, cancellation, unknown commands and an explicitly authorized live
   smoke check. Manual UI remains usable without voice. Document any external transmission
   and metered usage before the live check; do not purchase services or request secrets in chat.
+
+Current V1/V2 decision: [checkpoint 65 acceptance review](architecture/astroeye-voice-acceptance.md)
+accepts the implementation criteria for runtime `19b642f`, backed by 788 passing
+tests, 66 parity dispatches, a command-level data review and current isolated-browser
+evidence. V3 remains open for remaining full-bootstrap/host and explicitly authorized
+live checks. Earlier V1/V2-pending checkpoint notes below are historical.
 
 Current seam: `src/core/commandRegistry.js`; AstroEye declares seven commands and
 registers them when storage is available. Registration alone does not establish
