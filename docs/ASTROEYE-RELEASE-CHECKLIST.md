@@ -2,7 +2,7 @@
 
 Scope baseline: 2026-09-12, implementation checkpoint 34 (`92edee7`).
 
-**Status: pre-release; 15 acceptance gates remain open across five work packages.**
+**Status: pre-release; A3 verified for the current candidate, 14 acceptance gates remain open across five work packages.**
 These are grouped outcomes, not an estimate of commits or development days. Existing
 features and earlier passing tests are useful evidence, but do not close a release
 gate until the complete criterion has been verified on the release candidate.
@@ -44,10 +44,17 @@ Existing standalone Chromium results do not certify the embedded preview host.
 - [ ] **A2 — Planetary hours:** independently check sunrise/sunset and before/at/after
   hour/day boundaries, including venue-local date changes and locations without a normal
   sunrise/sunset cycle. Unavailable results must remain explicit rather than guessed.
-- [ ] **A3 — Supported range:** document and consistently handle the supported date range;
+- [x] **A3 — Supported range:** document and consistently handle the supported date range;
   add station, zodiac-boundary and historical-zone samples appropriate to that range.
   Rerun deterministic internal tests and stored external position comparisons. Describe
   sampled agreement, not universal accuracy or predictive validity.
+
+Current A3 decision: [candidate verification and evidence](architecture/astroeye-a3-candidate-verification.md).
+All 418 platform tests, 303 stored positions/101 motion screens, production build
+and two isolated browser checks pass against runtime candidate `6c96b86`.
+A3 must be revalidated after relevant changes; A1/A2 and the other gates remain
+open. The checkpoint history below retains earlier counts and then-open statuses;
+this decision supersedes its old A3 next-step statements.
 
 Start with the existing [validation backlog](architecture/astroeye-validation.md).
 The user-approved [1900–2100 UTC date-range policy](architecture/astroeye-supported-date-range.md)
@@ -196,7 +203,9 @@ See [current session-callout behavior](architecture/astroeye-event-callouts.md).
 
 For each gate record: candidate commit, test/inspection command or procedure, date,
 environment, result, evidence location and residual limitation. A checkbox changes only
-when that evidence covers the entire criterion. This planning checkpoint closes no gates.
+when that evidence covers the entire criterion. The original planning checkpoint closed
+no gates; checkpoint 57 closes A3 for the recorded candidate, with revalidation required
+after relevant changes.
 
 Use small test groups and isolated browser profiles, not the user's saved data or open
 preview. Browser jobs require a whole-run watchdog of at most 60 seconds and cleanup of
@@ -224,7 +233,8 @@ video-export workflows. These do not reopen the v0.1 checklist automatically.
 
 ## Execution order and what follows
 
-Next: **A1, then A2/A3**. Finish validation before expanding voice or annotation scope.
+Next: **remaining A1 and A2 evidence**. A3's current-candidate review is complete.
+Finish validation before expanding voice or annotation scope.
 Then V1–V3, R1–R3, U1–U3 and L1–L3, carrying relevant regression evidence forward and
 rerunning affected checks after changes. Required provider/user approvals may pause a gate;
 they are not permission to silently remove it.

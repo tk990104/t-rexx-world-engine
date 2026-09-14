@@ -1,5 +1,11 @@
 # AstroEye calculation date range
 
+Current status, checkpoint 57: [A3 candidate verification](astroeye-a3-candidate-verification.md)
+is complete for runtime candidate `6c96b86`; 418 platform tests, all stored
+reference packs, the build and two isolated browser checks pass. The A3-open
+statements and three-model wording below describe earlier checkpoints. All four
+current models use this date policy; broader release gates remain open.
+
 Current follow-up: [model 4](astroeye-calculation-model-4.md) corrects position time
 conversion within this unchanged date policy and preserves models 1–3. The
 checkpoint-51 Moon discrepancy below is now a legacy-only diagnostic; remaining
