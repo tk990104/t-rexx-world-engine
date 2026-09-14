@@ -70,6 +70,13 @@ integration checks passed at checkpoint 53 and were not rerun for this offline-o
 extension. The active-model Moon TODO is resolved. A3 remains open for station/zodiac
 samples and the complete candidate rerun. Angles, sky rotation and planetary hours
 retain their model-3 time approximations; this does not close A1 or A2.
+[First station/zodiac references](architecture/astroeye-station-zodiac-references.md)
+add 27 Sun/Mercury positions and nine motion screens in March/April 2024. Full
+charts pass; near-boundary signs and near-zero motion are not falsely certified.
+All 404 platform tests pass; combined stored coverage is 267 positions and 89
+motion screens. A3 remains open for older/future boundary cases, retrograde zodiac
+crossing coverage and final candidate verification. This first slice does not
+certify exact station or ingress timestamps.
 First A2 evidence: [USNO solar boundaries and planetary-hour checks](architecture/astroeye-sun-boundary-references.md)
 now cover six rise/set days, 72 hour midpoints, rounded-boundary rollover probes and
 southern polar-day/night cases. The 65N solstice pair verifies long days, short nights and
