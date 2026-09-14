@@ -187,7 +187,8 @@ export function parseAgentReply(text) {
     if (!step || typeof step.action !== 'string' || !step.action) continue;
     steps.push({
       action: step.action,
-      args: step.args && typeof step.args === 'object' && !Array.isArray(step.args)
+      args: step.action.startsWith('astroeye_') ? (step.args ?? null)
+        : step.args && typeof step.args === 'object' && !Array.isArray(step.args)
         ? step.args
         : {},
     });
@@ -213,6 +214,15 @@ export function parseAgentReply(text) {
  * @returns {string}
  */
 export function summariseResult(action, result) {
+  if (action.startsWith('astroeye_')) {
+    // The canonical runner supplies only fixed codes and a bounded calculation summary.
+    const safe = { ok: result?.ok === true, code: result?.code || 'failed' };
+    if (action === 'astroeye_summarize' && safe.ok && result.calculation) {
+      safe.calculation = Object.fromEntries(['calculatedFor', 'calculationVersion', 'zodiac', 'houseSystem', 'referenceFrame', 'notice']
+        .map((key) => [key, result.calculation[key]]));
+    }
+    return `${action}: ${JSON.stringify(safe)}`;
+  }
   if (result === null || result === undefined) return `${action}: no result`;
   if (result instanceof Error) return `${action}: failed (${result.message})`;
   if (typeof result !== 'object') return `${action}: ${String(result)}`;
@@ -272,6 +282,7 @@ export function createAgentLoop({
 }) {
   /** @type {Array<{role: string, content: string}>} */
   let history = [];
+  let generation = 0;
 
   /** Keep the last few exchanges; a free model's context is small. */
   function trimHistory() {
@@ -286,34 +297,49 @@ export function createAgentLoop({
      * @param {string} transcript
      * @returns {Promise<{spoke: boolean, rounds: number, steps: number, failed?: string}>}
      */
-    async ask(transcript) {
+    async ask(transcript, { signal } = {}) {
+      const turn = ++generation;
+      const isCurrent = () => turn === generation && !signal?.aborted;
+      const cancelled = () => ({ spoke, rounds, steps: stepCount, failed: 'cancelled' });
       history.push({ role: 'user', content: transcript });
       trimHistory();
 
       let rounds = 0;
       let stepCount = 0;
       let spoke = false;
+      if (!isCurrent()) return cancelled();
 
       while (rounds < maxRounds) {
         rounds += 1;
         const text = await chat([
           { role: 'system', content: buildPrompt() },
           ...history,
-        ]);
+        ], { signal });
+        if (!isCurrent()) return cancelled();
         const reply = parseAgentReply(text);
         if (!reply) {
           return { spoke, rounds, steps: stepCount, failed: 'unparseable' };
         }
 
-        if (reply.say) { onSay(reply.say); spoke = true; }
+        const hasAstroEye = reply.steps.some((step) => step.action.startsWith('astroeye_'));
+        if (reply.say && !hasAstroEye) { onSay(reply.say); spoke = true; }
         history.push({ role: 'assistant', content: JSON.stringify(reply) });
 
         if (!reply.steps.length || reply.done) {
+          let failed = false;
           // Run any final steps, then stop without another model round.
           for (const step of reply.steps) {
+            if (!isCurrent()) return cancelled();
             onStep(step);
             stepCount += 1;
-            try { await execute(step); } catch { /* reported by the runner */ }
+            try { const result = await execute(step, { signal, isCurrent }); failed ||= result?.ok === false; }
+            catch { failed = true; }
+            if (!isCurrent()) return cancelled();
+          }
+          if (hasAstroEye) {
+            onSay(failed ? 'An AstroEye command could not be completed. Check the workspace and try again.'
+              : 'AstroEye commands completed. Calculation cautions still apply.');
+            spoke = true;
           }
           trimHistory();
           return { spoke, rounds, steps: stepCount };
@@ -321,14 +347,16 @@ export function createAgentLoop({
 
         const observations = [];
         for (const step of reply.steps) {
+          if (!isCurrent()) return cancelled();
           onStep(step);
           stepCount += 1;
           let result;
           try {
-            result = await execute(step);
+            result = await execute(step, { signal, isCurrent });
           } catch (error) {
             result = error instanceof Error ? error : new Error(String(error));
           }
+          if (!isCurrent()) return cancelled();
           observations.push(summariseResult(step.action, result));
         }
         history.push({
@@ -342,7 +370,7 @@ export function createAgentLoop({
     },
 
     /** Forget the conversation. */
-    reset() { history = []; },
+    reset() { generation += 1; history = []; },
 
     /** @returns {Array<object>} A copy, for tests and diagnostics. */
     history() { return history.map((m) => ({ ...m })); },

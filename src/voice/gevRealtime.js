@@ -1,4 +1,5 @@
 import { createGevActionRunner, readLayerLifecycleSummary } from './gevActions.js';
+import { createAstroEyeVoiceRunner, ASTROEYE_VOICE_DISCLOSURE, parseAstroEyeVoiceArguments } from './astroeyeVoice.js';
 import {
   DEFAULT_VOICE_TIER,
   VOICE_COST_LIMITS,
@@ -193,12 +194,14 @@ export function silenceRadioForVoice({ duckRadio, pauseRadio } = {}) {
  */
 const SUPERSEDED_RESPONSE_MEMORY = 8;
 
-export function initGevVoiceCommands({ viewer, styleManager, dataManager, sceneDirector = null, annotations = null }) {
+export function initGevVoiceCommands({ viewer, styleManager, dataManager, sceneDirector = null, annotations = null, commandRegistry = null }) {
   if (window.__gevVoiceCommands && typeof window.__gevVoiceCommands.stop === 'function') {
     window.__gevVoiceCommands.stop({ removeUi: true });
   }
-  const runner = createGevActionRunner({ viewer, styleManager, dataManager, sceneDirector, annotations });
+  const runner = createAstroEyeVoiceRunner(commandRegistry,
+    createGevActionRunner({ viewer, styleManager, dataManager, sceneDirector, annotations }));
   const ui = createVoiceControl({ reset: true });
+  ui.button.title = ASTROEYE_VOICE_DISCLOSURE;
   const radioLayer = dataManager?.layers?.get('radio')?.module || null;
   const controller = new GevRealtimeController({ runner, ui, radioLayer, dataManager });
   // Deferred annotation outlines finish AFTER their tool result returned. Feed the
@@ -1163,7 +1166,8 @@ export class GevRealtimeController {
       let radioReservationToken = null;
       let isRadioFeatureCall = call.name === 'control_radio';
       try {
-        const parsedArguments = parseArguments(call.arguments);
+        const parsedArguments = call.name.startsWith('astroeye_')
+          ? parseAstroEyeVoiceArguments(call.arguments) : parseArguments(call.arguments);
         const isRadioControlCall = call.name === 'control_radio';
         const isRadioVisibilityCall = call.name === 'set_layer_visibility'
           && parsedArguments.layerId === 'radio';
@@ -1294,6 +1298,10 @@ export class GevRealtimeController {
           this.activeRadioToolControllers.delete(toolController);
         }
       }
+      // A stopped/replaced AstroEye session must not send to a new channel or
+      // restore the LISTENING UI after its delayed command settles.
+      if (call.name.startsWith('astroeye_')
+        && (this.dc !== resultChannel || resultChannel?.readyState !== 'open')) return;
       if (radioReservationToken && result?.ok) {
         // Successful authority commits before its output is serialized. The
         // sibling abort synchronously restores manager ownership, so report
@@ -2026,6 +2034,9 @@ function hasStructuredViewIdentity(result) {
 }
 
 function responseInstructionForToolResult(result) {
+  if (result && !result.action && typeof result.code === 'string') {
+    return 'Report the returned AstroEye ok/code honestly. A refusal, cancellation, unavailable command or timeout is not success. For a summary, describe only the returned calculation fields and retain the accuracy cautions; no predictions. Do not seek private records through other tools.';
+  }
   if (result?.action === 'control_radio' && result.radioPlaybackSuppressed) {
     if (result.audioState === 'paused') {
       return 'Briefly confirm the completed Radio action, then say that Radio remains paused as requested. Do not say the request was cancelled or that Radio is playing.';

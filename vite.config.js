@@ -26,6 +26,7 @@
  */
 
 import fs from 'node:fs';
+import { ASTROEYE_VOICE_TOOLS, ASTROEYE_VOICE_POLICY } from './src/voice/astroeyeVoice.js';
 import { promises as fsp } from 'node:fs';
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -6080,6 +6081,7 @@ function openAiRealtimeProxy() {
           },
           instructions: [
             "You are GEV Voice Control, a concise voice controller for a Cesium geospatial app called God's Eye View.",
+            ASTROEYE_VOICE_POLICY,
             'Have a natural spoken conversation with the user while the mic session is active.',
             'Do not require a wake phrase. Treat direct commands like "zoom into London" or "open datacenters" as GEV control requests.',
             'Only control the app by calling the provided tools. Never invent tool names or arguments.',
@@ -6142,7 +6144,7 @@ function openAiRealtimeProxy() {
             'PREFER NAMES. Only when you cannot name or geocode a place but you can clearly SEE the exact spot in the most recent viewport screenshot, fall back to screenX/screenY (normalized 0..1 from that image) to point at it; the app converts the pixel to a real world point. Never use screenX/screenY for something you could name.',
             'PATHS vs DISTANCES: for "walking/driving route from A to B" (or through several stops), use type=route with the ordered points and the matching mode (walking/driving/cycling) — the app draws the real street-following path on the map and reports distance and travel time, which you can read aloud. For "how far is X from Y", "is it nearby", or "X is next to Y", use type=arrow between the two — it draws a floating connector and shows the straight-line distance. Do NOT use route for a simple distance/proximity question.',
           ].join('\n'),
-          tools: GEV_REALTIME_TOOLS,
+          tools: [...GEV_REALTIME_TOOLS, ...ASTROEYE_VOICE_TOOLS],
           tool_choice: 'auto',
         },
       };

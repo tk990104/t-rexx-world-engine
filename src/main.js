@@ -700,7 +700,7 @@ async function init() {
       worldPlatform,
       astroEyeWorkspace,
     };
-    window.__godsEyeView.voiceCommands = initGevVoiceCommands({ viewer, styleManager, dataManager, sceneDirector, annotations });
+    window.__godsEyeView.voiceCommands = initGevVoiceCommands({ viewer, styleManager, dataManager, sceneDirector, annotations, commandRegistry: worldPlatform.commandRegistry });
 
     // Free voice: browser speech in and out, intent parsed by a free-tier
     // model. Stands alongside the OpenAI Realtime path rather than replacing
@@ -708,6 +708,7 @@ async function init() {
     // needs neither. Exposed for the UI and for programmatic commands.
     const freeVoice = initFreeVoice({
       viewer, styleManager, dataManager, sceneDirector, annotations,
+      commandRegistry: worldPlatform.commandRegistry,
     });
     window.__godsEyeView.freeVoice = freeVoice;
 

@@ -25,6 +25,7 @@
  */
 
 import { createGevActionRunner } from './gevActions.js';
+import { createAstroEyeVoiceRunner, astroEyeVoiceCatalog, ASTROEYE_VOICE_POLICY, matchAstroEyeLocally } from './astroeyeVoice.js';
 
 /** Where intent parsing happens. */
 import {
@@ -337,11 +338,12 @@ export function pickVoice(voices) {
  * @returns {object} Controller.
  */
 export function initFreeVoice({
-  viewer, styleManager, dataManager, sceneDirector = null, annotations = null,
+  viewer, styleManager, dataManager, sceneDirector = null, annotations = null, commandRegistry = null,
 } = {}) {
-  const runAction = createGevActionRunner({
+  const runAction = createAstroEyeVoiceRunner(commandRegistry, createGevActionRunner({
     viewer, styleManager, dataManager, sceneDirector, annotations,
-  });
+  }));
+  let activeTurn = null;
 
   /**
    * Whether the free-tier intent parser is reachable.
@@ -430,11 +432,12 @@ export function initFreeVoice({
    * @param {{action: string, args: object}} step
    * @returns {Promise<object>}
    */
-  async function execute(step) {
+  async function execute(step, context = {}) {
     // Camera commands must not race the startup restore; see
     // awaitStartupSettled. Non-camera commands (layers, styles, panels) are
     // unaffected and should not pay the wait.
     if (CAMERA_ACTIONS.has(step.action)) await awaitStartupSettled();
+    if (context.signal?.aborted || context.isCurrent?.() === false) return { ok: false, code: 'cancelled' };
 
     // find_incident belongs to the shootings layer, not the shared runner.
     if (step.action === 'find_incident') {
@@ -445,7 +448,7 @@ export function initFreeVoice({
       const found = await shootings.findAndFocus(viewer, step.args?.query || '');
       return { ok: found.ok !== false, label: found.reply, text: found.reply };
     }
-    return runAction(step.action, step.args || {});
+    return runAction(step.action, step.action.startsWith('astroeye_') ? (step.args ?? null) : (step.args || {}), context);
   }
 
   /**
@@ -486,10 +489,13 @@ export function initFreeVoice({
    * @param {Array<{role: string, content: string}>} messages
    * @returns {Promise<string>}
    */
-  async function chat(messages) {
+  async function chat(messages, { signal } = {}) {
     const system = messages.find((m) => m.role === 'system')?.content || '';
     const rest = messages.filter((m) => m.role !== 'system');
     const controller = new AbortController();
+    const onAbort = () => controller.abort();
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (signal?.aborted) controller.abort();
     const timer = setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS);
     try {
       const response = await fetch(CHAT_URL, {
@@ -505,6 +511,7 @@ export function initFreeVoice({
       return '';
     } finally {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
     }
   }
 
@@ -512,7 +519,9 @@ export function initFreeVoice({
     chat,
     execute,
     buildPrompt: () => buildAgentPrompt({
-      actions: VOICE_ACTIONS.map((a) => `${a.name}(${a.args}) — ${a.hint}`).join('\n'),
+      actions: VOICE_ACTIONS.map((a) => `${a.name}(${a.args}) — ${a.hint}`).join('\n')
+        + '\n' + astroEyeVoiceCatalog() + '\n' + ASTROEYE_VOICE_POLICY
+        + '\nFor AstroEye summary questions, call astroeye_summarize with done:false, then answer only from the returned calculation fields. Do not use generic map tools to answer chart questions.',
       layers: Object.entries(LAYER_WORDS).map(([id, w]) => `${id} = ${w}`).join('\n'),
       state: describeState(),
     }),
@@ -532,6 +541,10 @@ export function initFreeVoice({
    * @returns {Promise<void>}
    */
   async function handle(rawTranscript) {
+    activeTurn?.abort();
+    const turn = new AbortController();
+    activeTurn = turn;
+    const context = { signal: turn.signal, isCurrent: () => activeTurn === turn && !turn.signal.aborted };
     onState('heard', rawTranscript);
     const transcript = stripWakeWords(rawTranscript);
     if (!transcript) return;
@@ -544,10 +557,11 @@ export function initFreeVoice({
     // "miami and check the cameras" — nothing is found and the cameras never
     // come on.
     if (!multiPart) {
-      const intent = matchLocally(transcript);
+      const intent = matchAstroEyeLocally(transcript) || matchLocally(transcript);
       if (intent) {
         try {
-          const result = await execute(intent);
+          const result = await execute(intent, context);
+          if (!context.isCurrent()) return;
           // These actions REPORT failure in their return value rather than
           // throwing: `{ ok: false, ... }`. Treating "did not throw" as success
           // meant the app cheerfully said "Flying to Tokyo" while the camera
@@ -564,6 +578,7 @@ export function initFreeVoice({
           onState('done', reply);
           speak(reply);
         } catch (error) {
+          if (!context.isCurrent()) return;
           // Say what failed rather than going quiet — silence after a command
           // is indistinguishable from not having been heard.
           onState('error', `That command failed. ${error?.message || error}`);
@@ -588,7 +603,8 @@ export function initFreeVoice({
     }
 
     onState('thinking', transcript);
-    const outcome = await agent.ask(transcript);
+    const outcome = await agent.ask(transcript, context);
+    if (!context.isCurrent()) return;
     if (outcome.failed && !outcome.spoke) {
       const reply = outcome.failed === 'round-cap'
         ? "I got partway through that but could not finish it."
@@ -613,7 +629,7 @@ export function initFreeVoice({
     isListening() { return listening; },
 
     /** Start a new conversation, forgetting what was said before. */
-    resetConversation() { agent.reset(); },
+    resetConversation() { activeTurn?.abort(); agent.reset(); },
 
     /** @returns {Array<object>} The conversation so far, for diagnostics. */
     conversation() { return agent.history(); },
@@ -639,8 +655,10 @@ export function initFreeVoice({
       // Interim results make the UI feel alive while someone is mid-sentence.
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
+      const session = recognition;
 
       recognition.onresult = (event) => {
+        if (!listening || recognition !== session) return;
         for (let i = event.resultIndex; i < event.results.length; i += 1) {
           const result = event.results[i];
           const text = String(result[0]?.transcript || '').trim();
@@ -650,6 +668,7 @@ export function initFreeVoice({
         }
       };
       recognition.onerror = (event) => {
+        if (!listening || recognition !== session) return;
         // 'no-speech' fires constantly during a pause and is not an error worth
         // reporting; anything else is.
         if (event.error !== 'no-speech' && event.error !== 'aborted') {
@@ -659,7 +678,7 @@ export function initFreeVoice({
       recognition.onend = () => {
         // Chrome stops recognition on its own after a silence. Restart while
         // the user still believes it is listening.
-        if (listening) {
+        if (listening && recognition === session) {
           try { recognition.start(); } catch { /* already starting */ }
         }
       };
@@ -678,6 +697,8 @@ export function initFreeVoice({
 
     /** @returns {void} */
     stop() {
+      activeTurn?.abort();
+      agent.reset();
       listening = false;
       try { recognition?.stop(); } catch { /* not started */ }
       recognition = null;

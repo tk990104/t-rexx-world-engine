@@ -20,6 +20,11 @@ const SPECS = [
   ['summarize', 'Describe only the displayed calculation time, model and conventions. No predictions, saved collection, notebook, title or coordinates.', schema()],
 ];
 
+// Static metadata only: never derive remote catalogs from saved events or UI state.
+export const ASTROEYE_VOICE_TOOLS = freezeTree(SPECS.map(([action, description, parameters]) => ({
+  type: 'function', name: `astroeye_${action}`, description, parameters,
+})));
+
 function validate(args, properties) {
   if (!args || typeof args !== 'object' || Array.isArray(args)
     || ![Object.prototype, null].includes(Object.getPrototypeOf(args))) return false;

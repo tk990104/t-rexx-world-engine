@@ -177,6 +177,12 @@ manual cancellation and owner-only teardown. Eight new tests and an isolated
 Chromium command/UI check cover this slice; actual voice transports are not yet
 exposed. V1 acceptance review and V2/V3 remain open; no gate is closed here.
 
+Checkpoint 62 [voice transports](architecture/astroeye-voice-transports.md) connects
+both runners and their catalogs to the canonical seven commands. Offline simulated
+transport, cancellation and disclosure work is implemented; V1 review and V2/V3
+acceptance remain open, especially host UI and authorized live-provider checks.
+Checkpoint 60/61 transport-pending statements above are historical.
+
 ## 3. Persistent event-linked map research
 
 - [ ] **R1 — Record contract:** define a versioned local annotation record with stable ID,
