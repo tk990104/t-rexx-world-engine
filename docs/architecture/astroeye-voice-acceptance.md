@@ -94,6 +94,10 @@ candidate `19b642f` (249 modules, 35.50 seconds, existing warnings).
 
 ## Remaining V3 work
 
+Checkpoint 66 adds a [real-app bootstrap harness](astroeye-bootstrap-validation.md),
+but its current run times out before app readiness and does not verify interactions.
+That work is explicitly incomplete, not new acceptance evidence.
+
 Run full application-bootstrap/host interaction checks without exposing real saved
 records. Before any live test, explicitly agree on provider, microphone use, outgoing
 audio/transcript/tool/map context, session length and possible metered charges. Use
