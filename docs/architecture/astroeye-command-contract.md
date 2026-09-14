@@ -1,5 +1,9 @@
 # AstroEye command foundation — checkpoint 60
 
+Historical checkpoint record. [Checkpoint 61](astroeye-workspace-commands.md)
+adds runtime shell registration; statements below about the then-unmounted
+foundation are retained as history, not current integration status.
+
 The user approved starting planned voice controls while A1/A2 remain mandatory
 release blockers. This changes execution order, not release scope or criteria.
 Starting commit: `19b5b1d`. A3's calculation candidate is unchanged.

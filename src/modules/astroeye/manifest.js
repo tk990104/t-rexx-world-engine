@@ -1,3 +1,5 @@
+import { ASTROEYE_COMMAND_NAMES } from './commands.js';
+
 /** Public identity and capability declaration for the first T-Rexx module. */
 export const ASTROEYE_MANIFEST = Object.freeze({
   id: 'astroeye',
@@ -17,7 +19,7 @@ export const ASTROEYE_MANIFEST = Object.freeze({
   ]),
   layers: Object.freeze(['astroeye-event-marker', 'astroeye-saved-events']),
   panels: Object.freeze(['astroeye-workspace', 'astroeye-venue-context']),
-  commands: Object.freeze([]),
+  commands: ASTROEYE_COMMAND_NAMES,
   sceneRecipes: Object.freeze(['astroeye-event-tour']),
   credits: Object.freeze(['astronomy-engine', 'thesportsdb']),
 });

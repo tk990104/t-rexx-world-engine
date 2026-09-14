@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13 local / September 14 UTC: [workspace command integration](architecture/astroeye-workspace-commands.md) registers the seven commands in the running shell when storage is available. Commands refresh visible chart/preview/sky state, respect Director and camera authority, cancel delayed work after manual input and remove only their own registrations on teardown. Isolated Chromium verifies command/UI behavior with synthetic data and no API calls. Voice transport exposure is still pending; calculation gates remain open. Earlier unmounted-foundation notes below are historical.
+
 September 13 local / September 14 UTC: the [voice-command foundation](architecture/astroeye-command-contract.md) defines seven bounded commands with strict validation, explicit ownership checks, cancellation/deadlines and minimal results. Eight focused tests include real-controller record preservation. This is an unmounted contract, not working microphone control; shell and transport integration follow. The user approved this sequence while retaining A1/A2 release blockers. No preview, saved-data, credentials or live AI calls changed.
 
 September 13 local / September 14 UTC: [published quadrant/wrap checks](architecture/astroeye-orientation-references.md) add four Ascendant and eleven Midheaven assertions from the existing Unlicense reference project. All fifteen pass the unchanged orientation tolerance; malformed coverage and wrong outputs are rejected. These are orientation-only references, not polar UTC/cusp certification. A1/A2 remain open, A3's decision is unchanged, and no runtime or user data changed. USNO web retrieval returned no new data.

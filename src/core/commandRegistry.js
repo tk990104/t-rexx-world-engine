@@ -39,6 +39,12 @@ export class CommandRegistry {
     return this.#commands.get(name) ?? null;
   }
 
+  /** Remove only the exact registration held by its installer. */
+  unregister(name, registration) {
+    if (!registration || this.#commands.get(name) !== registration) return false;
+    return this.#commands.delete(name);
+  }
+
   list({ owner } = {}) {
     const commands = [...this.#commands.values()];
     return owner ? commands.filter((command) => command.owner === owner) : commands;

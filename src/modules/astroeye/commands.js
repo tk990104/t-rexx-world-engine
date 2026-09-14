@@ -51,9 +51,15 @@ export function createAstroEyeCommands(services, { timeoutMs = 5000 } = {}) {
     args = { ...args };
     if (disposed || context.signal?.aborted) return reply('cancelled');
     if (busy) return reply('busy');
+    let interactionVersion;
+    try {
+      if (services.canStart && services.canStart() !== true) return reply('blocked');
+      interactionVersion = services.getInteractionVersion?.();
+    } catch { return reply('blocked'); }
     busy = true;
     let live = true, timer, onAbort;
-    const isCurrent = () => live && !disposed && !context.signal?.aborted && services.canInteract() === true;
+    const isCurrent = () => live && !disposed && !context.signal?.aborted && services.canInteract() === true
+      && interactionVersion === services.getInteractionVersion?.();
     const guard = () => { if (!isCurrent()) throw new Error('Command no longer owns interaction'); };
     const run = async () => {
       guard();

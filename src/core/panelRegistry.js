@@ -11,6 +11,7 @@ export class PanelRegistry {
   #activePanelId = null;
   #cleanup = null;
   #events;
+  #generation = 0;
 
   constructor({ eventBus = null } = {}) {
     this.#events = eventBus;
@@ -47,12 +48,23 @@ export class PanelRegistry {
   async show(id, host, context = {}) {
     const panel = this.get(id);
     if (!panel) throw new Error(`Unknown panel: ${id}`);
+    if (context.isCurrent && !context.isCurrent()) return null;
+    const generation = ++this.#generation;
+    const isCurrent = () => generation === this.#generation && (context.isCurrent?.() ?? true);
+    if (!isCurrent()) return null;
     if (id === this.#activePanelId) return panel;
 
-    await this.hide();
-    const cleanup = await panel.mount(host, context);
+    await this.#hideActive();
+    if (!isCurrent()) return null;
+    const cleanup = await panel.mount(host, { ...context, isCurrent });
+    // An adapter may explicitly decline mounting without claiming active status.
+    if (cleanup === false) return null;
     if (cleanup != null && typeof cleanup !== 'function') {
       throw new TypeError(`Panel ${id} mount must return a cleanup function or nothing`);
+    }
+    if (!isCurrent()) {
+      if (this.#activePanelId !== id) await cleanup?.();
+      return null;
     }
     this.#cleanup = cleanup ?? null;
     this.#activePanelId = id;
@@ -61,6 +73,11 @@ export class PanelRegistry {
   }
 
   async hide() {
+    this.#generation++;
+    return this.#hideActive();
+  }
+
+  async #hideActive() {
     if (!this.#activePanelId) return null;
     const panel = this.get(this.#activePanelId);
     const cleanup = this.#cleanup;

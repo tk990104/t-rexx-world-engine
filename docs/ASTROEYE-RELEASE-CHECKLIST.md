@@ -162,13 +162,20 @@ annual USNO web retrieval attempts yielded no new reference data.
   smoke check. Manual UI remains usable without voice. Document any external transmission
   and metered usage before the live check; do not purchase services or request secrets in chat.
 
-Current seam: `src/core/commandRegistry.js`; AstroEye's manifest command list is empty.
-The registry's existence alone does not establish voice integration.
+Current seam: `src/core/commandRegistry.js`; AstroEye declares seven commands and
+registers them when storage is available. Registration alone does not establish
+voice transport integration.
 
 Checkpoint 60 adds the [seven-command contract](architecture/astroeye-command-contract.md)
 and eight focused tests, including real-controller record preservation. Both catalog
 shapes are tested without network calls. Runtime registration, workspace adapters
 and transport dispatch are not yet integrated; V1/V2/V3 remain open.
+
+Checkpoint 61 [workspace integration](architecture/astroeye-workspace-commands.md)
+now supplies shell registration, rendered chart/sky updates, camera arbitration,
+manual cancellation and owner-only teardown. Eight new tests and an isolated
+Chromium command/UI check cover this slice; actual voice transports are not yet
+exposed. V1 acceptance review and V2/V3 remain open; no gate is closed here.
 
 ## 3. Persistent event-linked map research
 

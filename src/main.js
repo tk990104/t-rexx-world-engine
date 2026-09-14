@@ -51,6 +51,8 @@ import { initFirstRunExperience } from './firstRunExperience.js';
 import { createWorldPlatform } from './core/platform.js';
 import { createWorldRecordStore } from './core/worldRecordStore.js';
 import { createAstroEyeModule } from './modules/astroeye/index.js';
+import { installAstroEyeWorkspaceCommands } from './modules/astroeye/workspaceCommands.js';
+import { flyToLandmark } from './locations.js';
 import { createResearchNotebook } from './modules/astroeye/researchNotebook.js';
 import { createAstroEyeWorkspaceController } from './modules/astroeye/workspaceController.js';
 import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.js';
@@ -397,8 +399,8 @@ async function init() {
         id: 'astroeye-workspace',
         owner: 'astroeye',
         title: 'AstroEye Event Workspace',
-        mount: async (_host, { trigger } = {}) => {
-          await astroEyeWorkspace.open(trigger);
+        mount: async (_host, { trigger, isCurrent = () => true } = {}) => {
+          if (!await astroEyeWorkspace.open(trigger, { isCurrent })) return false;
           return () => astroEyeWorkspace.close();
         },
       });
@@ -406,6 +408,22 @@ async function init() {
         normalize: normalizeAstroEyeSceneView,
         capture: () => astroEyeWorkspace.sceneSnapshot(),
         apply: (snapshot, options) => astroEyeWorkspace.applySceneView(snapshot, options),
+      });
+      const astroEyeCommands = installAstroEyeWorkspaceCommands({
+        registry: worldPlatform.commandRegistry, controller: astroEyeController,
+        workspace: astroEyeWorkspace, panels: worldPlatform.panelRegistry, host: document.body,
+        canInteract: () => !sceneDirector.running && !document.body.classList.contains('scene-playback-mode'),
+        flyToVenue: ({ isCurrent }) => {
+          if (!isCurrent()) return false;
+          const selection = astroEyeController.selectionSnapshot();
+          if (!selection) return false;
+          return styleManager.runImmediateNavigation('AstroEye venue', () => {
+            if (!isCurrent()) return false;
+            flyToLandmark(viewer, selection.event.venue.latitude, selection.event.venue.longitude,
+              { range: 12000, pitch: -42, heading: 12, buildingHeight: 0, duration: 2.4 });
+            return true;
+          }) === true;
+        },
       });
       const venueContext = mountVenueContextPanel({
         getSelection: () => astroEyeController.selectionSnapshot(),
@@ -439,6 +457,7 @@ async function init() {
         },
       });
       window.addEventListener('pagehide', () => {
+        astroEyeCommands.dispose();
         removeVenueInteraction();
         savedMapModeObserver.disconnect();
         savedEventLayer.destroy();

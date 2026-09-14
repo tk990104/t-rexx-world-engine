@@ -113,7 +113,7 @@ test('adapter errors and unsupported summaries do not expose arbitrary text or r
 });
 
 test('real controller selection and preview preserve stored bytes; summary exposes only approved calculation fields', async () => {
-  const store = createWorldRecordStore({ indexedDB, dbName: `astroeye-commands-${crypto.randomUUID()}` });
+  const store = createWorldRecordStore({ indexedDB, databaseName: `astroeye-commands-${crypto.randomUUID()}` });
   const eventBus = new EventBus(), worldClock = new WorldClock(), moduleState = new ModuleStateCoordinator();
   const optionsSeen = [];
   const controller = createAstroEyeWorkspaceController({ recordStore: store, eventBus, worldClock, moduleState,

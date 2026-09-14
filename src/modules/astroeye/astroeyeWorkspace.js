@@ -319,8 +319,9 @@ export function mountAstroEyeWorkspace({
   notebookPanel?.updateChart(null, null);
   root.querySelector('[data-action="research-notes"]').hidden = !notebookPanel;
   let userInteracted = false;
-  root.addEventListener('pointerdown', () => { userInteracted = true; });
-  root.addEventListener('keydown', () => { userInteracted = true; });
+  let interactionVersion = 0;
+  root.addEventListener('pointerdown', () => { userInteracted = true; interactionVersion++; });
+  root.addEventListener('keydown', () => { userInteracted = true; interactionVersion++; });
   let previouslyFocused = null;
   let lastTourId = null;
   let scheduleSelection = null;
@@ -511,11 +512,11 @@ export function mountAstroEyeWorkspace({
     root.querySelector('[data-role="deletion-undo-description"]').textContent = state ? `Deleted: ${state.title} · ${state.charts} stored charts available to restore.` : '';
   }
 
-  async function refreshEvents() {
+  async function refreshEvents({ isCurrent = () => true } = {}) {
     refreshDeletionUndo();
     const request = ++eventRefresh;
     const events = await controller.listEvents();
-    if (request !== eventRefresh) return;
+    if (request !== eventRefresh || !isCurrent()) return;
     savedEvents = [...events];
     renderEvents();
   }
@@ -554,17 +555,18 @@ export function mountAstroEyeWorkspace({
     }
   }
 
-  async function busy(action, successMessage) {
-    if (root.dataset.busy) return null;
+  async function busy(action, successMessage, { isCurrent = () => true } = {}) {
+    if (root.dataset.busy || !isCurrent()) return null;
     root.dataset.busy = 'true';
     root.querySelector('#astroeye-time-offset').disabled = true;
     setStatus('Working…');
     try {
       const result = await action();
+      if (!isCurrent()) return null;
       setStatus(successMessage);
       return result;
     } catch (error) {
-      setStatus(error?.message || 'AstroEye could not complete that action.', 'error');
+      if (isCurrent()) setStatus(error?.message || 'AstroEye could not complete that action.', 'error');
       return null;
     } finally {
       delete root.dataset.busy;
@@ -590,15 +592,17 @@ export function mountAstroEyeWorkspace({
   });
 
   async function selectSavedEvent(eventId, options = {}) {
+    const isCurrent = options.isCurrent ?? (() => true);
     const houseSystem = field(form, 'houseSystem').value;
     const result = await busy(
       () => controller.selectEvent(eventId, { houseSystem, ...options }),
       'Saved event synchronized with the globe.',
+      { isCurrent },
     );
-    if (!result) return false;
+    if (!result || !isCurrent()) return false;
     renderChart(result.event, result.chart);
-    await refreshEvents();
-    return true;
+    await refreshEvents({ isCurrent });
+    return isCurrent();
   }
   eventList.addEventListener('click', async (event) => {
     const button = event.target.closest('button[data-event-id]');
@@ -831,6 +835,24 @@ export function mountAstroEyeWorkspace({
   return Object.freeze({
     root,
     selectSavedEvent,
+    isBusy: () => Boolean(root.dataset.busy),
+    interactionVersion: () => interactionVersion,
+    markCommandInteraction() { userInteracted = true; },
+    previewCommandTime(offsetMinutes, { isCurrent = () => true } = {}) {
+      if (!selected || root.dataset.busy || !isCurrent()) return false;
+      const result = controller.previewTime(offsetMinutes);
+      renderChart(result.event, result.chart, result.offsetMinutes, result.isShared);
+      setStatus('Command time preview applied; saved records are unchanged.');
+      return true;
+    },
+    setCommandSky(enabled, { isCurrent = () => true } = {}) {
+      if (root.dataset.busy || !isCurrent() || !eventSky || (enabled && !selected)) return false;
+      eventSky.setEnabled(enabled, { focus: false });
+      if (enabled) root.dataset.skyCompact = 'true';
+      else delete root.dataset.skyCompact;
+      setStatus(enabled ? 'Event sky follows the chart time.' : 'Event-sky mode ended.');
+      return true;
+    },
     focusChart() {
       const title = root.querySelector('[data-chart="title"]');
       title.tabIndex = -1;
@@ -869,12 +891,13 @@ export function mountAstroEyeWorkspace({
       await refreshEvents();
       return true;
     },
-    async open(trigger = document.activeElement) {
+    async open(trigger = document.activeElement, { isCurrent = () => true } = {}) {
       previouslyFocused = trigger;
-      const opened = await busy(onOpen, 'AstroEye ready.');
+      const opened = await busy(onOpen, 'AstroEye ready.', { isCurrent });
       if (opened === null) return false;
+      await refreshEvents({ isCurrent });
+      if (!isCurrent()) return false;
       root.hidden = false;
-      await refreshEvents();
       field(form, 'title').focus();
       return true;
     },
