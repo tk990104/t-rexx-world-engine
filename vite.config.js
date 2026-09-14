@@ -9230,7 +9230,7 @@ function openRouterProxy() {
 
       if (subPath === '/status') {
         // Whether a key exists, never the key itself.
-        sendJson(200, { configured: Boolean(process.env.OPENROUTER_API_KEY), models: FREE_MODELS });
+        sendJson(200, { configured: Boolean(process.env.OPENROUTER_API_KEY), realtimeConfigured: Boolean(process.env.OPENAI_API_KEY), models: FREE_MODELS });
         return;
       }
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 
-let browser;
+let browser, report;
 const deadline = setTimeout(async () => {
   console.error('AstroEye command UI check exceeded 60 seconds.');
   await Promise.race([browser?.close(), new Promise((r) => setTimeout(r, 2000))]);
@@ -32,6 +32,7 @@ try {
     const { WorldClock } = await import('/src/core/worldClock.js');
     const { initFreeVoice } = await import('/src/voice/freeVoice.js');
     const { initGevVoiceCommands } = await import('/src/voice/gevRealtime.js');
+    const { installVoiceFallback } = await import('/src/voice/voiceFallback.js');
     const check = (condition, message) => { if (!condition) throw new Error(message); };
     const store = createWorldRecordStore({ databaseName: 'qa-astroeye-commands-isolated' });
     const eventBus = new EventBus(), controller = createAstroEyeWorkspaceController({ recordStore: store,
@@ -95,6 +96,7 @@ try {
     const nativeFetch = window.fetch;
     window.fetch = async (url, options = {}) => {
       requests.push({ url: String(url), body: options.body || '' });
+      if (String(url) === '/api/openrouter/status') return new Response(JSON.stringify({ realtimeConfigured: false, configured: false }));
       if (String(url).startsWith('/api/realtime/token')) {
         return new Response(JSON.stringify(tokenAvailable ? { value: 'synthetic-token-not-a-credential' } : { error: 'QA provider not configured' }), { status: tokenAvailable ? 200 : 503 });
       }
@@ -138,12 +140,53 @@ try {
     workspace.root.querySelector('[data-action="time-reset"]').click();
     check(controller.selectionSnapshot().offsetMinutes === 0, 'Voice failure disabled manual time reset');
     check(await store.serializeRecords() === before, 'Voice failures changed durable records');
-    voice.stop(); realtime.stop({ removeUi: true }); window.fetch = nativeFetch;
+    const tokenRequests = () => requests.filter((r) => r.url.startsWith('/api/realtime/token')).length;
+    const tokensBeforeBinding = tokenRequests();
+    const oldButton = document.querySelector('#gev-voice-button');
+    const fallback = installVoiceFallback({ realtime, freeVoice: voice });
+    check(await fallback.ready === 'free', 'Main-shell fallback did not bind');
+    const mic = document.querySelector('#gev-voice-button');
+    check(mic !== oldButton && tokenRequests() === tokensBeforeBinding, 'Fallback minted token or retained old click handler');
+    check(mic.title.includes('Saved collections and notebooks are not attached'), 'Replacement lost disclosure');
+    check(!mic.getAttribute('aria-label').includes('Space'), 'Replacement advertises inactive shortcut');
+    check(document.querySelector('#gev-voice-tier').disabled && document.querySelector('#gev-voice-cost-value').hidden, 'Inactive Realtime cost controls still shown');
+    mic.click(); check(voice.isListening() && mic.getAttribute('aria-pressed') === 'true', 'MIC did not start browser voice');
+    check(document.querySelector('#gev-voice-status').textContent === 'LISTENING', 'Fallback status not rendered');
+    document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space', bubbles: true }));
+    check(tokenRequests() === tokensBeforeBinding && realtime.shortcutKeyDownHandler === null, 'Free voice still triggers Realtime shortcut');
+    speechSessions.at(-1).onerror({ error: 'not-allowed' });
+    check(document.querySelector('#gev-voice-control').dataset.status === 'error', 'Fallback denial is not styled as error');
+    check(document.querySelector('#gev-voice-error-detail').textContent.includes('not-allowed'), 'Fallback error detail stale');
+    mic.click(); check(voice.isListening(), 'Explicit fallback retry failed');
+    await voice.handle('close astroeye');
+    check(workspace.root.hidden && document.querySelector('#gev-voice-status').textContent === 'DONE', 'Shell-bound command did not update UI');
+    mic.click(); check(!voice.isListening(), 'MIC did not stop browser voice');
+    fallback.dispose(); mic.click(); check(!voice.isListening(), 'Disposed fallback left a live handler');
+    check(tokenRequests() === tokensBeforeBinding && await store.serializeRecords() === before, 'Shell binding changed tokens or saved records');
+    realtime.stop({ removeUi: true }); window.fetch = nativeFetch;
     installed.dispose(); check(registry.list().length === 0, 'Command teardown left registrations');
     workspace.destroy(); await store.close();
     return { commands: 7, recordBytesUnchanged: true, manualCancellation: true, cameraGuard: true, uiAndSkyTimeSynchronized: true,
-      simulatedVoiceFailures: true, manualUiAfterVoiceFailure: true, nativeMicrophoneUsed: false };
+      simulatedVoiceFailures: true, manualUiAfterVoiceFailure: true, mainShellFallback: true, startupTokenProbe: false, nativeMicrophoneUsed: false };
   });
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ ...result, browser: await browser.version(), passed: true }));
-} finally { await browser?.close(); clearTimeout(deadline); }
+  report = { ...result, browser: await browser.version(), passed: true };
+} finally {
+  // A completed assertion run must not wait indefinitely for Chromium shutdown.
+  // Only this harness's fresh-profile process may be terminated.
+  let closeTimer;
+  try {
+    if (browser) {
+      const closed = await Promise.race([
+        browser.close().then(() => true, () => false),
+        new Promise((resolve) => { closeTimer = setTimeout(() => resolve(false), 3000); }),
+      ]);
+      if (!closed) {
+        browser.process()?.kill();
+        if (report) report.browserCleanupForced = true;
+      }
+    }
+  } finally { clearTimeout(closeTimer); clearTimeout(deadline); }
+}
+console.log(JSON.stringify(report));

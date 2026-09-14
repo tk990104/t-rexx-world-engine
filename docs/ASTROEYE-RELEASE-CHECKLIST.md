@@ -190,6 +190,13 @@ regression tests and the bounded Chromium harness pass. This does not exercise t
 embedded host, the full fallback MIC binding or a live provider; V1/V2 review and
 remaining V3 acceptance stay open. No release gate is closed.
 
+Checkpoint 64 [main-shell fallback evidence](architecture/astroeye-voice-transports.md#checkpoint-64--main-shell-microphone-fallback)
+exercises the production binding in isolated Chromium: MIC start/stop, denial/retry,
+shortcut detachment, status/help/privacy controls and disposal. Startup now reads
+configuration without minting a token. All 787 regression tests and the browser
+rerun pass. This is not full-bootstrap, embedded-host or live-provider certification;
+V1/V2 review and remaining V3 acceptance stay open.
+
 ## 3. Persistent event-linked map research
 
 - [ ] **R1 — Record contract:** define a versioned local annotation record with stable ID,

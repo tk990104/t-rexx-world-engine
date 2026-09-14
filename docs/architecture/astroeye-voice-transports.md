@@ -128,3 +128,47 @@ the full application's fallback MIC binding is not exercised by this harness.
 No actual microphone, live AI request, saved user records, credential changes or
 publication were involved. V1/V2 acceptance review, embedded-host validation and
 V3's explicitly authorized live smoke check remain open. No release gate is closed.
+
+## Checkpoint 64 — main-shell microphone fallback
+
+September 14, 2026. `main.js` now uses `installVoiceFallback` rather than a separate
+inline binding. The isolated browser harness exercises that same binding with the
+real microphone controls and synthetic speech/services.
+
+The old startup token-minting probe is removed. `/api/openrouter/status` now also
+returns `realtimeConfigured`, a boolean derived from server configuration. It never
+returns the key and does not call OpenAI. The client reads only two booleans, with
+a five-second deadline and teardown cancellation. The local endpoint was checked
+with a bounded request: HTTP 200 and both expected boolean fields were present.
+This is configuration presence, not credential validity, billing or provider health.
+An invalid configured key is reported when the user explicitly starts Realtime;
+it no longer causes a speculative provider call during startup. Unknown/malformed
+configuration leaves the existing transport intact. Active Realtime sessions are
+not displaced. Deployments must update the status endpoint along with the client.
+
+When browser voice takes ownership, the binding replaces only the MIC button,
+preserves its disclosure, changes its accessible label/help, disables the inactive
+Realtime tier control, hides its cost value and detaches Realtime's Space listeners.
+It does not install a global Space-swallowing listener. Error details and status
+are rendered as text; denied speech is visibly an error rather than an idle state.
+Page teardown cancels pending configuration reads and removes the owned click handler.
+
+Five new unit tests cover non-minting configuration reads, malformed/offline/hung
+responses, cancellation, configured/active Realtime and unsupported-speech guards,
+and main/server wiring. Expanded Chromium assertions cover actual button start/stop,
+denial/retry, shortcut detachment, privacy/help/cost controls, chart-command feedback,
+disposal and byte-identical synthetic records. No new token request occurs during
+fallback binding or browser-voice button/Space interactions.
+
+Verification: all 787 combined voice/platform/radio-schema tests pass (80.79 seconds).
+Production build passes (249 modules, 35.50 seconds, existing node:fs/chunk warnings).
+An initial browser run passed assertions but hung during shutdown and hit the
+60-second watchdog. Cleanup is now bounded to three seconds before stopping only
+the harness's owned fresh-profile Chromium process, and success is printed after
+cleanup. The rerun exited successfully in Chrome 145.0.7632.77 without forced cleanup.
+
+This verifies the extracted production binding, not a full application-bootstrap,
+embedded-host or live-provider run. All test speech, microphone and token/chat
+responses were simulated. No credentials or saved user records were changed, and
+nothing was published. V1/V2 acceptance review and remaining V3 host/live validation
+stay open; no calculation or release gate was waived.

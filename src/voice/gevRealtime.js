@@ -859,18 +859,7 @@ export class GevRealtimeController {
       this.ui.tierButton.removeEventListener('click', this.tierHandler);
       this.tierHandler = null;
     }
-    if (removeUi) {
-      if (this.shortcutKeyDownHandler) document.removeEventListener('keydown', this.shortcutKeyDownHandler);
-      if (this.shortcutKeyUpHandler) document.removeEventListener('keyup', this.shortcutKeyUpHandler);
-      if (this.shortcutBlurHandler) window.removeEventListener('blur', this.shortcutBlurHandler);
-      if (this.shortcutVisibilityHandler) {
-        document.removeEventListener('visibilitychange', this.shortcutVisibilityHandler);
-      }
-      this.shortcutKeyDownHandler = null;
-      this.shortcutKeyUpHandler = null;
-      this.shortcutBlurHandler = null;
-      this.shortcutVisibilityHandler = null;
-    }
+    if (removeUi) this.unbindPushToTalkShortcut();
     if (removeUi && this.annotationEventUnsubscribe) {
       // Full teardown (re-init path): stop listening to the long-lived annotation
       // engine so a replaced controller can't keep receiving outline events.
@@ -1366,6 +1355,15 @@ export class GevRealtimeController {
       ));
     }
     this.setStatus('listening', 'Ask or command');
+  }
+
+  unbindPushToTalkShortcut() {
+    if (this.shortcutKeyDownHandler) document.removeEventListener('keydown', this.shortcutKeyDownHandler);
+    if (this.shortcutKeyUpHandler) document.removeEventListener('keyup', this.shortcutKeyUpHandler);
+    if (this.shortcutBlurHandler) window.removeEventListener('blur', this.shortcutBlurHandler);
+    if (this.shortcutVisibilityHandler) document.removeEventListener('visibilitychange', this.shortcutVisibilityHandler);
+    this.shortcutKeyDownHandler = null; this.shortcutKeyUpHandler = null;
+    this.shortcutBlurHandler = null; this.shortcutVisibilityHandler = null;
   }
 
   sendToolOutput(callId, result) {

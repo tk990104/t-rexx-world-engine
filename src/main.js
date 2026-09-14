@@ -34,7 +34,8 @@ import { LAYER_STATE_REGISTRY } from './data/layerState.js';
 import { registerDataCredits } from './data/dataCredits.js';
 import { SceneDirector } from './scenes/director.js';
 import { initGevVoiceCommands } from './voice/gevRealtime.js';
-import { initFreeVoice, shouldUseFreeVoice } from './voice/freeVoice.js';
+import { initFreeVoice } from './voice/freeVoice.js';
+import { installVoiceFallback } from './voice/voiceFallback.js';
 import { MapStackController } from './mapStackController.js';
 import { initAnnotations } from './annotations/index.js';
 import { initLogoGaze } from './logoGaze.js';
@@ -712,91 +713,10 @@ async function init() {
     });
     window.__godsEyeView.freeVoice = freeVoice;
 
-    // The MIC button drives whichever voice path is actually available.
-    // OPENAI_API_KEY may be unset — it is by default — and in that case the
-    // Realtime path cannot connect at all, so the button would do nothing.
-    // Rebinding it to free voice means one control that always works rather
-    // than a button whose behaviour depends on a key the user cannot see.
-    void (async () => {
-      try {
-        const status = await fetch('/api/openrouter/status')
-          .then((r) => r.json())
-          .catch(() => null);
-        const realtimeReady = await fetch('/api/realtime/token', { method: 'POST' })
-          .then((r) => r.ok)
-          .catch(() => false);
-
-        // NOT gated on the OpenRouter key. It was, and that was the bug behind
-        // "Realtime connection: OPENAI_API_KEY is not set" on the deployed
-        // site: the key lives in a gitignored .env and is absent in
-        // production, so this returned early, the mic stayed bound to the
-        // Realtime path, and clicking it reported a missing OpenAI key the
-        // user had no way to supply. The free path's local matcher needs
-        // neither key, so the only real requirements are that Realtime is
-        // unavailable and the browser can do speech.
-        if (!shouldUseFreeVoice({ realtimeReady, speechSupported: freeVoice.isSupported() })) return;
-        freeVoice.setAiAvailable(status?.configured === true);
-
-        // #gev-voice-button by id, NOT the first button in the container. The
-        // container's first button is #gev-voice-tier — the STD/mini cost
-        // chip — so a positional selector rebound the wrong control and left
-        // the mic still wired to the Realtime path, which then reported
-        // "OPENAI_API_KEY is not set" on click.
-        const button = document.getElementById('gev-voice-button');
-        if (!button) return;
-        // Replacing the node drops the Realtime listener with it, so the two
-        // paths can never both fire on one click.
-        const fresh = button.cloneNode(true);
-        button.replaceWith(fresh);
-        const label = document.getElementById('gev-voice-status');
-
-        // Space-to-talk belongs to the Realtime controller and would start a
-        // connection that cannot succeed. Suppress it while free voice owns
-        // the microphone.
-        const swallowSpace = (event) => {
-          if (event.code === 'Space' && !/^(INPUT|TEXTAREA)$/.test(event.target?.tagName || '')) {
-            event.stopImmediatePropagation();
-          }
-        };
-        window.addEventListener('keydown', swallowSpace, true);
-        window.addEventListener('keyup', swallowSpace, true);
-        // The Realtime path's own error banner is meaningless here.
-        document.getElementById('gev-voice-error')?.remove();
-        const root = document.getElementById('gev-voice-control');
-        // ...and so is its verdict on the microphone. The Realtime controller
-        // writes "VOICE UNAVAILABLE" when it cannot reach its own service,
-        // which is exactly the case in which free voice takes over — so
-        // leaving it would label a working microphone as broken. Clear the
-        // error state before the user ever looks at it.
-        if (root) {
-          root.dataset.status = 'idle';
-          delete root.dataset.error;
-        }
-        if (label) label.textContent = 'READY';
-        freeVoice.onStateChange((state, text) => {
-          // The container styles itself from data-status, so keeping it in
-          // step is what makes the button look active while listening.
-          if (root) root.dataset.status = state === 'listening' ? 'listening' : 'idle';
-          if (!label) return;
-          const copy = {
-            listening: text ? `“${text}”` : 'LISTENING',
-            heard: `“${text}”`,
-            thinking: 'THINKING',
-            done: text || 'DONE',
-            error: text || 'ERROR',
-            idle: 'OFF',
-          };
-          label.textContent = String(copy[state] || 'OFF').toUpperCase().slice(0, 42);
-        });
-        fresh.addEventListener('click', () => {
-          if (freeVoice.isListening()) freeVoice.stop();
-          else freeVoice.start();
-        });
-        console.info('[Voice] Free voice active (no OpenAI key present).');
-      } catch (error) {
-        console.warn('[Voice] free-voice wiring skipped:', error?.message || error);
-      }
-    })();
+    // Read local configuration only. Token minting belongs to explicit voice start.
+    const voiceFallback = installVoiceFallback({ realtime: window.__godsEyeView.voiceCommands, freeVoice });
+    void voiceFallback.ready.catch(() => console.warn('[Voice] fallback binding unavailable'));
+    window.addEventListener('pagehide', () => voiceFallback.dispose(), { once: true });
 
   } catch (error) {
     console.error("God's Eye View initialization failed:", error);
