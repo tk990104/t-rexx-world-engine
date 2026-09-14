@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "https://github.com/0xStarcat/CircularNatalHoroscopeJS",
+    "commit": "76e150f64a3525797afe5b7ce118c2c63a1d59bd",
+    "assertions": "https://github.com/0xStarcat/CircularNatalHoroscopeJS/blob/76e150f64a3525797afe5b7ce118c2c63a1d59bd/tests/utilities.astronomy.test.js",
+    "conventions": "https://github.com/0xStarcat/CircularNatalHoroscopeJS/blob/76e150f64a3525797afe5b7ce118c2c63a1d59bd/src/utilities/astronomy.js",
+    "license": "Unlicense",
+    "licenseUrl": "https://github.com/0xStarcat/CircularNatalHoroscopeJS/blob/76e150f64a3525797afe5b7ce118c2c63a1d59bd/LICENSE",
+    "retrievedOn": "2026-09-14"
+  },
+  "scope": "Published orientation assertions only; no UTC, geographic longitude or polar date-based certification.",
+  "obliquityDegrees": 23.4367,
+  "toleranceArcseconds": 0.36,
+  "cases": [
+    {
+      "id": "asc-1",
+      "component": "ascendant",
+      "latitude": 40.72,
+      "localSiderealDegrees": 25.96,
+      "expected": 129.6067302512891
+    },
+    {
+      "id": "asc-2",
+      "component": "ascendant",
+      "latitude": 42.37,
+      "localSiderealDegrees": 95.7499998542,
+      "expected": 184.4906041740967
+    },
+    {
+      "id": "asc-3",
+      "component": "ascendant",
+      "latitude": -33.47,
+      "localSiderealDegrees": 121.88288750336505,
+      "expected": 225.66189024232585
+    },
+    {
+      "id": "asc-4",
+      "component": "ascendant",
+      "latitude": 40.65871,
+      "localSiderealDegrees": 238.89506391854957,
+      "expected": 310.67600948149834
+    },
+    {
+      "id": "mc-1",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 0,
+      "expected": 0
+    },
+    {
+      "id": "mc-2",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 90,
+      "expected": 90
+    },
+    {
+      "id": "mc-3",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 179,
+      "expected": 178.9101025984246
+    },
+    {
+      "id": "mc-4",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 180,
+      "expected": 180
+    },
+    {
+      "id": "mc-5",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 181,
+      "expected": 181.0898974015754
+    },
+    {
+      "id": "mc-6",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 270,
+      "expected": 270
+    },
+    {
+      "id": "mc-7",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 359,
+      "expected": 358.9101025984246
+    },
+    {
+      "id": "mc-8",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 359.79954708891455,
+      "expected": 359.781522892123
+    },
+    {
+      "id": "mc-9",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 14.8123734689,
+      "expected": 16.078072862279782
+    },
+    {
+      "id": "mc-10",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 269.524892875,
+      "expected": 269.5640876085488
+    },
+    {
+      "id": "mc-11",
+      "component": "midheaven",
+      "latitude": 0,
+      "localSiderealDegrees": 284.5659616273,
+      "expected": 283.40950386091356
+    }
+  ]
+}

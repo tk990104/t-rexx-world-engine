@@ -139,6 +139,13 @@ redistribution disposition before promotion to public fixtures or release artifa
 All 422 platform tests pass; A3's candidate decision is unchanged. A2 retrieval
 again failed with no accepted response; no gate was waived or newly closed.
 
+Checkpoint 59: [published quadrant/wrap assertions](architecture/astroeye-orientation-references.md)
+add four ASC and eleven MC comparisons using the existing Unlicense source and
+unchanged 0.36-arcsecond orientation screen. All pass. They advance A1's quadrant
+coverage but do not supply polar UTC/cusps or resolve the separate local Swiss
+candidate's rights disposition. A1/A2 remain open; no gate is waived. Daily and
+annual USNO web retrieval attempts yielded no new reference data.
+
 ## 2. AstroEye voice commands
 
 - [ ] **V1 — Bounded command contract:** register open/close workspace, select a saved

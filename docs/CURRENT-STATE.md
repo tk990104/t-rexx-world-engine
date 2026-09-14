@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13 local / September 14 UTC: [published quadrant/wrap checks](architecture/astroeye-orientation-references.md) add four Ascendant and eleven Midheaven assertions from the existing Unlicense reference project. All fifteen pass the unchanged orientation tolerance; malformed coverage and wrong outputs are rejected. These are orientation-only references, not polar UTC/cusp certification. A1/A2 remain open, A3's decision is unchanged, and no runtime or user data changed. USNO web retrieval returned no new data.
+
 September 13 local / September 14 UTC: [polar numerical candidate review](architecture/astroeye-polar-candidate-review.md) passes 16 local ASC/MC/Equal/Whole Sign comparisons at both polar caps. The source numerical pack remains outside Git pending redistribution review; only the checker and four synthetic plumbing tests are included. All 422 platform tests pass. A1 remains open; A2 returning-sunrise retrieval failed again with no accepted response. Fourteen release gates remain open, with A3's candidate closure unchanged. No runtime, saved-data or preview changes.
 
 September 13 local / September 14 UTC: [A3 candidate verification](architecture/astroeye-a3-candidate-verification.md) closes the supported-range gate for runtime candidate `6c96b86`. The consolidated offline report covers all 303 positions/101 motion screens and distinguishes inconclusive classifications. All 418 platform tests, the production build and two isolated browser checks pass. Fourteen release gates remain open, including A1/A2; no release or universal-accuracy claim is made. Runtime and user records are unchanged. Earlier A3-open descriptions below are historical.
