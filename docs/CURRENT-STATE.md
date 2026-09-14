@@ -4,6 +4,8 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+September 13 local / September 14 UTC: the [voice-command foundation](architecture/astroeye-command-contract.md) defines seven bounded commands with strict validation, explicit ownership checks, cancellation/deadlines and minimal results. Eight focused tests include real-controller record preservation. This is an unmounted contract, not working microphone control; shell and transport integration follow. The user approved this sequence while retaining A1/A2 release blockers. No preview, saved-data, credentials or live AI calls changed.
+
 September 13 local / September 14 UTC: [published quadrant/wrap checks](architecture/astroeye-orientation-references.md) add four Ascendant and eleven Midheaven assertions from the existing Unlicense reference project. All fifteen pass the unchanged orientation tolerance; malformed coverage and wrong outputs are rejected. These are orientation-only references, not polar UTC/cusp certification. A1/A2 remain open, A3's decision is unchanged, and no runtime or user data changed. USNO web retrieval returned no new data.
 
 September 13 local / September 14 UTC: [polar numerical candidate review](architecture/astroeye-polar-candidate-review.md) passes 16 local ASC/MC/Equal/Whole Sign comparisons at both polar caps. The source numerical pack remains outside Git pending redistribution review; only the checker and four synthetic plumbing tests are included. All 422 platform tests pass. A1 remains open; A2 returning-sunrise retrieval failed again with no accepted response. Fourteen release gates remain open, with A3's candidate closure unchanged. No runtime, saved-data or preview changes.

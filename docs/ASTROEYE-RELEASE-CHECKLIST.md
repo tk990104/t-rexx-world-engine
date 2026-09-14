@@ -165,6 +165,11 @@ annual USNO web retrieval attempts yielded no new reference data.
 Current seam: `src/core/commandRegistry.js`; AstroEye's manifest command list is empty.
 The registry's existence alone does not establish voice integration.
 
+Checkpoint 60 adds the [seven-command contract](architecture/astroeye-command-contract.md)
+and eight focused tests, including real-controller record preservation. Both catalog
+shapes are tested without network calls. Runtime registration, workspace adapters
+and transport dispatch are not yet integrated; V1/V2/V3 remain open.
+
 ## 3. Persistent event-linked map research
 
 - [ ] **R1 — Record contract:** define a versioned local annotation record with stable ID,
@@ -248,9 +253,10 @@ video-export workflows. These do not reopen the v0.1 checklist automatically.
 
 ## Execution order and what follows
 
-Next: **remaining A1 and A2 evidence**. A3's current-candidate review is complete.
-Finish validation before expanding voice or annotation scope.
-Then V1–V3, R1–R3, U1–U3 and L1–L3, carrying relevant regression evidence forward and
+User-approved sequence change (September 13 local): proceed with **V1–V3** while
+remaining A1/A2 evidence and fixture-rights review stay mandatory release blockers.
+A3's current-candidate review is complete. No calculation gate is waived.
+Then R1–R3, U1–U3 and L1–L3, carrying relevant regression evidence forward and
 rerunning affected checks after changes. Required provider/user approvals may pause a gate;
 they are not permission to silently remove it.
 
