@@ -131,6 +131,14 @@ still required before closing A1.
 Keep reference retrieval separate from offline tests and normal app startup. No Swiss
 Ephemeris integration or license purchase is included in this work package.
 
+Checkpoint 58: the [polar numerical candidate review](architecture/astroeye-polar-candidate-review.md)
+passes sixteen local model-4 comparisons at both polar caps. Its numerical pack
+remains outside Git pending rights review; four checked-in tests exercise synthetic
+checker plumbing only. A1 is not closed by this local candidate. L2 must record
+redistribution disposition before promotion to public fixtures or release artifacts.
+All 422 platform tests pass; A3's candidate decision is unchanged. A2 retrieval
+again failed with no accepted response; no gate was waived or newly closed.
+
 ## 2. AstroEye voice commands
 
 - [ ] **V1 — Bounded command contract:** register open/close workspace, select a saved

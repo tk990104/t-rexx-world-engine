@@ -104,3 +104,16 @@ while the external-reference gap remains explicitly documented.
 Checkpoint 48 verification: all 304 platform tests passed in 21.20 seconds. The
 three-test internal recovery subset also passed independently. No build or browser
 check was repeated for these test/documentation-only changes.
+
+## Bounded retrieval follow-up — checkpoint 58
+
+September 13 local / September 14 UTC, 2026: July 27, 2024 at 70N/0 was
+requested once with Node's system CA trust and a 20-second timeout, then once
+with Windows-native Invoke-RestMethod and a 20-second timeout. Node failed
+ECONNRESET before TLS established; Windows reported unexpected EOF from the
+transport stream and returned no response. A shell exit of zero on the latter
+does not make its null response successful. TLS verification was not disabled.
+July 28 was not requested in this checkpoint. No new external fixture was
+accepted, the existing reference pack is unchanged and A2 remains open.
+No further automatic retries are scheduled. The separate A1 local candidate
+review can proceed without claiming that returning-sunrise timing is validated.
