@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
+import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 
 // Real index/main/Cesium boot, fresh temporary profile, synthetic records only.
 // All provider endpoints are intercepted BEFORE reaching the local proxy.
-let browser, report;
+let browser, page, report;
 const deadline = setTimeout(() => {
   console.error('Full AstroEye bootstrap check exceeded 150 seconds.');
   browser?.process()?.kill(); process.exit(1);
@@ -11,7 +12,7 @@ const deadline = setTimeout(() => {
 try {
   browser = await puppeteer.launch({ headless: true, timeout: 15000,
     args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-background-networking'] });
-  const page = await browser.newPage();
+  page = await browser.newPage();
   page.setDefaultTimeout(15000);
   await page.setViewport({ width: 1280, height: 900 });
   await page.setBypassServiceWorker(true);
@@ -199,10 +200,19 @@ try {
     nativeMicrophoneUsed: false, diagnosticRequestsIntercepted: diagnosticRequests,
     externalRequestsBlocked: blockedExternal, browser: await browser.version() };
 } finally {
-  let timer;
-  const closed = await Promise.race([browser?.close().then(() => true, () => false),
-    new Promise((resolve) => { timer = setTimeout(() => resolve(false), 3000); })]);
-  clearTimeout(timer); clearTimeout(deadline);
-  if (!closed && browser) { browser.process()?.kill(); if (report) report.browserCleanupForced = true; }
+  try {
+    const cleanup = await closeOwnedBrowser(browser, { page });
+    if (report) {
+      report.cleanup = cleanup;
+      report.browserCleanupForced = cleanup.forced;
+      report.gracefulShutdown = cleanup.status === 'graceful';
+    }
+    console.log(JSON.stringify({ stage: 'cleanup', ...cleanup }));
+  } finally { clearTimeout(deadline); }
 }
-console.log(JSON.stringify(report, null, 2));
+// Assertions and owned-browser cleanup are finished. Drain the report before
+// ending this QA driver; library handles must not leave the foreground task hung.
+// A forced/incomplete cleanup is a failing overall run, even if assertions passed.
+process.stdout.write(`${JSON.stringify(report, null, 2)}\n`, () => {
+  process.exit(report?.passed && report?.gracefulShutdown ? 0 : 1);
+});

@@ -97,10 +97,12 @@ candidate `19b642f` (249 modules, 35.50 seconds, existing warnings).
 The [real-app bootstrap harness](astroeye-bootstrap-validation.md) introduced at
 checkpoint 66 now passes offline assertions at checkpoint 67 after correcting test
 mocks and navigation. Both startup configurations and seven commands preserve
-synthetic record bytes without provider calls. Browser close required owned-process
-timeout cleanup; embedded-host, graceful teardown and live checks remain open.
+synthetic record bytes without provider calls. Checkpoint 68's bounded page-first
+cleanup now completes gracefully in the isolated harness with a successful driver
+exit; earlier forced-cleanup reports remain historical. Embedded-host and live checks
+remain open.
 
-Complete remaining host/teardown checks without exposing real saved records.
+Complete remaining host checks without exposing real saved records.
 Before any live test, explicitly agree on provider, microphone use, outgoing
 audio/transcript/tool/map context, session length and possible metered charges. Use
 synthetic records and a small command sequence; record outcomes without storing
