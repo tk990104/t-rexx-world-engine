@@ -94,12 +94,14 @@ candidate `19b642f` (249 modules, 35.50 seconds, existing warnings).
 
 ## Remaining V3 work
 
-Checkpoint 66 adds a [real-app bootstrap harness](astroeye-bootstrap-validation.md),
-but its current run times out before app readiness and does not verify interactions.
-That work is explicitly incomplete, not new acceptance evidence.
+The [real-app bootstrap harness](astroeye-bootstrap-validation.md) introduced at
+checkpoint 66 now passes offline assertions at checkpoint 67 after correcting test
+mocks and navigation. Both startup configurations and seven commands preserve
+synthetic record bytes without provider calls. Browser close required owned-process
+timeout cleanup; embedded-host, graceful teardown and live checks remain open.
 
-Run full application-bootstrap/host interaction checks without exposing real saved
-records. Before any live test, explicitly agree on provider, microphone use, outgoing
+Complete remaining host/teardown checks without exposing real saved records.
+Before any live test, explicitly agree on provider, microphone use, outgoing
 audio/transcript/tool/map context, session length and possible metered charges. Use
 synthetic records and a small command sequence; record outcomes without storing
 credentials or microphone recordings in acceptance artifacts. Do not mark V3 accepted

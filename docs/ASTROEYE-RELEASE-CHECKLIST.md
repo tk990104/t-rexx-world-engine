@@ -165,8 +165,9 @@ annual USNO web retrieval attempts yielded no new reference data.
 Current V1/V2 decision: [checkpoint 65 acceptance review](architecture/astroeye-voice-acceptance.md)
 accepts the implementation criteria for runtime `19b642f`, backed by 788 passing
 tests, 66 parity dispatches, a command-level data review and current isolated-browser
-evidence. V3 remains open for remaining full-bootstrap/host and explicitly authorized
-live checks. Earlier V1/V2-pending checkpoint notes below are historical.
+evidence. Checkpoint 67's [offline full-bootstrap assertions](architecture/astroeye-bootstrap-validation.md)
+now pass after test-harness corrections. V3 remains open for host, graceful browser
+teardown and explicitly authorized live checks. Earlier pending notes are historical.
 
 Current seam: `src/core/commandRegistry.js`; AstroEye declares seven commands and
 registers them when storage is available. Registration alone does not establish

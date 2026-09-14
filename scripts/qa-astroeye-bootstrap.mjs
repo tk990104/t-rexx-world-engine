@@ -17,12 +17,16 @@ try {
   await page.setBypassServiceWorker(true);
   const base = new URL(process.env.QA_BASE_URL || 'http://127.0.0.1:5173');
   assert.ok(['127.0.0.1', 'localhost'].includes(base.hostname), 'QA requires a loopback server');
-  let configured = false, statusReads = 0, voiceRequests = 0, blockedExternal = 0;
+  let configured = false, statusReads = 0, voiceRequests = 0, diagnosticRequests = 0, blockedExternal = 0;
   const pageErrors = [];
   const pending = new Set();
   page.on('requestfinished', (request) => pending.delete(request));
   page.on('requestfailed', (request) => pending.delete(request));
-  page.on('pageerror', (error) => pageErrors.push(error.name));
+  page.on('pageerror', (error) => pageErrors.push({ name: error.name,
+    category: error.message === 'Failed to fetch' ? 'fetch-failed'
+      : error.message.match(/^([A-Za-z_$][\w.$]*) is not a function$/)?.[1] || 'unclassified',
+    frames: [...(error.stack || '').matchAll(/\/(?:src|node_modules)\/[\w/.-]+:\d+:\d+/g)]
+      .slice(0, 4).map(([frame]) => frame) }));
   await page.setRequestInterception(true);
   page.on('request', (request) => {
     pending.add(request);
@@ -34,13 +38,21 @@ try {
       return void request.respond({ contentType: 'application/json',
         body: JSON.stringify({ configured: false, realtimeConfigured: configured }) });
     }
+    if (url.pathname === '/api/realtime/debug-log') {
+      // Local diagnostics are not token/model calls. Do not persist their body.
+      diagnosticRequests++;
+      return void request.respond({ status: 204 });
+    }
     if (url.pathname.startsWith('/api/')) {
       if (/^\/api\/(realtime|openrouter)\//.test(url.pathname)) voiceRequests++;
       return void request.respond({ status: 503, contentType: 'application/json', body: '{"error":"Offline QA"}' });
     }
     void request.continue();
   });
-  await page.evaluateOnNewDocument(() => {
+  await page.evaluateOnNewDocument((appOrigin) => {
+    // about:blank has no mediaDevices. Install mocks only in the app document,
+    // not in the neutral document used to guarantee a genuine reload.
+    if (location.origin !== appOrigin) return;
     window.__qaSpeech = { sessions: [], microphoneAttempts: 0, spoken: 0, sockets: 0 };
     class Recognition {
       constructor() { window.__qaSpeech.sessions.push(this); }
@@ -50,9 +62,11 @@ try {
     }
     Object.defineProperty(window, 'SpeechRecognition', { configurable: true, value: Recognition });
     Object.defineProperty(window, 'webkitSpeechRecognition', { configurable: true, value: Recognition });
-    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: {
+    // Real SpeechSynthesis is an EventTarget. An empty voice list registers a
+    // voiceschanged listener during init, even before the first spoken command.
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: Object.assign(new EventTarget(), {
       cancel() {}, getVoices: () => [], speak() { window.__qaSpeech.spoken++; },
-    } });
+    }) });
     Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { configurable: true, value: async () => {
       window.__qaSpeech.microphoneAttempts++;
       throw new DOMException('QA microphone disabled', 'NotAllowedError');
@@ -71,8 +85,13 @@ try {
       send() { throw new Error('QA sockets disabled'); }
       close() {}
     };
-  });
+  }, base.origin);
   const open = async () => {
+    const started = Date.now();
+    // The app rewrites its fragment while navigating. Returning to our initial
+    // fragment can be a same-document navigation; force a new document so the
+    // second configuration actually boots (while preserving this QA profile's DB).
+    await page.goto('about:blank', { waitUntil: 'domcontentloaded', timeout: 10000 });
     await page.goto(`${base.origin}/?welcome=0#v=2&lat=40&lon=-75&alt=12000&heading=0&pitch=-90&roll=0&style=normal&map=osm&l=`,
       { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(async (error) => {
         console.error(JSON.stringify({ loadingFailure: error.name, pageErrors,
@@ -90,6 +109,7 @@ try {
             loaderError: document.querySelector('.loader-status')?.textContent.startsWith('Error:') })) }));
         throw error;
       });
+    console.log(JSON.stringify({ stage: 'app-ready', configuration: configured ? 'realtime' : 'browser-voice', elapsedMs: Date.now() - started }));
   };
   const click = (selector) => page.$eval(selector, (node) => node.click());
   const records = () => page.evaluate(() => window.__godsEyeView.worldPlatform.recordStore.serializeRecords());
@@ -155,11 +175,16 @@ try {
   // Reload the actual app with Realtime configured; never click its MIC.
   configured = true;
   const previousReads = statusReads;
+  // Observe the response directly: the resource-timing buffer can fill with
+  // startup modules before this fetch and is not a reliable completion signal.
+  const configurationResponse = page.waitForResponse((response) =>
+    new URL(response.url()).origin === base.origin
+    && new URL(response.url()).pathname === '/api/openrouter/status', { timeout: 60000 }).catch(() => null);
   await open();
   await page.waitForFunction(() => !!window.__godsEyeView.voiceCommands.ui.button);
-  // Await completion of the configuration fetch from outside, then a browser task.
-  await page.waitForFunction(() => performance.getEntriesByType('resource')
-    .some((entry) => new URL(entry.name).pathname === '/api/openrouter/status'));
+  const configuration = await configurationResponse;
+  assert.ok(configuration, 'Configured startup did not read status');
+  assert.deepEqual(await configuration.json(), { configured: false, realtimeConfigured: true });
   assert.ok(statusReads > previousReads);
   assert.equal(await page.evaluate(() => document.querySelector('#gev-voice-button')
     === window.__godsEyeView.voiceCommands.ui.button), true);
@@ -171,7 +196,8 @@ try {
   assert.deepEqual(pageErrors, [], 'Uncaught page errors (names only)');
   report = { passed: true, fullBootstrap: true, configurations: 2, commands: 7,
     syntheticRecordsUnchanged: true, manualRecovery: true, voiceProviderRequests: voiceRequests,
-    nativeMicrophoneUsed: false, externalRequestsBlocked: blockedExternal, browser: await browser.version() };
+    nativeMicrophoneUsed: false, diagnosticRequestsIntercepted: diagnosticRequests,
+    externalRequestsBlocked: blockedExternal, browser: await browser.version() };
 } finally {
   let timer;
   const closed = await Promise.race([browser?.close().then(() => true, () => false),
