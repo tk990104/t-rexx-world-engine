@@ -77,6 +77,13 @@ All 404 platform tests pass; combined stored coverage is 267 positions and 89
 motion screens. A3 remains open for older/future boundary cases, retrograde zodiac
 crossing coverage and final candidate verification. This first slice does not
 certify exact station or ingress timestamps.
+[Extended boundary references](architecture/astroeye-extended-boundary-references.md)
+now cover the planned 1900/2100 boundary examples and a 2025 retrograde crossing.
+All 415 platform tests pass; 303 stored positions and 101 motion checks jointly
+pass unchanged tolerances. Historical/future time cautions and inconclusive
+near-station directions remain explicit. This completes the planned sampling
+slice; A3 still needs consolidated candidate verification and evidence review.
+More samples are not an automatic prerequisite unless the review identifies a gap.
 First A2 evidence: [USNO solar boundaries and planetary-hour checks](architecture/astroeye-sun-boundary-references.md)
 now cover six rise/set days, 72 hour midpoints, rounded-boundary rollover probes and
 southern polar-day/night cases. The 65N solstice pair verifies long days, short nights and

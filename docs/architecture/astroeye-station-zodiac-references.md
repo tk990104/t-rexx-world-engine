@@ -1,5 +1,10 @@
 # AstroEye station and zodiac reference checks
 
+Follow-up checkpoint 56: [extended boundary references](astroeye-extended-boundary-references.md)
+complete the planned older/future and retrograde-crossing slice. Combined packs
+now cover 303 positions and 101 motion checks; 415 platform tests pass. The counts
+and next steps below describe the earlier checkpoint 55.
+
 ## Checkpoint 55 — September 13, 2026
 
 First independent boundary slice: nine Sun positions around the March 2024

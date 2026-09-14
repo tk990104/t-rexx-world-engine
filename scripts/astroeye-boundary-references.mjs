@@ -16,8 +16,11 @@ export function boundarySamples(body) {
 }
 export function validateBoundaryReference(fixture, body) {
   const samples = boundarySamples(body);
+  return validateBoundarySnapshot(fixture, body, samples, '2026-09-13');
+}
+export function validateBoundarySnapshot(fixture, body, samples, retrievalDay) {
   if (fixture?.body !== body || fixture.requestUrl !== horizonsUrl(body, samples)
-    || typeof fixture.retrievedAt !== 'string' || !/^2026-09-13T/.test(fixture.retrievedAt)
+    || typeof fixture.retrievedAt !== 'string' || !fixture.retrievedAt.startsWith(`${retrievalDay}T`)
     || !Number.isFinite(Date.parse(fixture.retrievedAt))
     || fixture.response?.signature?.version !== '1.2'
     || fixture.response?.signature?.source !== 'NASA/JPL Horizons API') throw new Error('Boundary provenance mismatch');
@@ -36,6 +39,9 @@ export function readBoundaryReference(body) {
 }
 export function compareBoundaryReference(body, positionAt = (instant) => calculateUtcTtPositions(instant).positions.find((p) => p.body === body)) {
   const { rows } = readBoundaryReference(body);
+  return compareBoundaryRows(body, rows, BOUNDARY_CENTERS[body], positionAt);
+}
+export function compareBoundaryRows(body, rows, centers, positionAt = (instant) => calculateUtcTtPositions(instant).positions.find((p) => p.body === body)) {
   const samples = rows.map((row) => {
     const actual = positionAt(row.instant);
     const boundaryDistanceArcseconds = Math.min(row.longitude % 30, 30 - row.longitude % 30) * 3600;
@@ -44,7 +50,7 @@ export function compareBoundaryReference(body, positionAt = (instant) => calcula
       boundaryDistanceArcseconds, signDecisive: boundaryDistanceArcseconds > POSITION_LIMIT_ARCSECONDS,
       signMatches: Math.floor(row.longitude / 30) === Math.floor(actual.longitude / 30) };
   });
-  const motions = BOUNDARY_CENTERS[body].map((instant) => {
+  const motions = centers.map((instant) => {
     const before = rows.find((row) => row.instant === shifted(instant, -6));
     const after = rows.find((row) => row.instant === shifted(instant, 6));
     const expected = signedDelta(before.longitude, after.longitude) * 2;
