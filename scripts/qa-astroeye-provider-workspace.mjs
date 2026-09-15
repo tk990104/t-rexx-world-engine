@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
+import { checkDirectorWorkflow } from './qa-astroeye-director-workflow.mjs';
 
 // Synthetic HTTP provider responses + real workspace/controller/IndexedDB.
 // Explicit diagnostic relay only; this does not certify normal host loading.
@@ -134,11 +135,12 @@ try {
   assert.deepEqual(fallback.workspaces, JSON.parse(privateBackup).workspaces);
   assert.deepEqual(fallback.events.find((event) => event.id === saved.events[0].id), saved.events[0]);
   assert.deepEqual(calls, ['schedule', 'venue', 'venue']);
+  const director = process.argv.includes('--director') ? await checkDirectorWorkflow(page, mark) : undefined;
   assert.deepEqual(errors, []); assert.deepEqual(blocked, []); assert.deepEqual(relayFailures, []);
   await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
   report = { passed: true, assetTransport: 'node-localhost', reviewRequired: true, editsInvalidateReview: true,
     repeatedHourPreserved: true, missingCoordinatesBlocked: true, manualFallback: true, privateResearchPreserved: true,
-    providerResponses: 'synthetic', cameraSeamMocked: true, embeddedHostVerified: false, userDataAccessed: false };
+    providerResponses: 'synthetic', cameraSeamMocked: true, embeddedHostVerified: false, userDataAccessed: false, director };
 } catch (error) {
   report = { passed: false, phase, error: error.message, calls, errors, blocked, relayFailures };
 } finally {

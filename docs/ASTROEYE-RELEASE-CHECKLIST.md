@@ -273,6 +273,15 @@ See [current session-callout behavior](architecture/astroeye-event-callouts.md).
 
 ## 4. Complete workflow and usability
 
+Checkpoint 84 adds [passing composed Director-workspace evidence](architecture/astroeye-director-workspace-validation.md):
+three-shot handoff, Stop/Escape, focus return and complete playback restore the
+saved preview time without changing event/private-workspace or project bytes.
+Private research is excluded from tours/telemetry. The real engine and adapter run
+over simulated camera/style seams with extracted production visibility rules.
+First browser attempt passes with graceful cleanup; 70 focused tests pass. U1/U2
+remain open for actual-host/map and remaining usability acceptance, not implicitly
+closed by this relay-backed test. U3 performance baselines remain next.
+
 Checkpoint 83 adds [passing synthetic provider-form evidence](architecture/astroeye-provider-workspace-validation.md):
 explicit review, edit invalidation, repeated-hour time preservation, missing-coordinate
 refusal and manual fallback preserve private research. Final relay-backed browser
