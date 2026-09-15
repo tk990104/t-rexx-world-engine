@@ -273,6 +273,13 @@ See [current session-callout behavior](architecture/astroeye-event-callouts.md).
 
 ## 4. Complete workflow and usability
 
+Checkpoint 83 adds [passing synthetic provider-form evidence](architecture/astroeye-provider-workspace-validation.md):
+explicit review, edit invalidation, repeated-hour time preservation, missing-coordinate
+refusal and manual fallback preserve private research. Final relay-backed browser
+run exits 0 with graceful cleanup; 46 focused tests pass. Earlier fixture/cleanup
+failures are documented. This does not certify live providers, default transport,
+Director or embedded-host behavior; U1 remains open and no new gate is accepted.
+
 Checkpoint 82 provides [passing relay-backed manual/share evidence](architecture/astroeye-manual-share-validation.md#checkpoint-82--pending-requests-identified-relay-backed-workflow-passes):
 all functional assertions and graceful browser cleanup pass with explicit
 `--node-assets`; 48 focused tests pass. Default browser module requests still stall,
