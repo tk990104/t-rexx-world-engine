@@ -273,6 +273,12 @@ See [current session-callout behavior](architecture/astroeye-event-callouts.md).
 
 ## 4. Complete workflow and usability
 
+Checkpoint 80's [manual form/share diagnostic](architecture/astroeye-manual-share-validation.md)
+is **incomplete**, not accepted U1 evidence. Functional assertions passed once but
+browser cleanup failed; a final retry exited 1 without a completion report.
+Retries stopped, and phase diagnostics were added without another browser run.
+42 focused regressions pass; runtime and release-gate decisions are unchanged.
+
 Checkpoint 79 adds an in-app Quick start guide and [combined workspace evidence](architecture/astroeye-quick-start-validation.md).
 Guide/shortcut keyboard access, narrow layout and comparison-pin preservation
 through chart changes and note saving pass; 461 platform tests pass. Final isolated
