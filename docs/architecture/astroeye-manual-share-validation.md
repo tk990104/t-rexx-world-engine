@@ -74,3 +74,62 @@ actual world/camera restore, provider-to-form review, real Director playback and
 embedded-host checks remain separate and unverified by this fixture.
 
 No gate closes: five remain accepted and ten open. Nothing was published or deployed.
+
+## Checkpoint 81 — startup stall isolated, failed-mount cleanup repaired
+
+September 15, 2026. Based on diagnostic candidate `b02c6e5`; application runtime
+remains `73150ed`. This section supersedes only the next-investigation guidance
+above, not its failure history or incomplete full-workflow status.
+
+The first phase-instrumented run failed at **sender-mount**, reporting failure to
+fetch the dynamic workspace module. It also revealed a harness ownership gap:
+`sender` was assigned only after `open()` finished mounting, so a failed mount left
+the created page unavailable to explicit page-first cleanup. Its browser close
+timed out (10.130 seconds) and invoked the owned-process fallback.
+
+A subsequent read-only request to the module URL returned HTTP 200, JavaScript,
+310,081 bytes. This shows that endpoint was available at that moment, not that
+every dependency was available or that the original fetch failure is explained.
+
+The test now retains each owned page immediately after creation, before navigation
+or imports. It records timestamped stages and bounded failed-request/status data,
+without query strings, links, private records or credentials. One instrumented
+run reached all workflow assertions, but its stricter asset check found a 404 for
+the fixture's favicon. Both pages and browser then closed normally (1.053-second
+shared cleanup, sender close completed, no force). An inline fixture icon removes
+that unnecessary request; it does not change the application's assets.
+
+The next full attempt hit the 60-second watchdog entering recipient-mount. Timings
+show sender startup consumed most of the budget: manual-form was reached only at
+58.189 seconds, and recipient-mount at 59.941 seconds. No failed asset requests
+were recorded. This is **startup latency**, not evidence that this attempt stalled
+at shutdown; its underlying cause remains unresolved.
+
+### Smaller diagnostic and current result
+
+`node scripts/qa-astroeye-manual-share.mjs --mount-only` now isolates one empty
+synthetic workspace. Mount evaluation has its own **20-second timeout**, within
+the unchanged 60-second overall watchdog. Substages distinguish workspace import,
+other service imports, setup, opening and shared restoration. The timeout does not
+cancel JavaScript in place; page-first cleanup closes the owned page afterward.
+
+The focused run reports workspace import at 4.883 seconds, then the mount timeout
+at 24.863 seconds. It never reaches service imports or storage/workspace setup.
+No failed HTTP requests are recorded. Exit is **1**, with **graceful cleanup**:
+sender close completed, browser close completed, process exited, no force;
+shared cleanup took 4.243 seconds. Thus the stall is localized to importing
+`astroeyeWorkspace.js` or its dependency graph/evaluation, not the note save or
+share algorithms. A 200 response for the top-level module does not distinguish a
+pending dependency fetch from slow evaluation or a renderer delay.
+
+All **six owned-browser cleanup unit tests pass** (0.583 seconds), and final
+script syntax/diff checks pass. A wrapper syntax typo was caught by `node --check`
+and corrected before the focused browser run. No application changes, new build,
+full-suite rerun, user-profile access or publication occurred. The 42 focused
+application tests in checkpoint 80 remain prior evidence, not a new rerun.
+
+The failed-mount cleanup path is now verified, but **the full manual/share check
+still has no accepted passing run**. Next: inspect pending dependency requests
+versus module evaluation using the mount-only case before repeating the two-party
+workflow. Do not extend the deadlines or infer an app-data defect from this result.
+Five gates remain accepted and ten open.

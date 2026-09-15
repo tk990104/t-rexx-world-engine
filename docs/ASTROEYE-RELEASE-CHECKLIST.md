@@ -273,6 +273,12 @@ See [current session-callout behavior](architecture/astroeye-event-callouts.md).
 
 ## 4. Complete workflow and usability
 
+Checkpoint 81 [isolates startup import latency](architecture/astroeye-manual-share-validation.md#checkpoint-81--startup-stall-isolated-failed-mount-cleanup-repaired)
+and repairs failed-mount page tracking in the test harness. The focused 20-second
+mount diagnostic times out before storage setup, then closes gracefully; all six
+cleanup unit tests pass. This is diagnosis/cleanup evidence, not a passing U1
+workflow or resolution of the underlying module-loading/evaluation delay.
+
 Checkpoint 80's [manual form/share diagnostic](architecture/astroeye-manual-share-validation.md)
 is **incomplete**, not accepted U1 evidence. Functional assertions passed once but
 browser cleanup failed; a final retry exited 1 without a completion report.

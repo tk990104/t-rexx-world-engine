@@ -5,8 +5,10 @@ import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 // Real workspace/form/storage, mocked camera seam, fresh isolated sender/recipient contexts.
 let browser, sender, recipient, report, phase = 'startup';
 const errors = [], unexpected = [];
+const assetFailures = [], started = Date.now();
+const mark = (value) => { phase = value; process.stderr.write(`${JSON.stringify({ phase, elapsedMs: Date.now() - started })}\n`); };
 const watchdog = setTimeout(() => {
-  process.stderr.write(`${JSON.stringify({ failed: '60-second watchdog', phase })}\n`);
+  process.stderr.write(`${JSON.stringify({ failed: '60-second watchdog', phase, assetFailures })}\n`);
   browser?.process()?.kill(); process.exit(1);
 }, 60000);
 try {
@@ -16,9 +18,19 @@ try {
     args: ['--disable-gpu', '--disable-background-networking'] });
   async function open(url) {
     const context = await browser.createBrowserContext(), page = await context.newPage();
+    // Retain ownership before navigation/imports: mounting can fail before open returns.
+    if (!sender) sender = page; else recipient = page;
+    await page.exposeFunction('qaMountPhase', (stage) => mark(`${page === sender ? 'sender' : 'recipient'}-${stage}`));
     page.setDefaultTimeout(10000);
     await page.setViewport({ width: 1200, height: 900 });
     page.on('pageerror', (error) => errors.push(error.name));
+    page.on('requestfailed', (request) => {
+      if (assetFailures.length < 20) assetFailures.push({ path: new URL(request.url()).pathname,
+        reason: request.failure()?.errorText ?? 'request failed' });
+    });
+    page.on('response', (response) => {
+      if (response.status() >= 400 && assetFailures.length < 20) assetFailures.push({ path: new URL(response.url()).pathname, status: response.status() });
+    });
     await page.setRequestInterception(true);
     page.on('request', (request) => {
       const address = new URL(request.url());
@@ -27,7 +39,7 @@ try {
         unexpected.push('blocked-request'); return void request.abort();
       }
       if (request.resourceType() === 'document') return void request.respond({ contentType: 'text/html;charset=utf-8',
-        body: '<!doctype html><html><head><title>Synthetic manual/share check</title></head><body></body></html>' });
+        body: '<!doctype html><html><head><link rel="icon" href="data:,"><title>Synthetic manual/share check</title></head><body></body></html>' });
       void request.continue();
     });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -35,8 +47,11 @@ try {
     return page;
   }
   async function mount(page) {
-    await page.evaluate(async () => {
+    let timer;
+    try { await Promise.race([page.evaluate(async () => {
+      await window.qaMountPhase('workspace-import');
       const { mountAstroEyeWorkspace } = await import('/src/modules/astroeye/astroeyeWorkspace.js');
+      await window.qaMountPhase('service-imports');
       const { createAstroEyeWorkspaceController } = await import('/src/modules/astroeye/workspaceController.js');
       const { createWorldRecordStore } = await import('/src/core/worldRecordStore.js');
       const { createResearchAnnotations } = await import('/src/modules/astroeye/researchAnnotations.js');
@@ -45,6 +60,7 @@ try {
       const { EventBus } = await import('/src/core/eventBus.js');
       const { WorldClock } = await import('/src/core/worldClock.js');
       const { ModuleStateCoordinator } = await import('/src/core/moduleState.js');
+      await window.qaMountPhase('workspace-setup');
       const store = createWorldRecordStore({ databaseName: 'qa-manual-share-synthetic' });
       const eventBus = new EventBus(), worldClock = new WorldClock({ eventBus });
       const qa = { store, navigation: 0, presentationNavigation: [] };
@@ -58,17 +74,26 @@ try {
         createWorldLink: () => `${location.origin}/#v=2&lat=40&lon=-75&alt=10000&heading=12&pitch=-42&roll=0` });
       Object.assign(qa, { controller, workspace, notes, notebook, incoming: readSharedViewHash(location.hash) });
       window.qa = qa;
+      await window.qaMountPhase('workspace-open');
       await workspace.open();
+      await window.qaMountPhase('shared-restore');
       if (qa.incoming.status !== 'absent') qa.restored = await workspace.restoreSharedView(qa.incoming);
-    });
+    }), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Workspace mount exceeded 20 seconds')), 20000); })]);
+    } finally { clearTimeout(timer); }
   }
   const records = (page) => page.evaluate(() => qa.store.serializeRecords());
   const click = async (page, action) => {
     await page.$eval(`[data-action="${action}"]`, (node) => node.click());
     await page.waitForFunction(() => !document.querySelector('#astroeye-workspace').dataset.busy);
   };
-  phase = 'sender-mount'; sender = await open(base.href);
-  phase = 'manual-form';
+  mark('sender-mount'); sender = await open(base.href);
+  if (process.argv.includes('--mount-only')) {
+    assert.deepEqual(JSON.parse(await records(sender)), { schemaVersion: 1, events: [], charts: [], workspaces: [] });
+    assert.deepEqual(errors, []); assert.deepEqual(unexpected, []); assert.deepEqual(assetFailures, []);
+    await sender.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
+    report = { passed: true, scope: 'mount-only', emptySyntheticStore: true, externalRequests: 0, userDataAccessed: false };
+  } else {
+  mark('manual-form');
   const empty = await records(sender);
   await sender.$eval('.astroeye-form', (form) => {
     const values = { title: 'Synthetic São Paulo 🦖', sport: 'QA', competition: 'QA', away: 'Away', home: 'Home',
@@ -89,7 +114,7 @@ try {
   assert.equal(saved.events[0].utcStart, '2026-11-01T06:30:00.000Z');
   assert.equal(saved.events[0].source.kind, 'manual');
   assert.equal(await sender.evaluate(() => qa.navigation), 1);
-  phase = 'sender-preview-and-share';
+  mark('sender-preview-and-share');
   await click(sender, 'time-back');
   const beforePreview = await records(sender);
   assert.deepEqual(JSON.parse(beforePreview), saved);
@@ -106,8 +131,8 @@ try {
   const expected = await sender.evaluate(() => ({ selection: qa.controller.selectionSnapshot(),
     wheel: document.querySelector('[data-chart="wheel"]').innerHTML }));
   assert.equal(await records(sender), privateBackup);
-  phase = 'recipient-mount'; recipient = await open(link);
-  phase = 'recipient-preview';
+  mark('recipient-mount'); recipient = await open(link);
+  mark('recipient-preview');
   assert.notEqual(sender.browserContext(), recipient.browserContext());
   assert.equal(await recipient.evaluate(() => qa.restored), true);
   assert.deepEqual(await recipient.evaluate(() => qa.incoming.snapshot), payload);
@@ -123,7 +148,7 @@ try {
   await recipient.waitForFunction(() => !document.querySelector('[data-annotation="reload"]').disabled);
   assert.equal(await recipient.$eval('[data-annotation="new"]', (node) => node.disabled), true);
   assert.equal(await records(recipient), empty);
-  phase = 'explicit-copy'; await click(recipient, 'save-shared');
+  mark('explicit-copy'); await click(recipient, 'save-shared');
   const copied = JSON.parse(await records(recipient));
   assert.equal(copied.events.length, 1); assert.equal(copied.charts.length, 1); assert.deepEqual(copied.workspaces, []);
   assert.notEqual(copied.events[0].id, saved.events[0].id);
@@ -135,7 +160,7 @@ try {
   assert.deepEqual(await recipient.evaluate(() => qa.presentationNavigation), [false, false]);
   await recipient.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
   const bad = new URL(link); const hash = new URLSearchParams(bad.hash.slice(1)); hash.set('ae', 'bad'); bad.hash = hash.toString();
-  phase = 'malformed-link';
+  mark('malformed-link');
   await recipient.goto('about:blank'); // Avoid same-document hash navigation.
   await recipient.goto(bad.href, { waitUntil: 'domcontentloaded' }); await mount(recipient);
   assert.equal(await recipient.evaluate(() => qa.restored), false);
@@ -143,15 +168,17 @@ try {
   assert.equal(await records(recipient), beforeBad);
   for (const page of [sender, recipient]) await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
+  assert.deepEqual(assetFailures, []);
   report = { passed: true, manualFormAndExplicitFold: true, previewDoesNotWrite: true,
     isolatedRecipientContext: true, sameChartAndWheel: true, privateNotesExcluded: true, viewingDoesNotSave: true,
     sharedNoteCaptureRefused: true, explicitCopyOnly: true, malformedLinkPreservesRecords: true,
     mainAppBootstrapped: false, cameraSeamMocked: true, embeddedHostVerified: false, externalRequests: 0, userDataAccessed: false };
+  }
 } catch (error) {
-  process.stderr.write(`${JSON.stringify({ failed: error.name, phase })}\n`);
+  process.stderr.write(`${JSON.stringify({ failed: error.name, phase, assetFailures })}\n`);
   throw error;
 } finally {
-  phase = 'cleanup';
+  mark('cleanup');
   let senderClose = 'not-needed', timer;
   try {
     // This fixture owns two pages. Close both before browser teardown, with the
