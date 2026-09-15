@@ -2,8 +2,9 @@ import { MAX_RESEARCH_ANNOTATIONS, MAX_ANNOTATION_NOTE_LENGTH, validateResearchA
 import { createUnsavedNotebookGuard } from './unsavedNotebookGuard.js';
 import { downloadNotebookDraft } from './notebookDraftDownload.js';
 
-/** Staged editor: deliberately not mounted by main until recovery/privacy review. */
+/** Local event notes; host controls suspension without discarding the draft. */
 export function mountResearchAnnotations(host, { annotations,
+  canInteract = () => true,
   confirmDiscard = (message) => host.ownerDocument.defaultView.confirm(message),
   downloadDraft = downloadNotebookDraft,
 } = {}) {
@@ -25,19 +26,23 @@ export function mountResearchAnnotations(host, { annotations,
   const editor = host.querySelector('textarea'), list = node('list');
   const guard = createUnsavedNotebookGuard(host.ownerDocument.defaultView);
   let baseline = null, loaded = false, pending = false, destroyed = false;
+  let opened = false, suspended = false, suspensionVersion = 0;
+  const allowed = () => !suspended && canInteract();
   let current = null, capture = null, editingId = '', savedText = '', sourceVersion = 0, deleted = null;
   const dirty = () => !!capture && editor.value !== savedText;
   const count = () => baseline?.annotations.length ?? 0;
   function render() {
     guard.setDirty(dirty());
-    editor.disabled = pending || !capture;
-    list.disabled = pending || !loaded;
-    node('new').disabled = pending || !loaded || !current || count() >= MAX_RESEARCH_ANNOTATIONS;
-    node('reload').disabled = pending;
-    node('save').disabled = pending || !capture || !editor.value.trim() || !dirty();
-    node('delete').disabled = pending || !editingId;
-    node('undo').disabled = pending || !loaded || !deleted;
-    node('download').disabled = pending || !capture || !editor.value.length;
+    const blocked = pending || !allowed();
+    host.hidden = !opened || !allowed();
+    editor.disabled = blocked || !capture;
+    list.disabled = blocked || !loaded;
+    node('new').disabled = blocked || !loaded || !current || count() >= MAX_RESEARCH_ANNOTATIONS;
+    node('reload').disabled = blocked;
+    node('save').disabled = blocked || !capture || !editor.value.trim() || !dirty();
+    node('delete').disabled = blocked || !editingId;
+    node('undo').disabled = blocked || !loaded || !deleted;
+    node('download').disabled = blocked || !capture || !editor.value.length;
     node('count').textContent = `${editor.value.length} / ${MAX_ANNOTATION_NOTE_LENGTH} characters · ${count()} / ${MAX_RESEARCH_ANNOTATIONS} saved notes${dirty() ? ' · Unsaved changes' : ''}`;
   }
   function refreshList() {
@@ -73,7 +78,7 @@ export function mountResearchAnnotations(host, { annotations,
     render();
   }
   async function run(action) {
-    if (pending || destroyed) return;
+    if (pending || destroyed || !allowed()) return;
     pending = true; render();
     try { await action(); }
     catch (cause) { if (!destroyed) node('status').textContent = `${cause.message || 'Operation failed.'} Draft unchanged; copy or download it before reloading.`; }
@@ -91,9 +96,10 @@ export function mountResearchAnnotations(host, { annotations,
   function newNote() {
     if (pending || destroyed || !loaded || !current || count() >= MAX_RESEARCH_ANNOTATIONS || !discard()) return;
     const snapshot = structuredClone(current);
+    const version = suspensionVersion;
     return run(async () => {
       if (await annotations.sourceState(snapshot) !== 'source-present') throw new Error('Save the source event in this browser before starting a note.');
-      if (destroyed) return;
+      if (destroyed || !allowed() || version !== suspensionVersion) return;
       show(snapshot);
       node('status').textContent = 'New draft captured. Write text, then Save event note. No record has been written yet.';
     }).then(() => { if (!destroyed && capture === snapshot) editor.focus(); });
@@ -135,13 +141,14 @@ export function mountResearchAnnotations(host, { annotations,
     });
   }
   function choose() {
-    if (pending || destroyed || !loaded || !discard()) { list.value = editingId; return; }
+    if (pending || destroyed || !allowed() || !loaded || !discard()) { list.value = editingId; return; }
     const entry = baseline?.annotations.find((item) => item.id === list.value);
     show(entry ?? null, entry?.id ?? '', entry?.note ?? '');
     node('status').textContent = entry ? 'Saved note opened. Captured details are read-only.' : 'Choose a saved note or start a new one.';
   }
   function input() { render(); node('status').textContent = dirty() ? 'Unsaved changes. Save event note to keep them.' : 'No unsaved changes.'; }
   function click(event) {
+    if (!allowed()) return;
     const action = event.target.closest('button')?.dataset.annotation;
     if (action === 'new') void newNote();
     if (action === 'reload') void load();
@@ -172,7 +179,8 @@ export function mountResearchAnnotations(host, { annotations,
       node('current').textContent = current ? `Selected chart: ${current.chartTimeUtc}. New note captures this chart.` : 'Select a saved event chart to start a note. Unsaved shared views cannot be captured.';
       render();
     },
-    open() { if (destroyed) return; host.hidden = false; if (!loaded) void load(); },
+    open() { if (destroyed || !allowed()) return false; opened = true; render(); if (!loaded) void load(); return true; },
+    setSuspended(value) { if (destroyed) return; if (value === true && !suspended) suspensionVersion++; suspended = value === true; render(); },
     destroy() { destroyed = true; sourceVersion++; guard.destroy(); host.removeEventListener('click', click); editor.removeEventListener('input', input); list.removeEventListener('change', choose); host.replaceChildren(); },
   });
 }

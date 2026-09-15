@@ -1,8 +1,8 @@
-# Persistent research annotations — R1/R2/R3 candidate, checkpoint 73
+# Persistent research annotations — workspace integration, checkpoint 74
 
-Status: **storage service and staged editor implemented and tested; not mounted in the app**.
-The editor is exercised only by an isolated synthetic-data harness. No main-app
-controls, map display or new sharing behavior are added by this checkpoint.
+Status: **mounted in AstroEye through the Event notes quick-navigation button**.
+The existing Research notes button still opens the separate notebook. Map display
+is not enabled. Browser verification uses isolated synthetic profiles, not user data.
 R1 review, R2 workflow and R3 recovery/privacy acceptance remain
 open. Live V3 testing remains separately approval-gated; it is not waived while
 this independent, non-voice work proceeds.
@@ -159,7 +159,61 @@ cleanup. It verifies session undo, failure/retry, stale and same-ID refusal, rec
 of saved rather than unsaved text, and undo loss on remount, alongside checkpoint-72
 checks. Syntax/diff checks pass. Only synthetic test databases were used.
 
-The editor is still unmounted. Next is actual workspace navigation/selection and
+At checkpoint 73 the editor was still unmounted. Next was actual workspace navigation/selection and
 Director-safe integration, including import-review privacy wording, styling and
 browser validation. No full-app build, embedded-host acceptance, live voice, release
 gate closure, user-record access or publication is claimed. Map display remains separate.
+
+## Checkpoint 74 — main-workspace integration
+
+Use **AstroEye → Event notes**. Choose a saved event chart, optionally change its
+preview time, then choose **New note from selected chart**, enter text and choose
+**Save event note**. Reopen a saved note from the dropdown; Delete and Undo last
+note deletion operate only on notes. Research notes remains the separate notebook.
+Save any unsaved work before refreshing an older preview to load these controls.
+
+`main.js` now provides the annotation service to `mountAstroEyeWorkspace`. The
+collection is not read on startup or chart selection; the user must open Event
+notes. Chart changes update only the candidate for the next new note, never the
+existing draft's capture. Notes remain available without a selected chart; creating
+one requires a saved-source chart. Shared/Director scene previews cannot be captured
+until saved as an event. Note opening/saving never moves the camera or selects a chart.
+
+The workspace observes its busy state and the Director playback class; the main
+callback also checks `sceneDirector.running`. During suspension the note section is
+hidden and new actions are refused, including synthetic clicks bypassing disabled
+buttons. Drafts and session undo remain in memory. A generation guard prevents a
+delayed New note source check from replacing a draft after playback has started,
+even if that response arrives after playback ends. Already-started writes may finish;
+they are not silently cancelled. Observer/listener cleanup occurs on workspace destroy.
+
+Import review now explicitly warns that workspace replacement can replace the whole
+private note collection and remove notes absent from the incoming file. Imported
+notes do not overwrite an open draft; a stale save is rejected until deliberate
+review/reload. The editor has bounded controls and wrapping styles for narrow screens.
+
+Verification:
+
+- All **454 platform tests pass**, no skips/TODOs (32.179 seconds).
+- Final production build passes (22.80 seconds); existing node:fs browser-externalization
+  and large-chunk warnings remain. This is not the entire `npm test` suite.
+- `qa-astroeye-annotation-workspace.mjs` passes with exit 0: keyboard navigation,
+  actual workspace/controller chart switching, frozen preview capture, no navigation
+  on note save, close/reopen drafts, Director signal/scene-adapter suspension, delayed
+  capture rejection, real document reload and IndexedDB reopen, separate notebook,
+  escaped text and 390px editor overflow checks. Final cleanup is graceful (0.783s).
+- The standalone editor regression harness also passes, including undo/conflicts,
+  failures and async destruction, with graceful cleanup (0.666s).
+
+Initial integration runs misclassified six embedded calendar/clock SVG data images
+as external requests; the harness now permits only this local image type while
+continuing to block external/API requests. One later run passed workflow assertions
+but exited 1 after the owned test browser exceeded its 10-second close deadline;
+the bounded guard stopped that process. A serial retry exited 0 with normal cleanup.
+No shutdown threshold was relaxed and no user browser was controlled.
+
+These harnesses mount the real workspace, not full globe bootstrap or the actual
+embedded browser. Director signals and adapter calls are tested, not a complete
+cinematic playback session. No user records, live providers or credentials were
+accessed; nothing was published. R1/R2/R3 acceptance remains open. Next is opt-in
+bounded note-marker display and remaining release/embedded-host verification.

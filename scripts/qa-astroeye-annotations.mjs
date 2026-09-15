@@ -182,7 +182,7 @@ try {
     draftPreservedOnFailure: true, staleSaveAndDeleteRejected: true, missingSource: true, staleSourceResponseIgnored: true,
     delayedNewCaptureFrozen: true, newDraftFocused: true,
     sessionDeletionUndo: true, undoFailureRetried: true, undoConflictRefused: true, undoClearedOnRemount: true,
-    destroyDuringSave: true, userDataAccessed: false, liveProviderRequests: 0, productionMounted: false };
+    destroyDuringSave: true, userDataAccessed: false, liveProviderRequests: 0, mainAppBootstrapped: false };
 } finally {
   try { const cleanup = await closeOwnedBrowser(browser, { page }); if (report) report.cleanup = cleanup; }
   finally { clearTimeout(watchdog); }

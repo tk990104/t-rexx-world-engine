@@ -55,6 +55,7 @@ import { createAstroEyeModule } from './modules/astroeye/index.js';
 import { installAstroEyeWorkspaceCommands } from './modules/astroeye/workspaceCommands.js';
 import { flyToLandmark } from './locations.js';
 import { createResearchNotebook } from './modules/astroeye/researchNotebook.js';
+import { createResearchAnnotations } from './modules/astroeye/researchAnnotations.js';
 import { createAstroEyeWorkspaceController } from './modules/astroeye/workspaceController.js';
 import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.js';
 import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js';
@@ -384,6 +385,8 @@ async function init() {
       astroEyeWorkspace = mountAstroEyeWorkspace({
         controller: astroEyeController,
         researchNotebook: createResearchNotebook(worldRecordStore),
+        researchAnnotations: createResearchAnnotations(worldRecordStore),
+        canUseResearchAnnotations: () => !sceneDirector.running && !document.body.classList.contains('scene-playback-mode'),
         onOpen: () => worldPlatform.moduleRegistry.activate('astroeye'),
         onRequestClose: () => worldPlatform.panelRegistry.hide(),
         createWorldLink: () => styleManager.shareLinkManager.createLink(),

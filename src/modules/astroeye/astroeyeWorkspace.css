@@ -173,6 +173,9 @@
 .astroeye-research-notebook label { display: grid; gap: 8px; font-size: 12px; }
 .astroeye-research-notebook textarea { box-sizing: border-box; width: 100%; min-width: 0; resize: vertical; padding: 8px; color: #fff; background: #160d28; border: 1px solid #68517f; border-radius: 6px; font: 13px/1.5 sans-serif; }
 .astroeye-research-notebook button { min-height: 44px; }
+.astroeye-event-notes { min-width: 0; overflow-wrap: anywhere; }
+.astroeye-event-notes select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; min-height: 44px; padding: 8px; color: #fff; background: #160d28; border: 1px solid #68517f; border-radius: 6px; }
+.astroeye-event-notes button:disabled { opacity: .45; cursor: not-allowed; }
 .astroeye-research-notebook:focus-visible, .astroeye-research-notebook :focus-visible { outline: 2px solid var(--astro-cyan); outline-offset: 2px; }
 .astroeye-aspect-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 10px; }
 .astroeye-aspect-filters label { display: grid; gap: 5px; min-width: 0; font-size: 11px; }

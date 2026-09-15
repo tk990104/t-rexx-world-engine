@@ -11,6 +11,7 @@ import { MAX_IMPORT_FILE_BYTES } from './recordImportReview.js';
 import { eventTemplateDraft } from './eventTemplate.js';
 import { mountChartComparison } from './chartComparisonPanel.js';
 import { mountResearchNotebook } from './researchNotebookPanel.js';
+import { mountResearchAnnotations } from './researchAnnotationsPanel.js';
 import { renderAngleCaution } from './angleCaution.js';
 import { chartCalculationVersion } from './calculation/modelVersion.js';
 import { renderPlanetaryHour } from './planetaryHourPresentation.js';
@@ -56,6 +57,9 @@ function defaultLocalValues(now = new Date()) {
 export function mountAstroEyeWorkspace({
   controller,
   researchNotebook = null,
+  researchAnnotations = null,
+  canUseResearchAnnotations = () => true,
+  downloadAnnotationDraft,
   host = document.body,
   onOpen = async () => {},
   onRequestClose = null,
@@ -93,6 +97,7 @@ export function mountAstroEyeWorkspace({
       <button type="button" data-action="compare-charts">Compare charts</button>
       <button type="button" data-action="find-saved-events">Saved events</button>
       <button type="button" data-action="research-notes">Research notes</button>
+      <button type="button" data-action="event-notes">Event notes</button>
     </nav>
     <div class="astroeye-body">
       <section class="astroeye-entry" aria-labelledby="astroeye-event-heading">
@@ -194,6 +199,7 @@ export function mountAstroEyeWorkspace({
           <p class="astroeye-provenance" data-chart="provenance"></p>
         </div>
         <section class="astroeye-research-notebook" data-role="research-notebook" aria-label="Research notebook" tabindex="-1" hidden></section>
+        <section class="astroeye-research-notebook astroeye-event-notes" data-role="event-notes" aria-label="Event research notes" tabindex="-1" hidden></section>
         <div class="astroeye-saved-header"><h3 data-role="saved-events-heading" tabindex="-1">Saved events</h3><div><button type="button" data-action="export">Export all</button><button type="button" data-action="import">Import</button></div></div>
         <section class="astroeye-deletion-undo" data-role="deletion-undo" aria-label="Recover last deleted event" hidden>
           <p data-role="deletion-undo-description" class="astroeye-help"></p>
@@ -226,6 +232,7 @@ export function mountAstroEyeWorkspace({
           <p class="astroeye-help" data-role="import-filename"></p>
           <div data-role="import-summary" aria-live="polite"></div>
           <p class="astroeye-help">Nothing has been imported yet. Identical records are skipped. Changed records with matching IDs will be overwritten only after acknowledgment; other records remain. Only import files you trust. The current chart preview stays unchanged; reopen an event to view its imported chart.</p>
+          <p class="astroeye-help">Research workspaces can contain private notebook text and the entire event-note collection. An acknowledged workspace overwrite replaces that whole collection, including removing notes absent from the file; it does not merge individual notes. Export all first for a backup. Open note drafts stay unchanged; copy or download them before reloading imported notes.</p>
           <label data-role="import-overwrite" hidden><input type="checkbox" data-role="import-overwrite-check" /> I approve overwriting the changed saved records.</label>
           <div class="astroeye-chart-actions"><button type="button" data-action="confirm-import">Confirm merge</button><button type="button" data-action="cancel-import">Cancel</button></div>
         </section>
@@ -318,6 +325,22 @@ export function mountAstroEyeWorkspace({
   const notebookPanel = researchNotebook ? mountResearchNotebook(notebookHost, { notebook: researchNotebook, downloadDraft: downloadNotebookDraft }) : null;
   notebookPanel?.updateChart(null, null);
   root.querySelector('[data-action="research-notes"]').hidden = !notebookPanel;
+  const annotationHost = root.querySelector('[data-role="event-notes"]');
+  const annotationAllowed = () => !root.dataset.busy && !host.ownerDocument.body.classList.contains('scene-playback-mode') && canUseResearchAnnotations();
+  const annotationPanel = researchAnnotations ? mountResearchAnnotations(annotationHost, {
+    annotations: researchAnnotations, canInteract: annotationAllowed, downloadDraft: downloadAnnotationDraft,
+  }) : null;
+  annotationPanel?.updateSelection(null);
+  const syncAnnotations = () => {
+    const blocked = !annotationAllowed();
+    annotationPanel?.setSuspended(blocked);
+    root.querySelector('[data-action="event-notes"]').disabled = blocked;
+  };
+  const annotationObserver = annotationPanel ? new MutationObserver(syncAnnotations) : null;
+  annotationObserver?.observe(host.ownerDocument.body, { attributes: true, attributeFilter: ['class'] });
+  annotationObserver?.observe(root, { attributes: true, attributeFilter: ['data-busy'] });
+  root.querySelector('[data-action="event-notes"]').hidden = !annotationPanel;
+  syncAnnotations();
   let userInteracted = false;
   let interactionVersion = 0;
   root.addEventListener('pointerdown', () => { userInteracted = true; interactionVersion++; });
@@ -427,6 +450,7 @@ export function mountAstroEyeWorkspace({
     selected = { event, chart, offsetMinutes, isShared };
     comparison.update(event, chart);
     notebookPanel?.updateChart(event, chart);
+    annotationPanel?.updateSelection(selected);
     root.querySelector('[data-action="delete"]').hidden = isShared;
     root.querySelector('[data-action="save-shared"]').hidden = !isShared;
     root.querySelector('[data-action="share-view"]').disabled = typeof createWorldLink !== 'function';
@@ -626,6 +650,8 @@ export function mountAstroEyeWorkspace({
     } else if (action === 'research-notes' && notebookPanel) {
       notebookPanel.open();
       focusWorkspaceSection(notebookHost);
+    } else if (action === 'event-notes' && annotationPanel && annotationAllowed()) {
+      if (annotationPanel.open()) focusWorkspaceSection(annotationHost);
     } else if (action === 'find-saved-events') {
       focusWorkspaceSection(root.querySelector('[data-role="saved-events-heading"]'));
     } else if (action === 'saved-map' && savedEventLayer && !root.dataset.busy) {
@@ -746,6 +772,7 @@ export function mountAstroEyeWorkspace({
       selected = null;
       comparison.update(null, null);
       notebookPanel?.updateChart(null, null);
+      annotationPanel?.updateSelection(null);
       eventSky?.update(null);
       chartRoot.hidden = true;
       empty.hidden = false;
@@ -913,6 +940,8 @@ export function mountAstroEyeWorkspace({
       resetImportReview();
       comparison.destroy();
       notebookPanel?.destroy();
+      annotationObserver?.disconnect();
+      annotationPanel?.destroy();
       eventRefresh++;
       unsubscribeSavedMap?.();
       eventSky?.destroy();

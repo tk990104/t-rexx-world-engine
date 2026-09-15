@@ -15,8 +15,12 @@ opt-in map behavior and embedded-host verification still need review.
 
 Checkpoint 73 adds annotation-specific backup/import/exclusion tests and session
 deletion undo (49 focused tests plus isolated browser QA passing). Collection-level
-import replacement is explicit, not per-note merge. The candidate is still unmounted;
-actual workspace/Director behavior and reviewed release acceptance remain open.
+import replacement is explicit, not per-note merge. That checkpoint's candidate was unmounted.
+
+Checkpoint 74 mounts the editor under **AstroEye → Event notes**. All 454 platform
+tests, the production build and isolated workspace tests pass, including real reload
+persistence and Director-signal suspension. Full embedded-host/cinematic playback
+verification, opt-in note-marker behavior and reviewed release acceptance remain open.
 
 ## Finish line
 

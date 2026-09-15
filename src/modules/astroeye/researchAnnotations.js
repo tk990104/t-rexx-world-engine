@@ -52,7 +52,7 @@ export function validateResearchAnnotations(collection) {
   return collection;
 }
 
-/** Unmounted R1 storage contract. No renderer, clock, voice, notebook or selection
+/** Local annotation storage contract. No renderer, clock, voice, notebook or selection
  * mutation. Each edit/delete compares the entire last-loaded collection atomically.
  * Source deletion leaves notes orphaned, not deleted; an existing same-ID source
  * resolves the reference again, without recapturing its time or coordinates. */
