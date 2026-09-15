@@ -95,11 +95,22 @@ export function mountAstroEyeWorkspace({
       <button class="astroeye-icon-button" type="button" data-action="close" aria-label="Close AstroEye">×</button>
     </header>
     <nav class="astroeye-quick-nav" aria-label="AstroEye shortcuts">
+      <button type="button" data-action="quick-start">Quick start</button>
       <button type="button" data-action="compare-charts">Compare charts</button>
       <button type="button" data-action="find-saved-events">Saved events</button>
       <button type="button" data-action="research-notes">Research notes</button>
       <button type="button" data-action="event-notes">Event notes</button>
     </nav>
+    <details class="astroeye-quick-start" data-role="quick-start">
+      <summary>Quick start · charts, comparison and notes</summary>
+      <ol>
+        <li><strong>Choose a chart.</strong> Fill in Event details and check the venue time zone and coordinates, then Save and view on globe. Or choose an existing chart from Saved events. Manual entry does not require voice or a schedule provider.</li>
+        <li><strong>Compare two moments.</strong> Choose Compare charts → Pin this chart. Then select another saved event or change the Time explorer. The pinned chart stays fixed; the current chart changes. The pin lasts for this session and clears on page reload.</li>
+        <li><strong>Keep research.</strong> Research notes opens the general notebook. Event notes → New note from selected chart captures a saved chart's UTC time and location. Write text and Save event note. Switching charts does not update that capture. Show note markers is optional; close AstroEye to see them without an automatic camera move.</li>
+        <li><strong>Back up deliberately.</strong> Saved events → Export all includes private research. Import requires review and may replace an entire note collection when you acknowledge an overwrite. Matching-event exports, comparison reports, view links and tours exclude the private note collection; they are not full backups.</li>
+      </ol>
+      <p>Save or download unsaved note text before refreshing or leaving. Local browser data and session undo are not crash protection. Charts and comparisons are research tools, not sports predictions.</p>
+    </details>
     <div class="astroeye-body">
       <section class="astroeye-entry" aria-labelledby="astroeye-event-heading">
         <div class="astroeye-schedule" data-role="schedule"></div>
@@ -646,7 +657,11 @@ export function mountAstroEyeWorkspace({
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;
     if (action === 'close') resetImportReview();
-    if (action === 'compare-charts') {
+    if (action === 'quick-start') {
+      const guide = root.querySelector('[data-role="quick-start"]');
+      guide.open = true;
+      focusWorkspaceSection(guide.querySelector('summary'));
+    } else if (action === 'compare-charts') {
       focusWorkspaceSection(selected ? root.querySelector('[data-role="chart-comparison"]') : empty);
     } else if (action === 'research-notes' && notebookPanel) {
       notebookPanel.open();

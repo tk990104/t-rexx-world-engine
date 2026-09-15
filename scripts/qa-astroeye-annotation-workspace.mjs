@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
 import puppeteer from 'puppeteer';
 import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 
 let browser, page, report;
-const watchdog = setTimeout(() => { browser?.process()?.kill(); process.exit(1); }, 120000);
+const watchdog = setTimeout(() => { browser?.process()?.kill(); process.exit(1); }, 60000);
 try {
   browser = await puppeteer.launch({ headless: true, timeout: 15000, args: ['--disable-gpu', '--disable-background-networking'] });
   page = await browser.newPage(); page.setDefaultTimeout(10000);
@@ -80,11 +81,30 @@ try {
   assert.equal(await page.evaluate(() => qa.reads), 0);
   assert.equal(await page.evaluate(() => qa.markerReads()), 0);
   assert.equal(await page.$eval('[data-role="event-notes"]', (element) => element.hidden), true);
+  const beforeGuide = await page.evaluate(() => qa.store.serializeRecords());
+  assert.equal(await page.$eval('[data-role="quick-start"]', (element) => element.open), false);
+  await page.focus('[data-action="quick-start"]'); await page.keyboard.press('Enter');
+  assert.equal(await page.$eval('[data-role="quick-start"]', (element) => element.open), true);
+  assert.equal(await page.evaluate(() => document.activeElement.tagName), 'SUMMARY');
+  assert.match(await page.$eval('[data-role="quick-start"]', (element) => element.textContent), /Compare charts → Pin this chart/);
+  assert.equal(await page.evaluate(() => qa.reads), 0);
+  assert.equal(await page.evaluate(() => qa.store.serializeRecords()), beforeGuide);
+  await page.keyboard.press('Space');
+  assert.equal(await page.$eval('[data-role="quick-start"]', (element) => element.open), false);
+  await page.focus('[data-action="compare-charts"]'); await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => document.activeElement.classList.contains('astroeye-empty')), true);
+  await page.focus('[data-action="find-saved-events"]'); await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.role), 'saved-events-heading');
   // Keyboard entry follows the user-visible quick navigation.
   await page.focus('[data-action="event-notes"]'); await page.keyboard.press('Enter'); await settle();
   assert.equal(await page.evaluate(() => document.activeElement.dataset.role), 'event-notes');
   assert.equal(await page.$eval(node('new'), (element) => element.disabled), true);
   await page.evaluate(() => qa.workspace.selectSavedEvent('one')); await settle();
+  await page.focus('[data-action="compare-charts"]'); await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.role), 'chart-comparison');
+  await page.focus('[data-comparison="pin"]'); await page.keyboard.press('Enter');
+  const pinned = await page.$eval('[data-comparison="pinned"]', (element) => element.textContent);
+  assert.match(pinned, /Synthetic one.*12:00:00/);
   await chartAction('time-forward'); await click('new'); await edit('Private event-note draft <img src=x>');
   const frozen = await page.$eval(node('capture'), (element) => element.textContent);
   assert.match(frozen, /12:15:00.000Z · 40, -75/);
@@ -98,6 +118,8 @@ try {
   assert.equal(saved.eventId, 'one'); assert.equal(saved.chartTimeUtc, '2026-09-14T12:15:00.000Z');
   assert.deepEqual(await page.evaluate(() => qa.controller.selectionSnapshot()), selectionBeforeSave);
   assert.equal(await page.evaluate(() => qa.navigation), navigationBeforeSave);
+  assert.equal(await page.$eval('[data-comparison="pinned"]', (element) => element.textContent), pinned);
+  assert.match(await page.$eval('[data-comparison="current"]', (element) => element.textContent), /Synthetic two/);
   const beforeMarkers = await page.evaluate(() => qa.store.serializeRecords());
   await click('map-toggle'); await page.waitForFunction(() => !qa.noteLayer.state().loading);
   assert.equal(await page.evaluate(() => qa.noteLayer.state().shown), 1);
@@ -151,6 +173,13 @@ try {
   assert.equal(await page.$('[data-role="event-notes"] img'), null);
   assert.match(await page.$eval('[data-role="import-review"]', (element) => element.textContent), /does not merge individual notes/);
   await page.setViewport({ width: 390, height: 844 });
+  const beforeNarrowGuide = await page.evaluate(() => qa.store.serializeRecords());
+  await page.focus('[data-action="quick-start"]'); await page.keyboard.press('Enter');
+  assert.ok(await page.$eval('[data-role="quick-start"]', (element) => element.scrollWidth <= element.clientWidth + 1));
+  assert.ok(await page.$eval('#astroeye-workspace', (element) => element.scrollWidth <= element.clientWidth + 1));
+  assert.equal(await page.evaluate(() => qa.store.serializeRecords()), beforeNarrowGuide);
+  await mkdir('qa-shots/astroeye-quick-start', { recursive: true });
+  await page.screenshot({ path: 'qa-shots/astroeye-quick-start/narrow.png' });
   await page.$eval('[data-action="event-notes"]', (element) => element.click());
   assert.ok(await page.$eval('[data-role="event-notes"]', (element) => element.scrollWidth <= element.clientWidth + 1));
   assert.equal(await page.evaluate(async () => (await qa.store.getWorkspace('astroeye-research-notebook-v1'))?.text), 'Separate notebook sentinel');
@@ -165,7 +194,9 @@ try {
   await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
   assert.equal(await page.evaluate(() => qa.markers.size), 0);
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
-  report = { passed: true, keyboardEntry: true, selectionChangesPreserveCapture: true, saveDoesNotNavigate: true,
+  report = { passed: true, keyboardEntry: true, quickStartKeyboardAndNarrowLayout: true,
+    guideDoesNotReadNotesOrWriteRecords: true, comparisonPinSurvivesChartSwitchAndNoteSave: true,
+    selectionChangesPreserveCapture: true, saveDoesNotNavigate: true,
     directorSuspension: true, delayedCaptureRefusedDuringPlayback: true, realReloadPersistence: true,
     narrowEditorLayout: true, separateNotebookPreserved: true, embeddedIconRequests: embeddedIcons,
     optInNoteMarkers: true, markerDeleteUndoImportRefresh: true, markersStayOffAfterPlaybackAndReload: true, markerViewerMocked: true,

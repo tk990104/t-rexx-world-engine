@@ -273,6 +273,13 @@ See [current session-callout behavior](architecture/astroeye-event-callouts.md).
 
 ## 4. Complete workflow and usability
 
+Checkpoint 79 adds an in-app Quick start guide and [combined workspace evidence](architecture/astroeye-quick-start-validation.md).
+Guide/shortcut keyboard access, narrow layout and comparison-pin preservation
+through chart changes and note saving pass; 461 platform tests pass. Final isolated
+browser retry exits 0 with graceful cleanup after one shutdown-timeout failure.
+U1/U2 remain open: this is seeded-controller data and a mocked viewer, not complete
+manual/provider/share/Director/embedded-host acceptance.
+
 - [ ] **U1 — End-to-end acceptance:** with isolated synthetic data, exercise manual entry,
   provider-to-reviewed-form handoff, selection/time preview, map, comparison, annotations,
   notes, export/import and deletion recovery. Verify share restoration in a fresh browser
