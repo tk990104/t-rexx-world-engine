@@ -7,6 +7,7 @@ function finiteTime(value, label = 'time') {
       ? Date.parse(value)
       : Number(value);
   if (!Number.isFinite(time)) throw new TypeError(`${label} must be a finite timestamp`);
+  if (!Number.isFinite(new Date(time).getTime())) throw new RangeError(`${label} must be a representable timestamp`);
   return time;
 }
 
@@ -35,13 +36,17 @@ export class WorldClock {
     return new Date(this.nowMs());
   }
 
-  setMode(mode, { time = this.#now() } = {}) {
+  setMode(mode, { time } = {}) {
     if (!WORLD_CLOCK_MODES.includes(mode)) {
       throw new RangeError(`Unknown world clock mode: ${mode}`);
     }
+    // Resolve and validate before committing either field. A rejected transition
+    // must not leave a different mode or an unrepresentable fixed timestamp.
+    const nextTime = mode === 'live' ? finiteTime(this.#now(), 'live clock')
+      : finiteTime(time === undefined ? this.#now() : time);
+    const snapshot = Object.freeze({ version: 1, mode, time: new Date(nextTime).toISOString() });
     this.#mode = mode;
-    this.#fixedTimeMs = mode === 'live' ? null : finiteTime(time);
-    const snapshot = this.snapshot();
+    this.#fixedTimeMs = mode === 'live' ? null : nextTime;
     this.#events?.emit('world-clock:changed', snapshot);
     return snapshot;
   }

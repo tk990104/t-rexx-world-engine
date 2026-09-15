@@ -371,6 +371,16 @@ actual-host/GPU evidence or support/budget acceptance. U3 remains open for the
 per-frame/shared-state audit and actual-host acceptance work; five gates accepted,
 ten open overall.
 
+Checkpoint 90 [audits idle work and shared-state boundaries](architecture/astroeye-idle-state-audit.md).
+Source inspection finds event-driven chart work; ring spies confirm cached
+directions avoid live Sun/Moon calculations across 120 synthetic method calls.
+Read-only presentation guards and controller snapshot tests retain other-module
+state and record bytes. A reproduced shared-clock validation defect is fixed:
+rejected time/mode changes no longer partially commit. All 472 platform tests and
+the production build pass. This is source/unit evidence, not an actual-host idle
+or GPU trace. U3 remains open for host measurements and supported-device,
+collection-size and timing-budget acceptance; five gates accepted, ten open.
+
 ## 5. Release engineering
 
 - [ ] **L1 — Reproducible candidate:** clean install on the declared Node version, production

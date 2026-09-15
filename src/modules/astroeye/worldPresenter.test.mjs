@@ -11,6 +11,25 @@ const EVENT = {
   venue: { latitude: 40.7505, longitude: -73.9934 },
 };
 
+test('read-only venue presentation never accesses the viewer clock, camera or unrelated entities', async () => {
+  const unrelated = { id: 'live-feed-owned', value: 'unchanged' };
+  const entities = new Map([[unrelated.id, unrelated]]);
+  const viewer = {
+    get clock() { assert.fail('AstroEye must not access the live-feed viewer clock'); },
+    get camera() { assert.fail('Read-only presentation must not access the camera'); },
+    entities: {
+      add: (entity) => { entities.set(entity.id, entity); return entity; },
+      removeById: (id) => { assert.equal(id, ASTROEYE_EVENT_ENTITY_ID); return entities.delete(id); },
+    },
+    scene: { requestRender() {} },
+  };
+  const present = createAstroEyeWorldPresenter({ viewer, navigate: () => assert.fail('Unexpected navigation') });
+  await present(EVENT, { chartId: 'selected' }, { navigate: false });
+  await present({ ...EVENT, id: 'another-event' }, { chartId: 'another-chart' }, { navigate: false });
+  await present(null, null, { navigate: false });
+  assert.deepEqual([...entities.entries()], [[unrelated.id, unrelated]]);
+});
+
 test('world presenter replaces one venue marker and navigates to exact coordinates', async () => {
   const added = [];
   const removed = [];

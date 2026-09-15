@@ -201,6 +201,41 @@ function harness({ idFactory = () => 'event-generated', presentEvent } = {}) {
   return { controller, eventBus, moduleState, worldClock, recordStore, presented };
 }
 
+test('selection, preview and idle clock reads preserve other modules and durable records', async () => {
+  const context = harness();
+  try {
+    context.moduleState.set('cosmic-watch', { version: 1, enabled: true, cursor: 'other-module' });
+    await context.controller.saveDraft(DRAFT);
+    const before = await context.recordStore.serializeRecords();
+    const other = context.moduleState.get('cosmic-watch');
+    let storageCalls = 0, clockEvents = 0;
+    const store = new Proxy({ ...context.recordStore }, { get(target, key) {
+      const value = target[key];
+      return typeof value === 'function' ? (...args) => { storageCalls++; return value(...args); } : value;
+    } });
+    const controller = createAstroEyeWorkspaceController({ ...context, recordStore: store,
+      presentEvent: async (event, chart, options) => context.presented.push({ event, chart, options }) });
+    await controller.selectEvent('event-generated', { navigate: false, persistChart: false });
+    assert.equal(context.presented.at(-1).options.navigate, false);
+    controller.previewTime(15);
+    const selected = controller.selectionSnapshot(), clock = context.worldClock.snapshot();
+    const calls = storageCalls, presentations = context.presented.length;
+    const stop = context.eventBus.on('world-clock:changed', () => clockEvents++);
+    for (let i = 0; i < 120; i++) {
+      assert.deepEqual(context.worldClock.snapshot(), clock);
+      assert.deepEqual(controller.selectionSnapshot(), selected);
+    }
+    stop();
+    assert.equal(clockEvents, 0);
+    assert.equal(storageCalls, calls);
+    assert.equal(context.presented.length, presentations);
+    assert.deepEqual(context.moduleState.get('cosmic-watch'), other);
+    assert.equal(context.moduleState.activeModuleId, 'astroeye');
+    assert.equal(clock.mode, 'replay');
+    assert.equal(await context.recordStore.serializeRecords(), before);
+  } finally { await context.recordStore.close(); }
+});
+
 test('manual drafts become canonical events without exposing storage IDs in the form', () => {
   const event = eventFromDraft(DRAFT, () => 'event-generated');
   assert.equal(event.id, 'event-generated');

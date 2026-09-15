@@ -36,19 +36,31 @@ test('chart sky directions are deterministic unit vectors and follow preview tim
   assert.throws(() => eventSkyDirections({ calculatedFor: chart.calculatedFor, positions: [] }), /Sun/);
 });
 
-test('ring snapshot validates atomically, uses cached directions and clears back to live', () => {
+test('ring snapshot validates atomically, uses cached directions and clears back to live', (t) => {
+  const sun = t.mock.method(Cesium.Simon1994PlanetaryPositions, 'computeSunPositionInEarthInertialFrame', () => assert.fail('Unexpected live Sun calculation'));
+  const moon = t.mock.method(Cesium.Simon1994PlanetaryPositions, 'computeMoonPositionInEarthInertialFrame', () => assert.fail('Unexpected live Moon calculation'));
   const ring = Object.create(CelestialRing.prototype);
   Object.assign(ring, { _directionSnapshot: null, _sunFixed: new Cesium.Cartesian3(), _moonFixed: new Cesium.Cartesian3(),
     _timeLabel: {}, _root: { dataset: {} }, _ephemerisUpdateCount: 0 });
   const snapshot = eventSkyDirections(chart);
   ring.setDirectionSnapshot(snapshot);
-  for (let index = 0; index < 100; index++) assert.equal(ring._updateEphemeris(Cesium.JulianDate.now()), true);
+  const start = Cesium.JulianDate.fromIso8601(chart.calculatedFor);
+  for (let index = 0; index < 120; index++) {
+    assert.equal(ring._updateEphemeris(Cesium.JulianDate.addSeconds(start, index * 60, new Cesium.JulianDate())), true);
+  }
+  assert.equal(sun.mock.callCount(), 0); assert.equal(moon.mock.callCount(), 0);
   assert.equal(ring._ephemerisUpdateCount, 1);
   assert.match(ring._timeLabel.textContent, /2026-09-10 12:00:00 UTC/);
   assert.throws(() => ring.setDirectionSnapshot({ ...snapshot, moon: { x: NaN, y: 1, z: 2 } }), /Invalid/);
   assert.equal(ring.getDirectionSnapshot().time, snapshot.time);
   const copy = ring.getDirectionSnapshot(); copy.sun.x = 100;
   assert.notEqual(ring.getDirectionSnapshot().sun.x, 100);
+  const next = eventSkyDirections(calculateTimePreview(event, 60));
+  ring.setDirectionSnapshot(next);
+  assert.equal(ring._ephemerisUpdateCount, 2, 'Only an explicit chart update replaces cached directions');
+  const updated = ring.getDirectionSnapshot();
+  assert.equal(updated.time, next.time); assert.equal(updated.owner, next.owner);
+  for (const body of ['sun', 'moon']) for (const axis of ['x', 'y', 'z']) close(updated[body][axis], next[body][axis]);
   ring.setDirectionSnapshot(null);
   assert.equal(ring.getDirectionSnapshot(), null); assert.equal(ring._ephemerisDirty, true);
   assert.equal(ring._timeLabel.hidden, true);
