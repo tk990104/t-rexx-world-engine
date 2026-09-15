@@ -4,13 +4,17 @@ import { downloadNotebookDraft } from './notebookDraftDownload.js';
 
 /** Local event notes; host controls suspension without discarding the draft. */
 export function mountResearchAnnotations(host, { annotations,
+  noteLayer = null,
   canInteract = () => true,
   confirmDiscard = (message) => host.ownerDocument.defaultView.confirm(message),
   downloadDraft = downloadNotebookDraft,
 } = {}) {
   host.innerHTML = `<h3 tabindex="-1">Event research notes</h3>
     <p class="astroeye-help">Separate from the notebook and session callouts. New note captures the selected saved chart's UTC time and venue coordinates. Switching charts never changes a draft. Opening a note does not move the globe or select a chart.</p>
-    <p class="astroeye-help">Local browser storage only; use Export all for a private backup. Review backups before sharing. Map display is not enabled. Save or download unsaved text before leaving; browser warnings cannot protect against crashes.</p>
+    <p class="astroeye-help">Local browser storage only; use Export all for a private backup. Review backups before sharing. Save or download unsaved text before leaving; browser warnings cannot protect against crashes.</p>
+    <section data-annotation="map-controls" hidden><button type="button" data-annotation="map-toggle" aria-pressed="false">Show note markers</button><button type="button" data-annotation="map-refresh" disabled>Refresh note markers</button>
+      <p class="astroeye-help">Opt-in amber markers show saved captured locations and UTC times, not private note text. Read-only: clicking does not open notes. Markers at identical locations may overlap. Close AstroEye to see the globe; showing markers does not move the camera. They turn off for playback/shared previews and are not saved in links or tours.</p>
+      <p class="astroeye-help" data-annotation="map-status" role="status"></p></section>
     <p data-annotation="current" class="astroeye-help"></p>
     <div class="astroeye-chart-actions"><button type="button" data-annotation="new" disabled>New note from selected chart</button><button type="button" data-annotation="reload">Reload saved event notes</button></div>
     <label>Saved event notes<select data-annotation="list" disabled></select></label>
@@ -25,6 +29,16 @@ export function mountResearchAnnotations(host, { annotations,
   const node = (name) => host.querySelector(`[data-annotation="${name}"]`);
   const editor = host.querySelector('textarea'), list = node('list');
   const guard = createUnsavedNotebookGuard(host.ownerDocument.defaultView);
+  function renderMap() {
+    if (!noteLayer) return;
+    const state = noteLayer.state();
+    node('map-controls').hidden = false;
+    node('map-toggle').disabled = !allowed() || (!state.enabled && !state.available);
+    node('map-toggle').textContent = state.enabled ? 'Hide note markers' : 'Show note markers';
+    node('map-toggle').setAttribute('aria-pressed', String(state.enabled));
+    node('map-refresh').disabled = !allowed() || !state.enabled || state.loading;
+    node('map-status').textContent = state.error || (!state.available ? 'Note markers are unavailable during playback or an unsaved shared view.' : state.loading ? 'Loading saved note markers…' : `${state.shown} / ${state.limit} note markers shown · ${state.enabled ? 'On for this session' : 'Off'}`);
+  }
   let baseline = null, loaded = false, pending = false, destroyed = false;
   let opened = false, suspended = false, suspensionVersion = 0;
   const allowed = () => !suspended && canInteract();
@@ -44,6 +58,7 @@ export function mountResearchAnnotations(host, { annotations,
     node('undo').disabled = blocked || !loaded || !deleted;
     node('download').disabled = blocked || !capture || !editor.value.length;
     node('count').textContent = `${editor.value.length} / ${MAX_ANNOTATION_NOTE_LENGTH} characters · ${count()} / ${MAX_RESEARCH_ANNOTATIONS} saved notes${dirty() ? ' · Unsaved changes' : ''}`;
+    renderMap();
   }
   function refreshList() {
     list.replaceChildren();
@@ -90,6 +105,7 @@ export function mountResearchAnnotations(host, { annotations,
       const record = await annotations.load();
       if (destroyed) return;
       baseline = record; loaded = true; editingId = ''; refreshList(); show(null);
+      void noteLayer?.refresh();
       node('status').textContent = 'Saved event notes loaded. Opening notes never changes the globe or current chart.';
     });
   }
@@ -115,6 +131,7 @@ export function mountResearchAnnotations(host, { annotations,
       const entry = id ? next.annotations.find((item) => item.id === id)
         : next.annotations.find((item) => !(baseline?.annotations ?? []).some((old) => old.id === item.id));
       baseline = next; refreshList(); show(entry, entry.id, entry.note);
+      void noteLayer?.refresh();
       node('status').textContent = 'Event note saved locally. Export all includes it in your private backup.';
     });
   }
@@ -127,6 +144,7 @@ export function mountResearchAnnotations(host, { annotations,
       const next = await annotations.remove(id, baseline);
       if (destroyed) return;
       deleted = removed; baseline = next; editingId = ''; refreshList(); show(null);
+      void noteLayer?.refresh();
       node('status').textContent = 'Event note deleted. Undo last note deletion is available this session. Source events, charts and the notebook are unchanged.';
     });
   }
@@ -137,6 +155,7 @@ export function mountResearchAnnotations(host, { annotations,
       const next = await annotations.restore(entry, baseline);
       if (destroyed) return;
       baseline = next; deleted = null; refreshList(); show(entry, entry.id, entry.note);
+      void noteLayer?.refresh();
       node('status').textContent = 'Deleted saved note restored with its original ID, time and location. Unsaved edits were not recovered.';
     });
   }
@@ -155,6 +174,8 @@ export function mountResearchAnnotations(host, { annotations,
     if (action === 'save') void save();
     if (action === 'delete') void remove();
     if (action === 'undo') void undo();
+    if (action === 'map-toggle' && noteLayer) void noteLayer.setEnabled(!noteLayer.state().enabled);
+    if (action === 'map-refresh' && noteLayer) void noteLayer.refresh();
     if (action === 'download' && !pending && !destroyed && capture && editor.value.length) {
       try {
         downloadDraft({ text: editor.value, filename: 't-rexx-event-note-draft.txt', mimeType: 'text/plain;charset=utf-8' });
@@ -164,6 +185,7 @@ export function mountResearchAnnotations(host, { annotations,
   }
   host.addEventListener('click', click); editor.addEventListener('input', input); list.addEventListener('change', choose);
   refreshList(); render();
+  const unsubscribeMap = noteLayer?.subscribe(renderMap);
   return Object.freeze({
     updateSelection(selection) {
       if (destroyed) return;
@@ -181,6 +203,6 @@ export function mountResearchAnnotations(host, { annotations,
     },
     open() { if (destroyed || !allowed()) return false; opened = true; render(); if (!loaded) void load(); return true; },
     setSuspended(value) { if (destroyed) return; if (value === true && !suspended) suspensionVersion++; suspended = value === true; render(); },
-    destroy() { destroyed = true; sourceVersion++; guard.destroy(); host.removeEventListener('click', click); editor.removeEventListener('input', input); list.removeEventListener('change', choose); host.replaceChildren(); },
+    destroy() { destroyed = true; sourceVersion++; unsubscribeMap?.(); guard.destroy(); host.removeEventListener('click', click); editor.removeEventListener('input', input); list.removeEventListener('change', choose); host.replaceChildren(); },
   });
 }

@@ -22,6 +22,12 @@ tests, the production build and isolated workspace tests pass, including real re
 persistence and Director-signal suspension. Full embedded-host/cinematic playback
 verification, opt-in note-marker behavior and reviewed release acceptance remain open.
 
+Checkpoint 75 adds opt-in read-only note markers, off by default and disabled on
+playback/shared views without automatic resumption. 460 platform tests, production
+build and mocked-viewer browser checks pass; real Cesium entity tests cover bounds,
+privacy and ownership. Actual globe appearance/interaction and embedded-host review
+are not yet verified; no gate is closed by this checkpoint.
+
 ## Finish line
 
 Choose or manually enter a sporting event, verify its time and place, inspect its

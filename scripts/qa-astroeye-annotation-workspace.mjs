@@ -29,6 +29,7 @@ try {
       const { mountAstroEyeWorkspace } = await import('/src/modules/astroeye/astroeyeWorkspace.js');
       const { createAstroEyeWorkspaceController } = await import('/src/modules/astroeye/workspaceController.js');
       const { createResearchAnnotations } = await import('/src/modules/astroeye/researchAnnotations.js');
+      const { createResearchAnnotationLayer } = await import('/src/modules/astroeye/researchAnnotationLayer.js');
       const { createResearchNotebook } = await import('/src/modules/astroeye/researchNotebook.js');
       const { createWorldRecordStore } = await import('/src/core/worldRecordStore.js');
       const { EventBus } = await import('/src/core/eventBus.js');
@@ -45,7 +46,16 @@ try {
         await createResearchNotebook(store).save('Separate notebook sentinel', null);
       }
       const notes = createResearchAnnotations(store);
+      const markers = new Map(); let markerReads = 0;
+      const viewer = { scene: { requestRender() {} }, entities: {
+        add: (entity) => { if (markers.has(entity.id)) throw new Error('Duplicate ID'); markers.set(entity.id, entity); return entity; },
+        getById: (id) => markers.get(id), remove: (entity) => markers.delete(entity.id),
+      } };
+      const noteLayer = createResearchAnnotationLayer({ viewer, eventBus, modeTarget: document.body,
+        loadAnnotations: () => { markerReads++; return notes.load(); },
+        canDisplay: () => !qa.directorRunning && !document.body.classList.contains('scene-playback-mode') && !controller.selectionSnapshot()?.isShared });
       const workspace = mountAstroEyeWorkspace({ controller, researchNotebook: createResearchNotebook(store),
+        researchAnnotationLayer: noteLayer,
         researchAnnotations: { ...notes, load: () => { qa.reads++; return notes.load(); }, sourceState: async (entry) => {
           if (qa.holdSource) await new Promise((resolve) => { qa.releaseSource = resolve; });
           return notes.sourceState(entry);
@@ -53,7 +63,7 @@ try {
         canUseResearchAnnotations: () => !qa.directorRunning,
         downloadAnnotationDraft: (file) => qa.downloads.push(file),
       });
-      Object.assign(qa, { notes, controller, workspace }); window.qa = qa;
+      Object.assign(qa, { notes, controller, workspace, markers, noteLayer, markerReads: () => markerReads }); window.qa = qa;
       await workspace.open();
     });
   }
@@ -68,6 +78,7 @@ try {
     await page.waitForFunction(() => !document.querySelector('#astroeye-workspace').dataset.busy); await settle();
   };
   assert.equal(await page.evaluate(() => qa.reads), 0);
+  assert.equal(await page.evaluate(() => qa.markerReads()), 0);
   assert.equal(await page.$eval('[data-role="event-notes"]', (element) => element.hidden), true);
   // Keyboard entry follows the user-visible quick navigation.
   await page.focus('[data-action="event-notes"]'); await page.keyboard.press('Enter'); await settle();
@@ -87,14 +98,23 @@ try {
   assert.equal(saved.eventId, 'one'); assert.equal(saved.chartTimeUtc, '2026-09-14T12:15:00.000Z');
   assert.deepEqual(await page.evaluate(() => qa.controller.selectionSnapshot()), selectionBeforeSave);
   assert.equal(await page.evaluate(() => qa.navigation), navigationBeforeSave);
+  const beforeMarkers = await page.evaluate(() => qa.store.serializeRecords());
+  await click('map-toggle'); await page.waitForFunction(() => !qa.noteLayer.state().loading);
+  assert.equal(await page.evaluate(() => qa.noteLayer.state().shown), 1);
+  assert.match(await page.evaluate(() => [...qa.markers.values()][0].label.text), /12:15:00.000Z/);
+  assert.doesNotMatch(await page.evaluate(() => [...qa.markers.values()][0].label.text), /Private|img/);
+  assert.equal(await page.evaluate(() => qa.store.serializeRecords()), beforeMarkers);
+  assert.equal(await page.evaluate(() => qa.navigation), navigationBeforeSave);
   await edit('Unsaved after save');
   await page.evaluate(async () => { qa.workspace.close(); await qa.workspace.open(); }); await settle();
   assert.equal(await value(), 'Unsaved after save');
   const beforeDirector = await page.evaluate(() => qa.store.serializeRecords());
   await page.evaluate(() => { qa.directorRunning = true; document.body.classList.add('scene-playback-mode'); });
   await page.waitForFunction(() => document.querySelector('[data-role="event-notes"]').hidden);
+  assert.equal(await page.evaluate(() => qa.noteLayer.state().shown), 0);
+  assert.equal(await page.evaluate(() => qa.noteLayer.state().enabled), false);
   // Even synthetic dispatched clicks (which bypass disabled button semantics) are refused.
-  for (const action of ['new', 'save', 'delete', 'undo', 'download', 'reload']) {
+  for (const action of ['new', 'save', 'delete', 'undo', 'download', 'reload', 'map-toggle', 'map-refresh']) {
     await page.$eval(node(action), (element) => element.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   }
   assert.equal(await page.evaluate(() => qa.store.serializeRecords()), beforeDirector);
@@ -104,6 +124,8 @@ try {
   await page.evaluate(() => { qa.directorRunning = false; document.body.classList.remove('scene-playback-mode'); }); await settle();
   assert.equal(await page.$eval('[data-role="event-notes"]', (element) => element.hidden), false);
   assert.equal(await page.$eval(node('new'), (element) => element.disabled), true, 'Scene/shared previews are not saved-source capture candidates');
+  assert.equal(await page.$eval(node('map-toggle'), (element) => element.disabled), true);
+  assert.equal(await page.evaluate(() => qa.noteLayer.state().enabled), false);
   assert.equal(await value(), 'Unsaved after save');
   await click('save'); assert.equal((await page.evaluate(() => qa.notes.load())).annotations[0].note, 'Unsaved after save');
   // A source check started before playback may finish, but must not replace an editor during playback.
@@ -119,6 +141,8 @@ try {
   await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
   await page.reload({ waitUntil: 'domcontentloaded' }); await mount();
   assert.equal(await page.evaluate(() => qa.reads), 0);
+  assert.equal(await page.evaluate(() => qa.markerReads()), 0);
+  assert.equal(await page.evaluate(() => qa.noteLayer.state().enabled), false);
   await page.click('[data-action="event-notes"]'); await settle();
   await page.select(node('list'), saved.id);
   assert.equal(await value(), 'Unsaved after save');
@@ -130,11 +154,21 @@ try {
   await page.$eval('[data-action="event-notes"]', (element) => element.click());
   assert.ok(await page.$eval('[data-role="event-notes"]', (element) => element.scrollWidth <= element.clientWidth + 1));
   assert.equal(await page.evaluate(async () => (await qa.store.getWorkspace('astroeye-research-notebook-v1'))?.text), 'Separate notebook sentinel');
+  await click('map-toggle'); await page.waitForFunction(() => qa.noteLayer.state().shown === 1);
+  await click('delete'); await page.waitForFunction(() => !qa.noteLayer.state().loading && qa.noteLayer.state().shown === 0);
+  await click('undo'); await page.waitForFunction(() => qa.noteLayer.state().shown === 1);
+  await page.evaluate(async () => { const backup = await qa.store.exportRecords();
+    backup.workspaces = backup.workspaces.map((record) => record.kind === 'astroeye-event-annotations' ? { ...record, annotations: [] } : record);
+    await qa.controller.prepareImportRecords(backup); await qa.controller.confirmImportRecords({ allowOverwrite: true });
+  });
+  await page.waitForFunction(() => !qa.noteLayer.state().loading && qa.noteLayer.state().shown === 0);
   await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
+  assert.equal(await page.evaluate(() => qa.markers.size), 0);
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
   report = { passed: true, keyboardEntry: true, selectionChangesPreserveCapture: true, saveDoesNotNavigate: true,
     directorSuspension: true, delayedCaptureRefusedDuringPlayback: true, realReloadPersistence: true,
     narrowEditorLayout: true, separateNotebookPreserved: true, embeddedIconRequests: embeddedIcons,
+    optInNoteMarkers: true, markerDeleteUndoImportRefresh: true, markersStayOffAfterPlaybackAndReload: true, markerViewerMocked: true,
     mainAppBootstrapped: false, userDataAccessed: false, liveProviderRequests: 0 };
 } finally {
   try { const cleanup = await closeOwnedBrowser(browser, { page }); if (report) report.cleanup = cleanup; }

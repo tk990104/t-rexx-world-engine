@@ -56,6 +56,7 @@ import { installAstroEyeWorkspaceCommands } from './modules/astroeye/workspaceCo
 import { flyToLandmark } from './locations.js';
 import { createResearchNotebook } from './modules/astroeye/researchNotebook.js';
 import { createResearchAnnotations } from './modules/astroeye/researchAnnotations.js';
+import { createResearchAnnotationLayer } from './modules/astroeye/researchAnnotationLayer.js';
 import { createAstroEyeWorkspaceController } from './modules/astroeye/workspaceController.js';
 import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.js';
 import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js';
@@ -369,6 +370,10 @@ async function init() {
         presentEvent: createAstroEyeWorldPresenter({ viewer }),
       });
       const canOpenVenue = () => !sceneDirector.running && !astroEyeWorkspace?.root.dataset.busy;
+      const researchAnnotations = createResearchAnnotations(worldRecordStore);
+      const researchAnnotationLayer = createResearchAnnotationLayer({ viewer, loadAnnotations: () => researchAnnotations.load(),
+        eventBus: worldPlatform.eventBus, modeTarget: document.body,
+        canDisplay: () => !sceneDirector.running && !document.body.classList.contains('scene-playback-mode') && !astroEyeController.selectionSnapshot()?.isShared });
       const savedEventLayer = createSavedEventLayer({ viewer, listEvents: () => astroEyeController.listEvents(),
         getSelection: () => astroEyeController.selectionSnapshot(), eventBus: worldPlatform.eventBus });
       // Observe mode transitions, not frames; local collections must not leak into tours.
@@ -385,7 +390,7 @@ async function init() {
       astroEyeWorkspace = mountAstroEyeWorkspace({
         controller: astroEyeController,
         researchNotebook: createResearchNotebook(worldRecordStore),
-        researchAnnotations: createResearchAnnotations(worldRecordStore),
+        researchAnnotations, researchAnnotationLayer,
         canUseResearchAnnotations: () => !sceneDirector.running && !document.body.classList.contains('scene-playback-mode'),
         onOpen: () => worldPlatform.moduleRegistry.activate('astroeye'),
         onRequestClose: () => worldPlatform.panelRegistry.hide(),

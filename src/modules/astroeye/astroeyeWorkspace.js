@@ -58,6 +58,7 @@ export function mountAstroEyeWorkspace({
   controller,
   researchNotebook = null,
   researchAnnotations = null,
+  researchAnnotationLayer = null,
   canUseResearchAnnotations = () => true,
   downloadAnnotationDraft,
   host = document.body,
@@ -328,7 +329,7 @@ export function mountAstroEyeWorkspace({
   const annotationHost = root.querySelector('[data-role="event-notes"]');
   const annotationAllowed = () => !root.dataset.busy && !host.ownerDocument.body.classList.contains('scene-playback-mode') && canUseResearchAnnotations();
   const annotationPanel = researchAnnotations ? mountResearchAnnotations(annotationHost, {
-    annotations: researchAnnotations, canInteract: annotationAllowed, downloadDraft: downloadAnnotationDraft,
+    annotations: researchAnnotations, noteLayer: researchAnnotationLayer, canInteract: annotationAllowed, downloadDraft: downloadAnnotationDraft,
   }) : null;
   annotationPanel?.updateSelection(null);
   const syncAnnotations = () => {
@@ -942,6 +943,7 @@ export function mountAstroEyeWorkspace({
       notebookPanel?.destroy();
       annotationObserver?.disconnect();
       annotationPanel?.destroy();
+      researchAnnotationLayer?.destroy();
       eventRefresh++;
       unsubscribeSavedMap?.();
       eventSky?.destroy();

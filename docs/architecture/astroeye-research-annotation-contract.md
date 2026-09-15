@@ -1,8 +1,9 @@
-# Persistent research annotations — workspace integration, checkpoint 74
+# Persistent research annotations — opt-in markers, checkpoint 75
 
 Status: **mounted in AstroEye through the Event notes quick-navigation button**.
-The existing Research notes button still opens the separate notebook. Map display
-is not enabled. Browser verification uses isolated synthetic profiles, not user data.
+The existing Research notes button still opens the separate notebook. Optional
+read-only note markers are available and off by default. Browser verification uses
+isolated synthetic profiles, not user data.
 R1 review, R2 workflow and R3 recovery/privacy acceptance remain
 open. Live V3 testing remains separately approval-gated; it is not waived while
 this independent, non-voice work proceeds.
@@ -217,3 +218,54 @@ embedded browser. Director signals and adapter calls are tested, not a complete
 cinematic playback session. No user records, live providers or credentials were
 accessed; nothing was published. R1/R2/R3 acceptance remains open. Next is opt-in
 bounded note-marker display and remaining release/embedded-host verification.
+
+## Checkpoint 75 — opt-in read-only globe markers (September 15)
+
+Use **AstroEye → Event notes → Show note markers**, then close the workspace to
+see the globe. This does not move the camera. Amber points show saved capture
+locations; nearby labels show exact captured UTC times, not note text or source
+event details. These first markers are read-only, with no note-opening click handler.
+Multiple captures at the same location can overlap. Hide note markers removes them;
+Refresh note markers rereads saved data without changing the editor draft.
+
+`researchAnnotationLayer.js` owns a separate set of Cesium entities. It is not
+registered in the shared annotation board, URL layer catalog or Director recipe.
+The opt-in flag lives only in memory and never enters record exports, links or tours.
+Full backups still contain the saved note collection as described above. Note text
+and source event IDs are not copied into marker names, labels or entity properties.
+
+- No record reads before explicit activation. Empty collections create no records.
+  Saved capture coordinates/time are used without recapturing a current chart.
+- The existing 100-note schema bound is enforced, not silently truncated. Invalid,
+  oversized or future collections and read/render failures clear the layer and show
+  a generic error without changing stored records. Old markers clear during refresh.
+- Panel save/delete/undo/reload and reviewed imports refresh an enabled layer.
+  Other browser tabs require explicit Refresh note markers. This is not live sync.
+- Director playback or an unsaved shared/scene view disables and clears markers,
+  invalidating in-flight reads. Leaving that mode never automatically reenables them;
+  the user must select an eligible view and explicitly show them again. Reload also
+  starts off. Frozen notes can remain mapped even if their source event was deleted.
+- Picking is registered with the shared ownership registry so sibling tracking
+  layers can leave these picks alone. No new pointer handler, timer, camera call,
+  world-clock operation, chart calculation or record write is added by the layer.
+- Cleanup checks entity identity before removal, so a foreign entity that reused
+  a former marker ID is preserved. Destroy disconnects its observer/subscriptions,
+  unregisters pick ownership and invalidates pending work.
+
+Verification: all **460 platform tests pass** (24.773 seconds), including six new
+tests using a real Cesium EntityCollection for capture coordinates, privacy fields,
+100-note bounds, stale reads, opt-in safety, import refresh, errors and scoped
+cleanup. An initial identity-reuse test caught Cesium removal by ID; the explicit
+identity check fixes it and the test now passes.
+
+Expanded isolated workspace browser QA passes with exit 0 and graceful 1.354-second
+cleanup. It checks controls, no writes/navigation on activation, delete/undo/import
+refresh, playback/shared-view exclusion and disabled state after real page reload.
+The browser harness uses a mocked viewer; entity construction is tested separately
+with Cesium. The production build passes (12.32 seconds), retaining existing
+node:fs browser-externalization and large-chunk warnings. Syntax/diff checks pass.
+
+No real-user records, live providers, credentials or publication were involved.
+Actual WebGL appearance, overlapping-marker usability and embedded-host acceptance
+still need verification. These checks do not certify GPU performance or close
+R1/R2/R3. Next: embedded-globe visual/interaction checks and remaining release gates.
