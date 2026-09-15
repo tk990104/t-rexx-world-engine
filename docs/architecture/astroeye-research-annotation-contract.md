@@ -1,4 +1,4 @@
-# Persistent research annotations — rendered markers, checkpoint 76
+# Persistent research annotations — shared-location labels, checkpoint 77
 
 Status: **mounted in AstroEye through the Event notes quick-navigation button**.
 The existing Research notes button still opens the separate notebook. Optional
@@ -302,3 +302,54 @@ Actual terrain/buildings, overlapping notes, embedded-host interaction and GPU
 performance remain unverified. No release gate closes, no user data changes and
 nothing is published. Next: actual-host note-marker interaction/overlap acceptance
 and remaining release checks; live V3 remains separately approval-gated.
+
+## Checkpoint 77 — exact-coordinate overlap labels (September 15)
+
+Notes with identical numeric latitude/longitude now share one nearby label showing
+their count and captured UTC time (or explicitly labeled First/Last times). This
+summarizes a range, not every intermediate capture. The lowest sorted note ID owns
+the label; other note entities retain their points and pick ownership but have no
+visible label. Deleting the representative promotes the next ID on refresh.
+Individual records, captured positions and the existing shown-note count remain
+unchanged. No fuzzy clustering, location jitter, source details or private note
+text is added. Nearby distinct coordinates can still have overlapping labels.
+
+Labels are bottom-anchored 12 pixels above their points so the three-line summary
+does not collide with its dot. Event notes help explains the grouping and directs
+users to saved notes for individual details. Existing opt-in, playback, import,
+privacy and cleanup behavior is preserved.
+
+All **461 platform tests pass** (35.373 seconds), including deterministic grouping,
+input preservation, representative deletion, single-note restoration, distinct
+nearby coordinates, 100 coincident notes and label anchoring. The updated offline
+WebGL check passes with exit 0 and graceful 1.735-second cleanup under a 60-second
+whole-run watchdog. It verifies three coincident notes have one exact count/range
+label, and retains the visible/hidden, camera, occlusion and playback checks. The
+final `qa-shots/astroeye-note-markers/coincident.png` was visually inspected; an
+earlier screenshot prompted the bottom-anchor correction. External requests: zero.
+
+Production build passes (17.07 seconds), retaining existing node:fs externalization
+and large-chunk warnings. The initial sandboxed build failed on parent-directory
+access while loading Vite configuration; the permission-approved retry succeeded.
+
+Embedded-preview inspection was attempted but failed before connection with the
+tool's kernel-assets error (os error 3). No user tab or database was accessed. The
+reference-mesh fixture still does not verify actual terrain, buildings, nearby
+screen-space collisions or embedded-host usability. No release gate closes.
+
+### Remaining manual preview check
+
+Use existing notes if available; do not create or delete personal records just to
+run this check. Save any unsaved editor draft before refreshing the preview.
+
+1. Open **AstroEye → Event notes → Show note markers**, then close AstroEye.
+2. At a known note location, check the amber dot and readable UTC label. If existing
+   notes share exact coordinates, check the count and First/Last summary against
+   their individual saved-note details. Otherwise mark that case untested.
+3. Zoom/rotate and check visibility against the actual map/terrain. Nearby distinct
+   labels can still collide; record that limitation rather than assuming clustering.
+4. Hide markers and verify they disappear without moving the camera. A read-only
+   marker click should not open a note or change the selected chart.
+
+Record browser, map source, observation and remaining limitation before accepting
+any host criterion. This procedure is a handoff, not a completed manual test.

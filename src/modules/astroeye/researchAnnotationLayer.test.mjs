@@ -34,10 +34,44 @@ test('note markers are explicit opt-in, read-only snapshots with no private text
     assert.equal(marker.properties, undefined); assert.equal(marker.description, undefined);
     assert.equal(marker.point.disableDepthTestDistance.getValue(), 200000);
     assert.equal(marker.label.disableDepthTestDistance.getValue(), 200000);
+    assert.equal(marker.label.verticalOrigin.getValue(), Cesium.VerticalOrigin.BOTTOM);
+    assert.equal(marker.label.pixelOffset.getValue().y, -12);
     assert.equal(isOwnedByOtherLayer('flights', marker.id), true);
     await h.layer.setEnabled(false);
     assert.deepEqual(h.entities.values, [h.unrelated]);
     assert.equal(isOwnedByOtherLayer('flights', marker.id), false);
+  } finally { h.layer.destroy(); }
+});
+
+test('exact-coordinate notes share a deterministic count/range label without merging nearby captures or records', async () => {
+  let rows = collection(['c', 'b', 'a', 'near']);
+  rows.annotations[0].chartTimeUtc = '2026-09-15T12:00:00.000Z';
+  rows.annotations[1].chartTimeUtc = '2026-09-13T12:00:00.000Z';
+  rows.annotations[3].latitude += 0.000001;
+  const before = JSON.stringify(rows), h = harness(async () => rows);
+  const marker = (id) => h.entities.getById(researchNoteEntityId(`astroeye-note:${id}`));
+  try {
+    await h.layer.setEnabled(true);
+    assert.equal(h.layer.state().shown, 4);
+    assert.equal(marker('a').label.text.getValue(), '3 event notes · captured UTC\nFirst: 2026-09-13T12:00:00.000Z\nLast: 2026-09-15T12:00:00.000Z');
+    for (const id of ['b', 'c']) {
+      assert.equal(marker(id).label.show.getValue(), false);
+      assert.equal(marker(id).label.text.getValue(), '');
+      assert.ok(marker(id).point);
+    }
+    assert.equal(marker('near').label.show.getValue(), true);
+    assert.match(marker('near').label.text.getValue(), /^Event note/);
+    assert.equal(JSON.stringify(rows), before);
+    rows.annotations.reverse(); await h.layer.refresh();
+    assert.equal(marker('a').label.show.getValue(), true);
+    rows.annotations = rows.annotations.filter(({ id }) => id !== 'astroeye-note:a');
+    await h.layer.refresh();
+    assert.equal(marker('a'), undefined);
+    assert.equal(marker('b').label.show.getValue(), true);
+    assert.match(marker('b').label.text.getValue(), /^2 event notes/);
+    rows = collection(['c']); await h.layer.refresh();
+    assert.equal(marker('c').label.show.getValue(), true);
+    assert.equal(marker('c').label.text.getValue(), 'Event note · captured UTC\n2026-09-14T12:15:00.000Z');
   } finally { h.layer.destroy(); }
 });
 
@@ -46,6 +80,9 @@ test('100-note maximum is enforced; oversized and future collections fail closed
   const h = harness(async () => rows);
   try {
     await h.layer.setEnabled(true); assert.equal(h.layer.state().shown, 100);
+    const visibleLabels = h.entities.values.filter((entity) => entity.label?.show.getValue());
+    assert.equal(visibleLabels.length, 1);
+    assert.equal(visibleLabels[0].label.text.getValue(), '100 event notes · captured UTC\n2026-09-14T12:15:00.000Z');
     for (const invalid of [collection(Array.from({ length: 101 }, (_, i) => String(i))), { ...rows, schemaVersion: 99 }, collection(['a', 'a'])]) {
       rows = invalid; await h.layer.refresh();
       assert.equal(h.layer.state().shown, 0); assert.match(h.layer.state().error, /could not/);

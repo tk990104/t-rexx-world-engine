@@ -32,17 +32,34 @@ export function createResearchAnnotationLayer({ viewer, loadAnnotations, eventBu
       // Retain only the fields needed for markers. Private note text is never copied into an entity.
       const points = (collection?.annotations ?? []).map(({ id, chartTimeUtc, latitude, longitude }) => ({ id, chartTimeUtc, latitude, longitude }));
       points.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+      // Exact coordinate matches share one label; do not jitter saved locations
+      // or approximate nearby locations into a new capture position.
+      const locations = new Map();
+      const locationKey = (point) => `${point.latitude},${point.longitude}`;
       for (const point of points) {
+        const key = locationKey(point), group = locations.get(key);
+        if (!group) locations.set(key, { leader: point.id, count: 1, first: point.chartTimeUtc, last: point.chartTimeUtc });
+        else {
+          group.count++;
+          if (point.chartTimeUtc < group.first) group.first = point.chartTimeUtc;
+          if (point.chartTimeUtc > group.last) group.last = point.chartTimeUtc;
+        }
+      }
+      for (const point of points) {
+        const group = locations.get(locationKey(point));
+        const label = group.count === 1 ? `Event note · captured UTC\n${point.chartTimeUtc}`
+          : `${group.count} event notes · captured UTC\n${group.first === group.last ? group.first : `First: ${group.first}\nLast: ${group.last}`}`;
         const id = researchNoteEntityId(point.id);
         const entity = viewer.entities.add({ id, name: 'Local event note',
           position: Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, 100),
           point: { color: Cesium.Color.fromCssColorString('#ffc66d'), pixelSize: 10,
             outlineColor: Cesium.Color.fromCssColorString('#33230c'), outlineWidth: 2,
             disableDepthTestDistance: NOTE_MARKER_DEPTH_OVERRIDE_METERS },
-          label: { text: `Event note · captured UTC\n${point.chartTimeUtc}`,
+          label: { text: group.leader === point.id ? label : '', show: group.leader === point.id,
             font: '12px sans-serif', fillColor: Cesium.Color.WHITE,
             outlineColor: Cesium.Color.fromCssColorString('#33230c'), outlineWidth: 3,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new Cesium.Cartesian2(0, -20),
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE, verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -12),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 200000),
             disableDepthTestDistance: NOTE_MARKER_DEPTH_OVERRIDE_METERS },
         });

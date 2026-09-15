@@ -36,6 +36,13 @@ cleanup and no external requests. Actual terrain readiness was inconsistent; the
 test instead uses a synchronous WGS84 mesh, not actual terrain or the embedded
 host. Overlap/host acceptance remains open; no release gate is newly accepted.
 
+Checkpoint 77 gives exact-coordinate notes one count/UTC-range label without
+merging records or moving captures. 461 platform tests and isolated WebGL checks
+pass; the final shared-label screenshot was inspected. Actual embedded access
+still fails at tool initialization, and nearby distinct labels may overlap. The
+annotation contract supplies a manual preview procedure; it has not been completed.
+This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 acceptance.
+
 ## Finish line
 
 Choose or manually enter a sporting event, verify its time and place, inspect its

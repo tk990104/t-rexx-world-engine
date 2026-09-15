@@ -7,7 +7,7 @@ import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 
 let browser, page, report;
 const assetFailures = [], consoleErrors = [], unexpected = [], errors = [];
-const watchdog = setTimeout(() => { browser?.process()?.kill(); process.exit(1); }, 120000);
+const watchdog = setTimeout(() => { browser?.process()?.kill(); process.exit(1); }, 60000);
 const output = resolve('qa-shots/astroeye-note-markers');
 try {
   await mkdir(output, { recursive: true });
@@ -76,6 +76,15 @@ try {
   }
   await page.evaluate(() => qa.layer.setEnabled(true));
   await page.waitForFunction(() => qa.points().every((point) => point?.picked), { polling: 200 });
+  await page.evaluate(() => qa.coincide());
+  await page.waitForFunction(() => qa.points().some((point) => point?.picked), { polling: 200 });
+  assert.deepEqual(await page.evaluate(() => qa.visibleLabels()), [{ id: 't-rexx-astroeye-note-astroeye-note%3Arender-0',
+    text: '3 event notes · captured UTC\nFirst: 2026-09-15T10:00:00.000Z\nLast: 2026-09-15T12:00:00.000Z' }]);
+  assert.equal(await page.evaluate(() => qa.layer.state().shown), 3);
+  await renderedFrame();
+  const coincident = resolve(output, 'coincident.png');
+  await page.screenshot({ path: coincident });
+  assert.ok(await amberPixels(coincident, (await page.evaluate(() => qa.points()))[0]) >= 12);
   await page.evaluate(() => qa.faceAway());
   await page.waitForFunction(() => { qa.render(); return qa.surfaceReady(); }, { polling: 200 });
   await renderedFrame();
@@ -91,7 +100,7 @@ try {
   await page.evaluate(() => qa.destroy());
   report = { passed: true, realCesium3D: true, referenceEllipsoidPicked: true, terrainVerified: false, pickedMarkers: points.length, visibleAmberPixels: visiblePixels,
     hiddenAmberPixels: hiddenPixels, cameraUnchanged: true, farSideOccluded: true, noPlaybackAutoResume: true,
-    images: { shown, hidden }, syntheticDataOnly: true, externalRequests: 0, embeddedHostVerified: false };
+    coincidentCountAndRange: true, images: { shown, hidden, coincident }, syntheticDataOnly: true, externalRequests: 0, embeddedHostVerified: false };
 } catch (error) {
   process.stdout.write(`${JSON.stringify({ failed: error.name, diagnostics: await page?.evaluate(() => window.qa?.diagnostics()).catch(() => null), assetFailures, consoleErrors, unexpected, errors })}\n`);
   throw error;

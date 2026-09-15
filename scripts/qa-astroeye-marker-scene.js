@@ -54,6 +54,12 @@ export function mountMarkerScene(host) {
     });
   }
   return { viewer, layer, camera, points, reads: () => reads,
+    async coincide() {
+      records.annotations.forEach((note) => { note.latitude = 40; note.longitude = -75; });
+      await layer.refresh();
+    },
+    visibleLabels: () => viewer.entities.values.filter((entity) => entity.label?.show.getValue())
+      .map((entity) => ({ id: entity.id, text: entity.label.text.getValue() })),
     scene3D: () => viewer.scene.mode === Cesium.SceneMode.SCENE3D,
     diagnostics: () => ({ renderErrors, referenceReady: earth.ready, globeShown: viewer.scene.globe.show,
       cameraHeight: viewer.camera.positionCartographic.height, terrain: viewer.terrainProvider.constructor.name }),
