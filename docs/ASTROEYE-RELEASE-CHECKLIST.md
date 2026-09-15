@@ -8,6 +8,11 @@ features and earlier passing tests are useful evidence, but do not close a relea
 gate until the complete criterion has been verified on the release candidate.
 The `0.1.0` package/manifest version and `mvp` manifest label are not release certification.
 
+Checkpoint 72 adds an unmounted event-note editor with isolated save/reopen/edit/delete,
+draft preservation and lifecycle checks; see the [annotation candidate](architecture/astroeye-research-annotation-contract.md).
+This is not R2/R3 acceptance: recovery/privacy, actual workspace/Director integration,
+opt-in map behavior and embedded-host verification still need review.
+
 ## Finish line
 
 Choose or manually enter a sporting event, verify its time and place, inspect its
