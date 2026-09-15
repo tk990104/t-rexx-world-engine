@@ -6,9 +6,14 @@ import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 let browser, sender, recipient, report, phase = 'startup';
 const errors = [], unexpected = [];
 const assetFailures = [], started = Date.now();
+const assetTransport = process.argv.includes('--node-assets') ? 'node-localhost' : 'browser';
+const pendingAssets = new Map(), completedAssets = [];
+const assetTiming = () => ({ pending: [...pendingAssets.values()].slice(0, 20).map(({ path, start, status }) =>
+  ({ path, elapsedMs: Date.now() - start, status })),
+  slowestCompleted: [...completedAssets].sort((a, b) => b.elapsedMs - a.elapsedMs).slice(0, 10) });
 const mark = (value) => { phase = value; process.stderr.write(`${JSON.stringify({ phase, elapsedMs: Date.now() - started })}\n`); };
 const watchdog = setTimeout(() => {
-  process.stderr.write(`${JSON.stringify({ failed: '60-second watchdog', phase, assetFailures })}\n`);
+  process.stderr.write(`${JSON.stringify({ failed: '60-second watchdog', phase, assetFailures, assets: assetTiming() })}\n`);
   browser?.process()?.kill(); process.exit(1);
 }, 60000);
 try {
@@ -25,14 +30,23 @@ try {
     await page.setViewport({ width: 1200, height: 900 });
     page.on('pageerror', (error) => errors.push(error.name));
     page.on('requestfailed', (request) => {
+      pendingAssets.delete(request);
       if (assetFailures.length < 20) assetFailures.push({ path: new URL(request.url()).pathname,
         reason: request.failure()?.errorText ?? 'request failed' });
     });
     page.on('response', (response) => {
+      const pending = pendingAssets.get(response.request()); if (pending) pending.status = response.status();
       if (response.status() >= 400 && assetFailures.length < 20) assetFailures.push({ path: new URL(response.url()).pathname, status: response.status() });
     });
+    page.on('requestfinished', (request) => {
+      const pending = pendingAssets.get(request);
+      if (pending) {
+        completedAssets.push({ path: pending.path, status: pending.status, elapsedMs: Date.now() - pending.start });
+        pendingAssets.delete(request);
+      }
+    });
     await page.setRequestInterception(true);
-    page.on('request', (request) => {
+    page.on('request', async (request) => {
       const address = new URL(request.url());
       if (address.protocol === 'data:' && request.resourceType() === 'image' && address.pathname.startsWith('image/svg+xml;base64,')) return void request.continue();
       if (address.origin !== base.origin || address.pathname.startsWith('/api/')) {
@@ -40,6 +54,21 @@ try {
       }
       if (request.resourceType() === 'document') return void request.respond({ contentType: 'text/html;charset=utf-8',
         body: '<!doctype html><html><head><link rel="icon" href="data:,"><title>Synthetic manual/share check</title></head><body></body></html>' });
+      pendingAssets.set(request, { path: address.pathname, start: Date.now() });
+      if (assetTransport === 'node-localhost') {
+        // Diagnostic transport only: same-origin assets, no redirects, no API,
+        // no cookies/credentials forwarded and a per-fetch deadline.
+        try {
+          const response = await fetch(address.href, { redirect: 'manual', signal: AbortSignal.timeout(5000) });
+          if (response.status >= 300 && response.status < 400) throw new Error('Asset redirect refused');
+          const body = Buffer.from(await response.arrayBuffer());
+          await request.respond({ status: response.status, contentType: response.headers.get('content-type') ?? 'application/octet-stream', body });
+        } catch {
+          if (assetFailures.length < 20) assetFailures.push({ path: address.pathname, reason: 'local asset relay failed' });
+          await request.abort().catch(() => {});
+        }
+        return;
+      }
       void request.continue();
     });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -91,7 +120,7 @@ try {
     assert.deepEqual(JSON.parse(await records(sender)), { schemaVersion: 1, events: [], charts: [], workspaces: [] });
     assert.deepEqual(errors, []); assert.deepEqual(unexpected, []); assert.deepEqual(assetFailures, []);
     await sender.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
-    report = { passed: true, scope: 'mount-only', emptySyntheticStore: true, externalRequests: 0, userDataAccessed: false };
+    report = { passed: true, scope: 'mount-only', assetTransport, assets: assetTiming(), emptySyntheticStore: true, externalRequests: 0, userDataAccessed: false };
   } else {
   mark('manual-form');
   const empty = await records(sender);
@@ -169,13 +198,13 @@ try {
   for (const page of [sender, recipient]) await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
   assert.deepEqual(assetFailures, []);
-  report = { passed: true, manualFormAndExplicitFold: true, previewDoesNotWrite: true,
+  report = { passed: true, assetTransport, assets: assetTiming(), manualFormAndExplicitFold: true, previewDoesNotWrite: true,
     isolatedRecipientContext: true, sameChartAndWheel: true, privateNotesExcluded: true, viewingDoesNotSave: true,
     sharedNoteCaptureRefused: true, explicitCopyOnly: true, malformedLinkPreservesRecords: true,
     mainAppBootstrapped: false, cameraSeamMocked: true, embeddedHostVerified: false, externalRequests: 0, userDataAccessed: false };
   }
 } catch (error) {
-  process.stderr.write(`${JSON.stringify({ failed: error.name, phase, assetFailures })}\n`);
+  process.stderr.write(`${JSON.stringify({ failed: error.name, phase, assetFailures, assets: assetTiming() })}\n`);
   throw error;
 } finally {
   mark('cleanup');

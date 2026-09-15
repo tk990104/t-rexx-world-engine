@@ -273,6 +273,12 @@ See [current session-callout behavior](architecture/astroeye-event-callouts.md).
 
 ## 4. Complete workflow and usability
 
+Checkpoint 82 provides [passing relay-backed manual/share evidence](architecture/astroeye-manual-share-validation.md#checkpoint-82--pending-requests-identified-relay-backed-workflow-passes):
+all functional assertions and graceful browser cleanup pass with explicit
+`--node-assets`; 48 focused tests pass. Default browser module requests still stall,
+so this does not certify normal transport, the embedded host, full bootstrap or
+the remaining provider/Director U1 steps. No additional gate is closed.
+
 Checkpoint 81 [isolates startup import latency](architecture/astroeye-manual-share-validation.md#checkpoint-81--startup-stall-isolated-failed-mount-cleanup-repaired)
 and repairs failed-mount page tracking in the test harness. The focused 20-second
 mount diagnostic times out before storage setup, then closes gracefully; all six

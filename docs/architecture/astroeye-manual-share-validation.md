@@ -1,4 +1,9 @@
-# Manual form to isolated shared-view check — incomplete
+# Manual form to isolated shared-view check — transport-limited verification
+
+Current status, checkpoint 82: the full functional check passes with the explicit
+`--node-assets` localhost relay and graceful cleanup. Default browser asset delivery
+still stalls; neither the actual preview nor full U1 acceptance is certified.
+Earlier incomplete results below remain historical evidence, not overwritten passes.
 
 September 15, 2026 — checkpoint 80. Application candidate: **`73150ed`**.
 Only a diagnostic QA script and documentation change; no application behavior,
@@ -133,3 +138,74 @@ still has no accepted passing run**. Next: inspect pending dependency requests
 versus module evaluation using the mount-only case before repeating the two-party
 workflow. Do not extend the deadlines or infer an app-data defect from this result.
 Five gates remain accepted and ten open.
+
+## Checkpoint 82 — pending requests identified; relay-backed workflow passes
+
+September 15, 2026. Diagnostic base `1391d82`; application runtime still `73150ed`.
+Request tracking now distinguishes pending assets, response status and completion
+duration. Logs omit query strings and limit displayed pending/slowest entries.
+
+The default `--mount-only` run again times out at workspace import. Several assets
+remain pending after about 17.7 seconds, including notebook/annotation services;
+`crossAspectFilters.js` already has status 200 but has not finished. Five completed
+requests (including Vite's client and comparison modules) take about 10.2 seconds.
+There are no failed-request statuses. Cleanup remains graceful (6.647 seconds).
+This shows that receipt/completion of the module graph is still pending; it does
+not support blaming only slow calculation or top-level module evaluation.
+
+Immediately afterward, direct localhost HTTP probes return 200:
+
+| Asset | Bytes | Measured request time |
+| --- | ---: | ---: |
+| `researchNotebook.js` | 6,157 | 914 ms |
+| `notebookChartReference.js` | 7,970 | 38 ms |
+| `calculation/ephemerisTime.js` | 16,668 | 85 ms |
+| optimized `astronomy-engine.js` | 198,529 | 205 ms |
+
+These are individual observations, not a formal cold-cache benchmark. Inspection
+of the installed Puppeteer launcher shows background/timer/renderer throttling is
+already disabled; no redundant flags were added. Inspection of Vite's client shows
+its connection call is not a top-level awaited module blocker. The exact Chromium,
+interception, server/cache or OS mechanism causing intermittent delivery delay is
+not established by these observations.
+
+### Explicit alternate asset path
+
+`--node-assets` is an opt-in diagnostic mode, **not the default or an app fix**.
+After the existing origin/API checks, Node fetches the same localhost asset URL
+and fulfills the intercepted browser request with its original content type/body.
+Redirects are refused, each fetch has a 5-second deadline, and browser credentials
+or cookies are not forwarded. The real modules execute in Chromium; calculations,
+forms, validation and native IndexedDB are not replaced with mocks. The camera
+presenter remains the same declared mock. External/API requests remain blocked.
+
+- `node scripts/qa-astroeye-manual-share.mjs --mount-only --node-assets` exits **0**.
+  Workspace import takes about 0.889 seconds; cleanup begins at 4.224 seconds.
+  Slowest recorded completed asset: 274 ms. No pending assets; graceful shared
+  browser cleanup 3.635 seconds, sender close completed, no force.
+- `node scripts/qa-astroeye-manual-share.mjs --node-assets` exits **0** with all
+  manual/fold, preview, identical-chart/wheel, private-note exclusion, unsaved
+  recipient, explicit-copy and malformed-link assertions passing. Cleanup begins
+  at 15.078 seconds; shared cleanup takes 5.048 seconds, both page closes complete,
+  process exits and no force is used. Slowest completed asset: 596 ms; no pending
+  or failed assets, no external requests or user-data access.
+
+The comparison points to the browser/request-delivery path as the test bottleneck,
+but the runs do not fully control cache state or prove the OS-level root cause.
+The relay-backed result verifies the functional sequence only under that delivery
+mode. It is not proof that normal browser fetching or the embedded preview is fixed.
+
+### Current regression and remaining work
+
+All **48 focused tests pass** (11.331 seconds), zero failures/skips/TODOs:
+
+```powershell
+node --test scripts/qa-owned-browser-cleanup.test.mjs src/modules/astroeye/shareView.test.mjs src/modules/astroeye/workspaceController.test.mjs src/modules/astroeye/draftTimeSummary.test.mjs src/modules/astroeye/researchAnnotationRecovery.test.mjs
+```
+
+Final script syntax/diff checks pass. No production code, dependency, schema or
+provider settings changed; no full-suite/build rerun or publication. Keep this
+explicit delivery mode in test reports. Remaining U1 provider-form and Director
+scenarios can proceed separately without treating this as actual-host evidence.
+Default transport, complete bootstrap/map/host acceptance and the full U1 gate
+remain open. Five gates accepted, ten open.
