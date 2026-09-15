@@ -2,10 +2,15 @@ import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 import { checkDirectorWorkflow } from './qa-astroeye-director-workflow.mjs';
+import { checkCollectionWorkflow } from './qa-astroeye-collection-workflow.mjs';
 
 // Synthetic HTTP provider responses + real workspace/controller/IndexedDB.
 // Explicit diagnostic relay only; this does not certify normal host loading.
 assert.ok(process.argv.includes('--node-assets'), 'Pass --node-assets to acknowledge the diagnostic asset transport');
+const collectionsOnly = process.argv.includes('--collections');
+const collectionSize = Number(process.argv.find((arg) => arg.startsWith('--collection-size='))?.split('=')[1] ?? 100);
+assert.ok(!collectionsOnly || [25, 100, 1000].includes(collectionSize), 'Collection size must be 25, 100 or 1000');
+assert.ok(!collectionsOnly || !process.argv.includes('--director'), 'Run collection timing separately from Director');
 let browser, page, report, phase = 'startup', venueUnavailable = false;
 const errors = [], blocked = [], relayFailures = [], calls = [];
 const started = Date.now();
@@ -84,6 +89,12 @@ try {
   const submit = () => page.$eval('.astroeye-form', (form) => form.requestSubmit());
   const empty = await records();
   assert.deepEqual(JSON.parse(empty), { schemaVersion: 1, events: [], charts: [], workspaces: [] });
+  if (collectionsOnly) {
+    const collections = await checkCollectionWorkflow(page, mark, collectionSize);
+    assert.deepEqual(calls, []); assert.deepEqual(errors, []); assert.deepEqual(blocked, []); assert.deepEqual(relayFailures, []);
+    await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
+    report = { passed: true, collections, externalRequests: 0, userDataAccessed: false };
+  } else {
   mark('provider-review');
   await click('[data-schedule="next"]'); await page.waitForSelector('[data-schedule-index="0"]');
   await click('[data-schedule-index="0"]'); await page.waitForSelector('[data-role="schedule-review"]:not([hidden])');
@@ -141,6 +152,7 @@ try {
   report = { passed: true, assetTransport: 'node-localhost', reviewRequired: true, editsInvalidateReview: true,
     repeatedHourPreserved: true, missingCoordinatesBlocked: true, manualFallback: true, privateResearchPreserved: true,
     providerResponses: 'synthetic', cameraSeamMocked: true, embeddedHostVerified: false, userDataAccessed: false, director };
+  }
 } catch (error) {
   report = { passed: false, phase, error: error.message, calls, errors, blocked, relayFailures };
 } finally {

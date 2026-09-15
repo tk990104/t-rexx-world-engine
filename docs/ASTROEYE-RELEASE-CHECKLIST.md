@@ -336,6 +336,15 @@ storage, DOM/GPU rendering and host delivery, and do not establish support limit
 or an accepted timing budget. U3 remains open pending mounted/actual-host measures
 and its remaining per-frame/shared-state audit.
 
+Checkpoint 86 adds [mounted workspace/native-storage observations](architecture/astroeye-browser-performance.md)
+for 100 and 1,000 synthetic events. Both first browser runs pass with graceful
+cleanup, unchanged backups and database-connection reopen checks; 18 focused tests
+pass. UI measurements end after an animation frame plus root layout, not actual
+screen presentation. Same-event cached selection is the slowest measured 1,000-event
+path (206 ms median, 405.6 ms maximum of five samples). U3 remains open: profile
+that path, preserve freshness, and extend actual-host/representative-case evidence
+before accepting support limits or budgets. Runtime is unchanged in this checkpoint.
+
 ## 5. Release engineering
 
 - [ ] **L1 — Reproducible candidate:** clean install on the declared Node version, production
