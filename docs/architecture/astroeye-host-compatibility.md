@@ -1,7 +1,20 @@
-# Embedded-browser compatibility — checkpoints 69–70
+# Embedded-browser compatibility — checkpoints 69–71
 
-Status: **all eight prerequisites reported detected by the user in the embedded
-browser; manual persistence/comparison and live interaction acceptance remain open**.
+Status: **the user reported all eight prerequisites detected and the requested
+manual save/reopen/comparison check successful. Live voice acceptance remains open**.
+
+## Checkpoint 71 — user-reported manual workflow success
+
+The user replied “it worked” to the requested synthetic-event save, refresh/reopen,
+and pinned 12:00/current 12:15 UTC comparison procedure. Record those requested
+steps as successful by user report, not independently observed by the agent. The
+separate Event start reset in the longer written guide was not explicitly requested
+in that final handoff and is not newly confirmed here. No screenshot, record bytes,
+database contents, export/recovery result or live-voice result was captured.
+
+This supplies useful manual host compatibility evidence in addition to the eight
+prerequisites. It does not certify durable backup/recovery, other hosts or the full
+V3 gate. The test event was not inspected, edited or deleted by the agent.
 
 ## Checkpoint 70 — user-supplied report and manual handoff
 
@@ -119,9 +132,9 @@ Missing voice prerequisites do not alone prevent manual AstroEye use.
 
 ## Remaining acceptance
 
-The user's prerequisite report is now recorded above. Manual persistence/comparison
-and voice interaction checks are still needed. Do not infer V3 acceptance from this
-Chrome test or from detected APIs.
+The user's prerequisite and manual persistence/comparison reports are recorded
+above. Live voice interaction checks remain pending. Do not infer V3 acceptance
+from those reports, the isolated Chrome tests or detected APIs alone.
 Before live voice tests, separately agree microphone use, provider, transmitted
 context, session length and possible charges. A3/V1/V2 remain accepted; twelve
 release gates remain open. No credentials, user records or publication changed.

@@ -207,6 +207,12 @@ V1/V2 review and remaining V3 acceptance stay open.
 
 ## 3. Persistent event-linked map research
 
+Checkpoint 71 adds the unmounted [R1 storage foundation](architecture/astroeye-research-annotation-contract.md):
+versioned captured records, bounded plain text, atomic stale-write protection and
+source deletion/restoration behavior. Six new tests and the related record/notebook/
+callout suites pass (25 total). No UI or map wiring yet; R1 review and R2/R3 acceptance
+remain open. This non-voice work does not waive the pending live V3 check.
+
 - [ ] **R1 — Record contract:** define a versioned local annotation record with stable ID,
   source event reference, captured UTC chart time, coordinates and bounded plain-text note.
   Specify edit/delete behavior, stale-write protection and what happens when its source
