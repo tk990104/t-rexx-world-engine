@@ -58,7 +58,7 @@ try {
   mark('workspace-mount');
   await page.goto(base.href, { waitUntil: 'domcontentloaded' });
   let timer;
-  try { await Promise.race([page.evaluate(async () => {
+  try { await Promise.race([page.evaluate(async (traceCollections) => {
     const { mountAstroEyeWorkspace } = await import('/src/modules/astroeye/astroeyeWorkspace.js');
     const { createAstroEyeWorkspaceController } = await import('/src/modules/astroeye/workspaceController.js');
     const { createWorldRecordStore } = await import('/src/core/worldRecordStore.js');
@@ -69,16 +69,27 @@ try {
     const { ModuleStateCoordinator } = await import('/src/core/moduleState.js');
     const store = createWorldRecordStore({ databaseName: 'qa-provider-workspace-synthetic' });
     const eventBus = new EventBus(), worldClock = new WorldClock({ eventBus });
-    const qa = { store, navigation: 0 };
-    const controller = createAstroEyeWorkspaceController({ recordStore: store, eventBus, worldClock,
+    const qa = { store, navigation: 0, traceSelection: false, selectionTrace: [] };
+    const trace = (name, action) => async (...args) => {
+      if (!qa.traceSelection) return action(...args);
+      const start = performance.now();
+      try { return await action(...args); }
+      finally { qa.selectionTrace.push({ name, start, end: performance.now() }); }
+    };
+    const controllerStore = traceCollections ? { ...store,
+      getEvent: trace('getEvent', store.getEvent), listCharts: trace('listCharts', store.listCharts) } : store;
+    const actualController = createAstroEyeWorkspaceController({ recordStore: controllerStore, eventBus, worldClock,
       moduleState: new ModuleStateCoordinator({ eventBus }), presentEvent: async (_event, _chart, options = {}) => {
         if (options.navigate !== false) qa.navigation++;
       } });
+    const controller = traceCollections ? { ...actualController,
+      selectEvent: trace('controllerSelect', actualController.selectEvent),
+      listEvents: trace('listEvents', actualController.listEvents) } : actualController;
     const notes = createResearchAnnotations(store), notebook = createResearchNotebook(store);
     const workspace = mountAstroEyeWorkspace({ controller, researchAnnotations: notes, researchNotebook: notebook });
     window.qa = Object.assign(qa, { controller, workspace, notes, notebook });
     await workspace.open();
-  }), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Workspace mount exceeded 20 seconds')), 20000); })]);
+  }, collectionsOnly), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Workspace mount exceeded 20 seconds')), 20000); })]);
   } finally { clearTimeout(timer); }
   const records = () => page.evaluate(() => qa.store.serializeRecords());
   const field = (name) => page.$eval(`[name="${name}"]`, (node) => node.value);

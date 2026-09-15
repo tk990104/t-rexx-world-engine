@@ -37,16 +37,31 @@ export async function checkCollectionWorkflow(page, mark, count) {
       await new Promise((resolve) => requestAnimationFrame(resolve));
       root.getBoundingClientRect();
     };
+    const selectionBreakdown = [];
     const measure = async (name, action, verify, layout = false) => {
       await window.qaCollectionPhase(`collections-${count}-${name}`);
       const samples = [];
       for (let i = 0; i < 6; i++) {
+        qa.selectionTrace = []; qa.traceSelection = name === 'cached-selection';
         const start = performance.now();
-        const value = await action();
+        let value;
+        try { value = await action(); }
+        finally { qa.traceSelection = false; }
+        const actionEnd = performance.now();
         if (layout) await atLayout();
         const elapsed = performance.now() - start;
         verify(value);
         if (i) samples.push(elapsed); // One warmup, five measured iterations.
+        if (i && name === 'cached-selection') {
+          const spans = Object.fromEntries(qa.selectionTrace.map((span) => [span.name, span]));
+          require(qa.selectionTrace.length === 4 && ['getEvent', 'listCharts', 'controllerSelect', 'listEvents'].every((key) => spans[key]), 'Expected selection timing boundaries');
+          const select = spans.controllerSelect, list = spans.listEvents;
+          require(start <= select.start && select.end <= list.start && list.end <= actionEnd, 'Ordered timing boundaries');
+          selectionBreakdown.push({ beforeController: select.start - start, controller: select.end - select.start,
+            getEvent: spans.getEvent.end - spans.getEvent.start, listCharts: spans.listCharts.end - spans.listCharts.start,
+            chartUpdate: list.start - select.end, listRead: list.end - list.start,
+            listUpdate: actionEnd - list.end, frameAndLayout: start + elapsed - actionEnd });
+        }
       }
       return samples;
     };
@@ -73,17 +88,32 @@ export async function checkCollectionWorkflow(page, mark, count) {
     }, true);
     require(await qa.store.serializeRecords() === before, 'Measured actions must preserve event, chart and private workspace bytes');
     require(qa.navigation === 0, 'No camera-navigation request');
+    // Mutate only detached result objects; never write these back to IndexedDB.
+    const returned = [await qa.store.listEvents(), await qa.store.listCharts(), await qa.store.listWorkspaces()];
+    const tamper = (value) => {
+      for (const key of Object.keys(value)) {
+        if (value[key] && typeof value[key] === 'object') tamper(value[key]);
+        else if (typeof value[key] === 'string') value[key] = 'CALLER-ONLY-EDIT';
+        else if (typeof value[key] === 'number') value[key] = -999;
+      }
+    };
+    returned.forEach(tamper);
+    require(await qa.store.serializeRecords() === before, 'Detached list mutations must not change stored records');
     await window.qaCollectionPhase(`collections-${count}-reopen-storage`);
     await qa.store.close();
     require((await qa.store.listEvents()).length === count, 'Data survives a closed/reopened native connection');
     require(await qa.store.serializeRecords() === before, 'Reopened connection preserves exact backup');
-    return { count, seedMs, samples: { nativeRead: read, openList: reopen, filterList: filter, cachedSelection: selection, timePreview: preview },
-      nativeStorageReopened: true, recordsPreserved: true, listCap: 25, warmups: 1, measuredSamples: 5 };
+    return { count, seedMs, selectionBreakdown, samples: { nativeRead: read, openList: reopen, filterList: filter, cachedSelection: selection, timePreview: preview },
+      nativeStorageReopened: true, detachedListIsolation: true, recordsPreserved: true, listCap: 25, warmups: 1, measuredSamples: 5 };
   }, count);
   for (const [name, samples] of Object.entries(result.samples)) {
     result.samples[name] = { ...summarizeTimings(samples), rawMs: samples.map((n) => Math.round(n * 1000) / 1000) };
   }
   result.seedMs = Math.round(result.seedMs * 1000) / 1000;
+  result.selectionBreakdown = Object.fromEntries(Object.keys(result.selectionBreakdown[0]).map((name) => {
+    const samples = result.selectionBreakdown.map((sample) => sample[name]);
+    return [name, { ...summarizeTimings(samples), rawMs: samples.map((n) => Math.round(n * 1000) / 1000) }];
+  }));
   return { passed: true, ...result, viewport: page.viewport(), browserVersion: await page.browser().version(),
     timingBoundary: 'Storage promise completion; UI actions additionally await one animation frame and force root layout. Not screen presentation latency.',
     scope: 'mounted workspace only; same-record cached selection and fixed +15-minute previews',

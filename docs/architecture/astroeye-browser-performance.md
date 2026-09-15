@@ -1,5 +1,55 @@
 # Mounted workspace / native-storage baseline
 
+## Checkpoint 87 — Selection-stage profile and redundant-copy removal
+
+Collection-mode test wrappers now time getEvent, listCharts, controller selection
+and full-list refresh without adding instrumentation to production. The intervals
+between controller completion and list-read start, and between list-read completion
+and workspace-method completion, capture chart/status and list-update work. These
+are coarse boundaries, not a CPU flame chart. Event/chart read spans are nested
+inside the controller span; do not add them twice or sum independent medians.
+
+The 1,000-event profile before the runtime edit used checkpoint 86 code. The
+second run removes only the redundant deep copy from the generic list helper:
+IndexedDB getAll already supplies a detached object graph. Fresh reads, transactions,
+sorting, refresh calls, individual/indexed chart reads and schema remain unchanged.
+
+Observed selection-stage median milliseconds, five measured iterations:
+
+| Stage | Before edit | After edit |
+|---|---:|---:|
+| Controller selection (includes event/chart reads) | 34.5 | 14.7 |
+| Chart/status update interval | 6.9 | 4.6 |
+| Full saved-list read | 108.0 | 52.5 |
+| List update interval | 6.0 | 4.3 |
+| Animation-frame wait and forced layout | 16.5 | 14.4 |
+| Whole cached selection | 183.3 | 89.8 |
+
+Whole-selection maximum samples were 652.1 and 109.1 ms. These are separate,
+instrumented local runs with uncontrolled scheduling/JIT/GC; unchanged stages and
+seed-import times also varied substantially. **Do not attribute the entire timing
+difference to this edit or claim a guaranteed speedup.** The directly verified
+change is eliminating an extra full-collection copy while retaining fresh reads.
+
+Both browser profiles passed and exited 0, with graceful cleanup in 3.968 seconds
+(before) and 4.739 seconds (after), no force. Cleanup began at 24.799/10.739 seconds;
+the 60-second watchdog is unchanged. The post-change run additionally recursively
+mutates detached event/chart/private-workspace list results and verifies unchanged
+native-storage backup bytes and connection reopen. No mutated values are written
+back. No user browser, data, credentials, live providers or external feeds are used.
+
+New unit tests verify deep isolation and independent snapshots across event/chart/
+workspace lists, plus another connection's updates/inserts/deletes becoming visible
+without modifying old snapshots. All 466 platform tests pass (39.523 seconds);
+15 focused storage/statistics tests pass (0.953 seconds). Production build passes
+(23.28 seconds), retaining node:fs externalization and large-bundle warnings.
+
+No gate is newly accepted: five accepted, ten open. Same-record cached selection
+with a mocked camera, diagnostic asset relay and one viewport is not actual-host
+acceptance. Next: representative uncached chart/venue cases and the remaining
+per-frame/shared-state U3 audit before accepting a device/collection/timing budget.
+Nothing was published. Checkpoint 86 measurements below are historical evidence.
+
 ## Checkpoint 86 — September 15, 2026
 
 Added an isolated collection-timing mode to the existing owned-browser harness.

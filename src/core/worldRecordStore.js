@@ -162,7 +162,9 @@ export function createWorldRecordStore({
   async function list(storeName, key) {
     return transact([storeName], 'readonly', async (transaction) => {
       const store = transaction.objectStore(storeName);
-      return copy(await requestResult(store.getAll())).sort(sortBy(key));
+      // IndexedDB deserializes getAll results into an independent object graph.
+      // Keep the fresh read and ordering without deep-copying that graph again.
+      return (await requestResult(store.getAll())).sort(sortBy(key));
     });
   }
 

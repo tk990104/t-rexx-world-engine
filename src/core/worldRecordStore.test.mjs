@@ -48,6 +48,41 @@ test('record export is ordered and byte-stable', async () => {
   await records.close();
 });
 
+test('list results are deeply isolated from storage and from independent reads', async () => {
+  const records = store();
+  try {
+    const event = await records.saveEvent(EVENT);
+    await records.saveChart(calculateAstroEyeChart(event));
+    await records.saveWorkspace({ id: 'private', nested: { notes: ['keep this'] } });
+    const before = await records.serializeRecords();
+    const events = await records.listEvents(), untouched = await records.listEvents();
+    const charts = await records.listCharts(), workspaces = await records.listWorkspaces();
+    events[0].venue.name = 'caller edit'; events[0].participants.home = 'changed'; events.pop();
+    charts[0].positions[0].longitude = -999; charts[0].options.houseSystem = 'caller edit';
+    workspaces[0].nested.notes.push('caller edit'); workspaces[0].id = 'renamed';
+    assert.deepEqual(untouched, [event]);
+    assert.equal(await records.serializeRecords(), before);
+  } finally { await records.close(); }
+});
+
+test('fresh lists observe another connection writes without mutating older snapshots', async () => {
+  const databaseName = `t-rexx-test-fresh-${++sequence}`;
+  const first = createWorldRecordStore({ indexedDB, databaseName });
+  const second = createWorldRecordStore({ indexedDB, databaseName });
+  try {
+    await first.saveEvent(EVENT);
+    const earlier = await first.listEvents();
+    await second.saveEvent({ ...EVENT, title: 'Updated elsewhere' });
+    await second.saveEvent({ ...EVENT, id: 'event-2' });
+    const current = await first.listEvents();
+    assert.equal(current.length, 2);
+    assert.equal(current[0].title, 'Updated elsewhere');
+    assert.equal(earlier.length, 1); assert.equal(earlier[0].title, EVENT.title);
+    await second.deleteEvent(EVENT.id);
+    assert.deepEqual((await first.listEvents()).map(({ id }) => id), ['event-2']);
+  } finally { await first.close(); await second.close(); }
+});
+
 test('deleting an event atomically removes its derived charts', async () => {
   const records = store();
   const event = await records.saveEvent(EVENT);

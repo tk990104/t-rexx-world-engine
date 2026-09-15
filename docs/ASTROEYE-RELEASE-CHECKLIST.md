@@ -345,6 +345,14 @@ path (206 ms median, 405.6 ms maximum of five samples). U3 remains open: profile
 that path, preserve freshness, and extend actual-host/representative-case evidence
 before accepting support limits or budgets. Runtime is unchanged in this checkpoint.
 
+Checkpoint 87 [profiles the selection stages and removes a redundant list copy](architecture/astroeye-browser-performance.md#checkpoint-87--selection-stage-profile-and-redundant-copy-removal),
+without skipping fresh reads or changing schema. Native returned-object isolation
+and unit cross-connection freshness checks pass. All 466 platform tests and the
+production build pass; both browser profiles exit 0 with graceful cleanup. Timing
+differences are observational and confounded by run variability. U3 remains open
+for representative uncached/venue cases, actual-host costs and per-frame/shared-state
+review before accepting device, collection and timing budgets.
+
 ## 5. Release engineering
 
 - [ ] **L1 — Reproducible candidate:** clean install on the declared Node version, production
