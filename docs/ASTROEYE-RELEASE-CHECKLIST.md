@@ -353,6 +353,14 @@ differences are observational and confounded by run variability. U3 remains open
 for representative uncached/venue cases, actual-host costs and per-frame/shared-state
 review before accepting device, collection and timing budgets.
 
+Checkpoint 88 [extends cache-miss coverage to varied venues](architecture/astroeye-uncached-performance.md).
+All twelve venue/house combinations pass at 100 synthetic events with graceful
+cleanup, exact times, polar cautions and no record/chart writes. The 1,000-event
+attempt reached its unchanged 60-second watchdog and remains incomplete. Twelve
+focused tests pass; runtime is unchanged. This is a warmed-app read-only cache-miss
+path, not cold startup or default chart persistence. U3 support/budget acceptance
+and larger/actual-host coverage remain open; use bounded case batches next.
+
 ## 5. Release engineering
 
 - [ ] **L1 — Reproducible candidate:** clean install on the declared Node version, production

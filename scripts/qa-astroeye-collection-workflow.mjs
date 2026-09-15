@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { summarizeTimings } from './qa-performance-stats.mjs';
 
 /** Native IndexedDB + mounted workspace in an already owned disposable context. */
-export async function checkCollectionWorkflow(page, mark, count) {
+export async function checkCollectionWorkflow(page, mark, count, { uncached = false } = {}) {
   assert.ok([25, 100, 1000].includes(count), 'Choose a bounded collection size: 25, 100 or 1000');
   await page.exposeFunction('qaCollectionPhase', mark);
-  const result = await page.evaluate(async (count) => {
+  const result = await page.evaluate(async ({ count, uncached }) => {
     const { eventFromDraft } = await import('/src/modules/astroeye/workspaceController.js');
     const { calculateAstroEyeChart } = await import('/src/modules/astroeye/calculation/chart.js');
     const require = (condition, message) => { if (!condition) throw new Error(message); };
@@ -19,6 +19,12 @@ export async function checkCollectionWorkflow(page, mark, count) {
         title: `${i % 2 ? 'Odd' : 'Even'} synthetic event ${i}`, utcStart,
         scheduledLocal: { date: utcStart.slice(0, 10), time: '12:00:00', timeZone: 'UTC' } };
     });
+    const cases = uncached ? (await import('/scripts/qa-astroeye-uncached-cases.mjs')).uncachedChartCases() : [];
+    for (const [index, entry] of cases.entries()) {
+      const slot = index + 1;
+      events[slot] = { ...entry.event, title: `${slot % 2 ? 'Odd' : 'Even'} synthetic ${entry.id}` };
+      entry.event = events[slot];
+    }
     const chart = calculateAstroEyeChart(events[0]);
     const input = JSON.stringify({ schemaVersion: 1, events, charts: [chart], workspaces: [] });
     const seedStart = performance.now();
@@ -86,6 +92,30 @@ export async function checkCollectionWorkflow(page, mark, count) {
       require(applied === true, 'Preview applied');
       require(Date.parse(qa.controller.selectionSnapshot().chart.calculatedFor) - Date.parse(events[0].utcStart) === 900000, 'Exact preview instant');
     }, true);
+    const uncachedResults = [];
+    for (const entry of cases) for (const houseSystem of ['whole-sign', 'equal']) {
+      await window.qaCollectionPhase(`uncached-${entry.id}-${houseSystem}`);
+      require((await qa.store.listCharts({ eventId: entry.event.id })).length === 0, 'Case must start without stored charts');
+      root.querySelector('.astroeye-form [name="houseSystem"]').value = houseSystem;
+      const samples = [];
+      for (let i = 0; i < 4; i++) {
+        const start = performance.now();
+        const applied = await qa.workspace.selectSavedEvent(entry.event.id, { navigate: false, persistChart: false });
+        await atLayout();
+        const elapsed = performance.now() - start;
+        const selected = qa.controller.selectionSnapshot();
+        require(applied && selected.event.id === entry.event.id, 'Correct uncached event selection');
+        require(selected.chart.calculatedFor === entry.event.utcStart, 'Uncached UTC instant');
+        require(selected.chart.options.houseSystem === houseSystem && selected.chart.calculationVersion === 4, 'Uncached house/model');
+        require(selected.chart.positions.length === 10 && !!root.querySelector('.astroeye-chart:not([hidden]) svg'), 'Uncached chart displayed');
+        require(selected.chart.planetaryHour.status === (entry.polar ? 'unavailable' : 'exact'), 'Explicit planetary-hour status');
+        require(root.querySelector('[data-chart="angle-caution"]').hidden === !entry.polar, 'Polar caution visibility');
+        if (i) samples.push(elapsed);
+      }
+      require((await qa.store.listCharts({ eventId: entry.event.id })).length === 0, 'Read-only selection must not cache charts');
+      uncachedResults.push({ id: entry.id, houseSystem, utcStart: entry.event.utcStart,
+        timeZone: entry.event.scheduledLocal.timeZone, polar: entry.polar, samples });
+    }
     require(await qa.store.serializeRecords() === before, 'Measured actions must preserve event, chart and private workspace bytes');
     require(qa.navigation === 0, 'No camera-navigation request');
     // Mutate only detached result objects; never write these back to IndexedDB.
@@ -103,20 +133,22 @@ export async function checkCollectionWorkflow(page, mark, count) {
     await qa.store.close();
     require((await qa.store.listEvents()).length === count, 'Data survives a closed/reopened native connection');
     require(await qa.store.serializeRecords() === before, 'Reopened connection preserves exact backup');
-    return { count, seedMs, selectionBreakdown, samples: { nativeRead: read, openList: reopen, filterList: filter, cachedSelection: selection, timePreview: preview },
+    return { count, seedMs, selectionBreakdown, uncachedResults, samples: { nativeRead: read, openList: reopen, filterList: filter, cachedSelection: selection, timePreview: preview },
       nativeStorageReopened: true, detachedListIsolation: true, recordsPreserved: true, listCap: 25, warmups: 1, measuredSamples: 5 };
-  }, count);
+  }, { count, uncached });
   for (const [name, samples] of Object.entries(result.samples)) {
     result.samples[name] = { ...summarizeTimings(samples), rawMs: samples.map((n) => Math.round(n * 1000) / 1000) };
   }
   result.seedMs = Math.round(result.seedMs * 1000) / 1000;
+  result.uncachedResults = result.uncachedResults.map(({ samples, ...entry }) => ({ ...entry,
+    timing: { ...summarizeTimings(samples), rawMs: samples.map((n) => Math.round(n * 1000) / 1000) } }));
   result.selectionBreakdown = Object.fromEntries(Object.keys(result.selectionBreakdown[0]).map((name) => {
     const samples = result.selectionBreakdown.map((sample) => sample[name]);
     return [name, { ...summarizeTimings(samples), rawMs: samples.map((n) => Math.round(n * 1000) / 1000) }];
   }));
   return { passed: true, ...result, viewport: page.viewport(), browserVersion: await page.browser().version(),
     timingBoundary: 'Storage promise completion; UI actions additionally await one animation frame and force root layout. Not screen presentation latency.',
-    scope: 'mounted workspace only; same-record cached selection and fixed +15-minute previews',
+    scope: 'mounted workspace only; cached selection/fixed previews, plus optional chart-cache misses (warmed application, not cold browser startup)',
     assetTransport: 'node-localhost', cameraSeamMocked: true, gpuMeasured: false, embeddedHostVerified: false,
     acceptance: 'observational only; no supported collection limit or timing budget accepted' };
 }

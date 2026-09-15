@@ -8,6 +8,8 @@ import { checkCollectionWorkflow } from './qa-astroeye-collection-workflow.mjs';
 // Explicit diagnostic relay only; this does not certify normal host loading.
 assert.ok(process.argv.includes('--node-assets'), 'Pass --node-assets to acknowledge the diagnostic asset transport');
 const collectionsOnly = process.argv.includes('--collections');
+const uncached = process.argv.includes('--uncached');
+assert.ok(!uncached || collectionsOnly, 'Uncached checks require collection mode');
 const collectionSize = Number(process.argv.find((arg) => arg.startsWith('--collection-size='))?.split('=')[1] ?? 100);
 assert.ok(!collectionsOnly || [25, 100, 1000].includes(collectionSize), 'Collection size must be 25, 100 or 1000');
 assert.ok(!collectionsOnly || !process.argv.includes('--director'), 'Run collection timing separately from Director');
@@ -101,7 +103,7 @@ try {
   const empty = await records();
   assert.deepEqual(JSON.parse(empty), { schemaVersion: 1, events: [], charts: [], workspaces: [] });
   if (collectionsOnly) {
-    const collections = await checkCollectionWorkflow(page, mark, collectionSize);
+    const collections = await checkCollectionWorkflow(page, mark, collectionSize, { uncached });
     assert.deepEqual(calls, []); assert.deepEqual(errors, []); assert.deepEqual(blocked, []); assert.deepEqual(relayFailures, []);
     await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
     report = { passed: true, collections, externalRequests: 0, userDataAccessed: false };
