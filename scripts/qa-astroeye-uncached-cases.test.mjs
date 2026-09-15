@@ -1,7 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { uncachedChartCases } from './qa-astroeye-uncached-cases.mjs';
+import { uncachedChartCases, uncachedBatchIds } from './qa-astroeye-uncached-cases.mjs';
 import { calculateAstroEyeChart } from '../src/modules/astroeye/calculation/chart.js';
+
+test('bounded batches cover every fixture exactly once and return detached ID lists', () => {
+  const groups = ['fold', 'offsets', 'polar'].map(uncachedBatchIds);
+  assert.deepEqual(groups.map((ids) => ids.length), [2, 2, 2]);
+  const ids = groups.flat();
+  assert.equal(new Set(ids).size, 6);
+  assert.deepEqual(ids.sort(), uncachedChartCases().map(({ id }) => id).sort());
+  groups[0][0] = 'caller edit';
+  assert.equal(uncachedBatchIds('fold')[0], 'new-york-fall-fold-first');
+});
+
+test('invalid batch names fail closed', () => {
+  for (const batch of ['', 'all', 'toString', '__proto__', undefined, null]) {
+    assert.throws(() => uncachedBatchIds(batch), /Uncached batch must be/);
+  }
+});
 
 test('uncached pack covers six distinct hemisphere/zone/polar inputs with detached copies', () => {
   const cases = uncachedChartCases();

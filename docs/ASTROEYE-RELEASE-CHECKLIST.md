@@ -361,6 +361,16 @@ focused tests pass; runtime is unchanged. This is a warmed-app read-only cache-m
 path, not cold startup or default chart persistence. U3 support/budget acceptance
 and larger/actual-host coverage remain open; use bounded case batches next.
 
+Checkpoint 89 [completes twelve 1,000-event combinations in bounded batches](architecture/astroeye-uncached-performance.md#checkpoint-89--bounded-1000-event-batches).
+Three independent batches exit 0 with graceful cleanup and unchanged synthetic
+records, explicit polar state and no case-chart writes. Dedicated batches skip
+baseline timing loops; a separate 25-event unbatched regression passes. Fourteen
+focused tests pass; the 60-second watchdog and runtime are unchanged. This adds
+larger-collection functional/timing observations, not a single-run full-pack pass,
+actual-host/GPU evidence or support/budget acceptance. U3 remains open for the
+per-frame/shared-state audit and actual-host acceptance work; five gates accepted,
+ten open overall.
+
 ## 5. Release engineering
 
 - [ ] **L1 — Reproducible candidate:** clean install on the declared Node version, production

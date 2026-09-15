@@ -1,6 +1,18 @@
 import { normalizeEvent } from '../src/domain/events/eventSchema.js';
 import { ASTROEYE_REGRESSION_CASES, eventFromRegressionCase } from '../src/modules/astroeye/calculation/regressionCases.js';
 
+const batches = Object.freeze({
+  fold: Object.freeze(['new-york-fall-fold-first', 'new-york-fall-fold-second']),
+  offsets: Object.freeze(['sydney-summer', 'kathmandu-quarter-offset']),
+  polar: Object.freeze(['longyearbyen-polar-day', 'longyearbyen-polar-night']),
+});
+
+// Validate before launching a browser; return a copy so callers cannot alter coverage.
+export function uncachedBatchIds(batch) {
+  if (!Object.hasOwn(batches, batch)) throw new Error('Uncached batch must be fold, offsets or polar');
+  return [...batches[batch]];
+}
+
 // Reuse input locations/times only, never the legacy ephemeris snapshots.
 export function uncachedChartCases() {
   const ids = ['new-york-fall-fold-first', 'sydney-summer', 'kathmandu-quarter-offset',

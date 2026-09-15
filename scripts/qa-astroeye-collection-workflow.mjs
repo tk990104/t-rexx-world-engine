@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { summarizeTimings } from './qa-performance-stats.mjs';
+import { uncachedBatchIds } from './qa-astroeye-uncached-cases.mjs';
 
 /** Native IndexedDB + mounted workspace in an already owned disposable context. */
-export async function checkCollectionWorkflow(page, mark, count, { uncached = false } = {}) {
+export async function checkCollectionWorkflow(page, mark, count, { uncached = false, uncachedBatch = null } = {}) {
   assert.ok([25, 100, 1000].includes(count), 'Choose a bounded collection size: 25, 100 or 1000');
+  assert.ok(uncachedBatch === null || uncached, 'A batch requires uncached checks');
+  const batchIds = uncachedBatch === null ? null : uncachedBatchIds(uncachedBatch);
   await page.exposeFunction('qaCollectionPhase', mark);
-  const result = await page.evaluate(async ({ count, uncached }) => {
+  const result = await page.evaluate(async ({ count, uncached, batchIds }) => {
     const { eventFromDraft } = await import('/src/modules/astroeye/workspaceController.js');
     const { calculateAstroEyeChart } = await import('/src/modules/astroeye/calculation/chart.js');
     const require = (condition, message) => { if (!condition) throw new Error(message); };
@@ -71,29 +74,37 @@ export async function checkCollectionWorkflow(page, mark, count, { uncached = fa
       }
       return samples;
     };
-    const read = await measure('native-read', () => qa.store.listEvents(), (rows) => require(rows.length === count, 'Native read count'));
-    const reopen = await measure('open-list', () => qa.workspace.open(), () => {
-      require(listButtons().length === 25, 'Open must retain 25 rows');
-      require(root.querySelector('[data-role="page-status"]').textContent.includes(`of ${count} matching`), 'Open total count');
-    }, true);
-    const filter = await measure('filter-list', () => {
-      const form = root.querySelector('.astroeye-event-filters');
-      form.elements.namedItem('query').value = 'Even synthetic'; form.requestSubmit();
-    }, () => {
-      require(listButtons().length === Math.min(25, Math.ceil(count / 2)), 'Filtered page size');
-      require(root.querySelector('[data-role="filter-status"]').textContent.startsWith(`${Math.ceil(count / 2)} of ${count}`), 'Filter total count');
-    }, true);
-    root.querySelector('[data-filter-reset]').click();
-    const selection = await measure('cached-selection', () => qa.workspace.selectSavedEvent(events[0].id, { navigate: false, persistChart: false }), () => {
-      require(!!root.querySelector('.astroeye-chart:not([hidden]) svg'), 'Chart SVG mounted');
-      require(qa.controller.selectionSnapshot().chart.calculatedFor === events[0].utcStart, 'Cached chart instant');
-    }, true);
-    const preview = await measure('time-preview', () => qa.workspace.previewCommandTime(15), (applied) => {
-      require(applied === true, 'Preview applied');
-      require(Date.parse(qa.controller.selectionSnapshot().chart.calculatedFor) - Date.parse(events[0].utcStart) === 900000, 'Exact preview instant');
-    }, true);
+    const baselineSamples = {};
+    // Dedicated batches retain the identical seed and safety checks but do not
+    // repeat baseline timing loops. Missing measurements are reported explicitly.
+    if (batchIds === null) {
+      const read = await measure('native-read', () => qa.store.listEvents(), (rows) => require(rows.length === count, 'Native read count'));
+      const reopen = await measure('open-list', () => qa.workspace.open(), () => {
+        require(listButtons().length === 25, 'Open must retain 25 rows');
+        require(root.querySelector('[data-role="page-status"]').textContent.includes(`of ${count} matching`), 'Open total count');
+      }, true);
+      const filter = await measure('filter-list', () => {
+        const form = root.querySelector('.astroeye-event-filters');
+        form.elements.namedItem('query').value = 'Even synthetic'; form.requestSubmit();
+      }, () => {
+        require(listButtons().length === Math.min(25, Math.ceil(count / 2)), 'Filtered page size');
+        require(root.querySelector('[data-role="filter-status"]').textContent.startsWith(`${Math.ceil(count / 2)} of ${count}`), 'Filter total count');
+      }, true);
+      root.querySelector('[data-filter-reset]').click();
+      const selection = await measure('cached-selection', () => qa.workspace.selectSavedEvent(events[0].id, { navigate: false, persistChart: false }), () => {
+        require(!!root.querySelector('.astroeye-chart:not([hidden]) svg'), 'Chart SVG mounted');
+        require(qa.controller.selectionSnapshot().chart.calculatedFor === events[0].utcStart, 'Cached chart instant');
+      }, true);
+      const preview = await measure('time-preview', () => qa.workspace.previewCommandTime(15), (applied) => {
+        require(applied === true, 'Preview applied');
+        require(Date.parse(qa.controller.selectionSnapshot().chart.calculatedFor) - Date.parse(events[0].utcStart) === 900000, 'Exact preview instant');
+      }, true);
+      Object.assign(baselineSamples, { nativeRead: read, openList: reopen, filterList: filter, cachedSelection: selection, timePreview: preview });
+    }
     const uncachedResults = [];
-    for (const entry of cases) for (const houseSystem of ['whole-sign', 'equal']) {
+    const selectedCases = batchIds === null ? cases : cases.filter(({ id }) => batchIds.includes(id));
+    require(batchIds === null || selectedCases.length === batchIds.length, 'Every requested batch fixture must exist');
+    for (const entry of selectedCases) for (const houseSystem of ['whole-sign', 'equal']) {
       await window.qaCollectionPhase(`uncached-${entry.id}-${houseSystem}`);
       require((await qa.store.listCharts({ eventId: entry.event.id })).length === 0, 'Case must start without stored charts');
       root.querySelector('.astroeye-form [name="houseSystem"]').value = houseSystem;
@@ -133,22 +144,26 @@ export async function checkCollectionWorkflow(page, mark, count, { uncached = fa
     await qa.store.close();
     require((await qa.store.listEvents()).length === count, 'Data survives a closed/reopened native connection');
     require(await qa.store.serializeRecords() === before, 'Reopened connection preserves exact backup');
-    return { count, seedMs, selectionBreakdown, uncachedResults, samples: { nativeRead: read, openList: reopen, filterList: filter, cachedSelection: selection, timePreview: preview },
-      nativeStorageReopened: true, detachedListIsolation: true, recordsPreserved: true, listCap: 25, warmups: 1, measuredSamples: 5 };
-  }, { count, uncached });
+    return { count, seedMs, selectionBreakdown, uncachedResults, samples: baselineSamples,
+      baselineTimings: batchIds === null ? 'measured' : 'skipped for dedicated uncached batch',
+      nativeStorageReopened: true, detachedListIsolation: true, recordsPreserved: true, listCap: 25,
+      warmups: 1, measuredSamples: batchIds === null ? 5 : null, uncachedMeasuredSamples: uncached ? 3 : 0 };
+  }, { count, uncached, batchIds });
   for (const [name, samples] of Object.entries(result.samples)) {
     result.samples[name] = { ...summarizeTimings(samples), rawMs: samples.map((n) => Math.round(n * 1000) / 1000) };
   }
   result.seedMs = Math.round(result.seedMs * 1000) / 1000;
   result.uncachedResults = result.uncachedResults.map(({ samples, ...entry }) => ({ ...entry,
     timing: { ...summarizeTimings(samples), rawMs: samples.map((n) => Math.round(n * 1000) / 1000) } }));
-  result.selectionBreakdown = Object.fromEntries(Object.keys(result.selectionBreakdown[0]).map((name) => {
+  result.selectionBreakdown = Object.fromEntries(Object.keys(result.selectionBreakdown[0] ?? {}).map((name) => {
     const samples = result.selectionBreakdown.map((sample) => sample[name]);
     return [name, { ...summarizeTimings(samples), rawMs: samples.map((n) => Math.round(n * 1000) / 1000) }];
   }));
-  return { passed: true, ...result, viewport: page.viewport(), browserVersion: await page.browser().version(),
+  return { passed: true, ...result, uncachedBatch, viewport: page.viewport(), browserVersion: await page.browser().version(),
     timingBoundary: 'Storage promise completion; UI actions additionally await one animation frame and force root layout. Not screen presentation latency.',
-    scope: 'mounted workspace only; cached selection/fixed previews, plus optional chart-cache misses (warmed application, not cold browser startup)',
+    scope: uncachedBatch === null
+      ? 'mounted workspace only; cached selection/fixed previews, plus optional chart-cache misses (warmed application, not cold browser startup)'
+      : 'mounted workspace only; dedicated chart-cache-miss batch in a warmed application; baseline timing loops skipped, not cold browser startup',
     assetTransport: 'node-localhost', cameraSeamMocked: true, gpuMeasured: false, embeddedHostVerified: false,
     acceptance: 'observational only; no supported collection limit or timing budget accepted' };
 }
