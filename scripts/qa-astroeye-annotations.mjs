@@ -4,7 +4,7 @@ import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 
 // Authored component QA only: fresh profile, synthetic IndexedDB, no app bootstrap.
 let browser, page, report;
-const watchdog = setTimeout(() => { browser?.process()?.kill(); process.exit(1); }, 90000);
+const watchdog = setTimeout(() => { browser?.process()?.kill(); process.exit(1); }, 60000);
 try {
   browser = await puppeteer.launch({ headless: true, timeout: 15000, args: ['--disable-gpu', '--disable-background-networking'] });
   page = await browser.newPage(); page.setDefaultTimeout(10000);

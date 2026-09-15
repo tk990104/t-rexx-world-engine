@@ -4,8 +4,9 @@ Status: **mounted in AstroEye through the Event notes quick-navigation button**.
 The existing Research notes button still opens the separate notebook. Optional
 read-only note markers are available and off by default. Browser verification uses
 isolated synthetic profiles, not user data.
-R1 review, R2 workflow and R3 recovery/privacy acceptance remain
-open. Live V3 testing remains separately approval-gated; it is not waived while
+R1 record-contract and R3 recovery/privacy acceptance are recorded in the
+[checkpoint 78 review](astroeye-research-acceptance.md) for runtime `8bb14d9`.
+R2 workflow acceptance remains open. Live V3 testing remains separately approval-gated; it is not waived while
 this independent, non-voice work proceeds.
 
 ## Record and ownership

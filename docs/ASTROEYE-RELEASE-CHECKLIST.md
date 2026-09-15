@@ -2,7 +2,7 @@
 
 Scope baseline: 2026-09-12, implementation checkpoint 34 (`92edee7`).
 
-**Status: pre-release; A3, V1 and V2 accepted for their reviewed candidates; 12 acceptance gates remain open across five work packages.**
+**Status: pre-release; A3, V1, V2, R1 and R3 accepted for their reviewed candidates; 10 acceptance gates remain open across five work packages.**
 These are grouped outcomes, not an estimate of commits or development days. Existing
 features and earlier passing tests are useful evidence, but do not close a release
 gate until the complete criterion has been verified on the release candidate.
@@ -44,6 +44,12 @@ annotation contract supplies a manual preview procedure; it has not been complet
 This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 acceptance.
 
 ## Finish line
+
+Checkpoint 78: [research acceptance review](architecture/astroeye-research-acceptance.md)
+accepts R1/R3 for runtime `8bb14d9`, backed by 57 current focused tests, native
+IndexedDB competing-connection/backup checks and editor recovery QA. Both browsers
+exit 0 with graceful cleanup. No runtime change or new build/full-suite claim.
+R2 and embedded terrain/accessibility checks remain open; no publication is approved.
 
 Choose or manually enter a sporting event, verify its time and place, inspect its
 reproducible chart on Earth, compare it with another chart, keep local research,
@@ -248,19 +254,21 @@ source deletion/restoration behavior. Six new tests and the related record/noteb
 callout suites pass (25 total). No UI or map wiring yet; R1 review and R2/R3 acceptance
 remain open. This non-voice work does not waive the pending live V3 check.
 
-- [ ] **R1 — Record contract:** define a versioned local annotation record with stable ID,
+- [x] **R1 — Record contract:** define a versioned local annotation record with stable ID,
   source event reference, captured UTC chart time, coordinates and bounded plain-text note.
   Specify edit/delete behavior, stale-write protection and what happens when its source
   event is deleted/restored. Existing notebook data and session callouts must remain intact.
 - [ ] **R2 — Explicit workflow:** add deliberate save/reopen/edit/delete controls and opt-in
   map display. Verify reload restoration, frozen captured time, owner-only cleanup and
   no implicit camera move or chart mutation. Keep rendering bounded and accessible.
-- [ ] **R3 — Recovery and privacy:** round-trip durable annotations through full backup
+- [x] **R3 — Recovery and privacy:** round-trip durable annotations through full backup
   and reviewed import, including conflicts and unsupported versions. Keep them out of
   matching-event exports, comparison reports, share URLs and tours unless a later explicit
   scope change adds a reviewed sharing flow. Test deletion/undo behavior and failed writes.
 
 This is one event-linked annotation slice, not a complete Research Mode case/project system.
+Current R1/R3 decision: [checkpoint 78 candidate review](architecture/astroeye-research-acceptance.md).
+Earlier open-status descriptions are historical; R2 remains unaccepted.
 See [current session-callout behavior](architecture/astroeye-event-callouts.md).
 
 ## 4. Complete workflow and usability
