@@ -1,4 +1,4 @@
-# Persistent research annotations — opt-in markers, checkpoint 75
+# Persistent research annotations — rendered markers, checkpoint 76
 
 Status: **mounted in AstroEye through the Event notes quick-navigation button**.
 The existing Research notes button still opens the separate notebook. Optional
@@ -269,3 +269,36 @@ No real-user records, live providers, credentials or publication were involved.
 Actual WebGL appearance, overlapping-marker usability and embedded-host acceptance
 still need verification. These checks do not certify GPU performance or close
 R1/R2/R3. Next: embedded-globe visual/interaction checks and remaining release gates.
+
+## Checkpoint 76 — offline WebGL reference scene (September 15)
+
+`node scripts/qa-astroeye-marker-render.mjs` now renders the production note layer
+in a real Cesium 3D viewer, using three synthetic in-memory notes and an opaque,
+synchronous WGS84 reference mesh. No user profile, IndexedDB records, imagery,
+external feeds or API requests are used. The actual terrain globe is disabled in
+this fixture: asynchronous terrain readiness was inconsistent in earlier attempts,
+so this is explicitly **reference-mesh evidence, not terrain acceptance**.
+
+An initial far-side reference check exposed the effect of unlimited depth override.
+Point and label overrides are now bounded to 200 km: nearby notes retain their
+always-on-top readability, while distant notes respect depth occlusion. This does
+not claim that a defect was reproduced in the user's actual terrain preview.
+
+Final browser run exits 0, with all three visible markers picked and 81/82/81 amber
+pixels around their projected centers; hiding yields zero amber pixels at each.
+The camera remains unchanged within tight floating-point tolerances. Far-side
+markers are not picked through the reference mesh; screenshots were also inspected.
+Playback disables the layer without automatic resumption. No page/render errors,
+failed local assets or external requests were recorded. Owned-browser cleanup was
+graceful (1.952 seconds), with no forced termination. Images are ignored local
+artifacts under `qa-shots/astroeye-note-markers/` (shown, hidden and far-side).
+
+All **460 platform tests pass** (36.330 seconds), including assertions for the
+bounded depth setting. The production build passes (18.38 seconds), retaining
+node:fs browser-externalization and large-chunk warnings. The fixture's continuous
+20-FPS rendering is test-only; application render scheduling is unchanged.
+
+Actual terrain/buildings, overlapping notes, embedded-host interaction and GPU
+performance remain unverified. No release gate closes, no user data changes and
+nothing is published. Next: actual-host note-marker interaction/overlap acceptance
+and remaining release checks; live V3 remains separately approval-gated.

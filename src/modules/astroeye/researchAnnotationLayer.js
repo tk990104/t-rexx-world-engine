@@ -4,6 +4,8 @@ import { registerPickOwner, unregisterPickOwner } from '../../data/pickRegistry.
 
 let sequence = 0;
 export const researchNoteEntityId = (id) => `t-rexx-astroeye-note-${encodeURIComponent(id)}`;
+// Nearby notes remain legible over buildings; distant notes respect depth occlusion.
+export const NOTE_MARKER_DEPTH_OVERRIDE_METERS = 200000;
 
 /** Session opt-in only. Not part of the shared annotation board or layer/URL catalog. */
 export function createResearchAnnotationLayer({ viewer, loadAnnotations, eventBus, canDisplay = () => true, modeTarget = null }) {
@@ -36,13 +38,13 @@ export function createResearchAnnotationLayer({ viewer, loadAnnotations, eventBu
           position: Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, 100),
           point: { color: Cesium.Color.fromCssColorString('#ffc66d'), pixelSize: 10,
             outlineColor: Cesium.Color.fromCssColorString('#33230c'), outlineWidth: 2,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY },
+            disableDepthTestDistance: NOTE_MARKER_DEPTH_OVERRIDE_METERS },
           label: { text: `Event note · captured UTC\n${point.chartTimeUtc}`,
             font: '12px sans-serif', fillColor: Cesium.Color.WHITE,
             outlineColor: Cesium.Color.fromCssColorString('#33230c'), outlineWidth: 3,
             style: Cesium.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new Cesium.Cartesian2(0, -20),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 200000),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY },
+            disableDepthTestDistance: NOTE_MARKER_DEPTH_OVERRIDE_METERS },
         });
         owned.set(id, entity);
       }

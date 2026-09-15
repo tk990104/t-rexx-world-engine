@@ -28,6 +28,14 @@ build and mocked-viewer browser checks pass; real Cesium entity tests cover boun
 privacy and ownership. Actual globe appearance/interaction and embedded-host review
 are not yet verified; no gate is closed by this checkpoint.
 
+Checkpoint 76 adds real WebGL reference-mesh checks with synthetic in-memory notes:
+visible/hidden pixels, picking, camera stability, far-side occlusion and playback
+opt-out pass. The marker depth override is now bounded to 200 km. 460 platform
+tests and the production build pass; the isolated browser exits 0 with graceful
+cleanup and no external requests. Actual terrain readiness was inconsistent; the
+test instead uses a synchronous WGS84 mesh, not actual terrain or the embedded
+host. Overlap/host acceptance remains open; no release gate is newly accepted.
+
 ## Finish line
 
 Choose or manually enter a sporting event, verify its time and place, inspect its
