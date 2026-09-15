@@ -106,6 +106,9 @@ Complete remaining host checks without exposing real saved records.
 Checkpoint 69 provides a [local prerequisite diagnostic](astroeye-host-compatibility.md)
 that can be run manually in the embedded browser. The browser-control tool currently
 fails to initialize; the isolated diagnostic-page check is not actual host acceptance.
+Checkpoint 70 records the user's report of eight detected prerequisites and prepares
+a manual save/reopen/comparison procedure. Its execution/results remain pending;
+no storage or live-voice acceptance is inferred from feature presence.
 Before any live test, explicitly agree on provider, microphone use, outgoing
 audio/transcript/tool/map context, session length and possible metered charges. Use
 synthetic records and a small command sequence; record outcomes without storing

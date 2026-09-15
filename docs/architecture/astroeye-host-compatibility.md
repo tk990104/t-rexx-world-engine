@@ -1,6 +1,69 @@
-# Embedded-browser compatibility — checkpoint 69
+# Embedded-browser compatibility — checkpoints 69–70
 
-Status: **diagnostic page verified in isolated Chromium; actual embedded host not verified**.
+Status: **all eight prerequisites reported detected by the user in the embedded
+browser; manual persistence/comparison and live interaction acceptance remain open**.
+
+## Checkpoint 70 — user-supplied report and manual handoff
+
+On September 14 the user supplied a `trexx-host-features-v1`, `prerequisites-only`
+report with `detected` for all eight IDs: `secure-context`, `graphics`, `storage-api`,
+`named-time-zones`, `rtc-api`, `capture-api`, `recognition-api`, `speech-output-api`.
+This is user-supplied host evidence, not an agent-observed end-to-end test. The
+HTML-encoded spaces in the pasted message do not change its fields or results.
+No storage persistence, voice permission, provider connectivity or chart-comparison
+result can be inferred from those statuses.
+
+One browser-tool connection check this turn still failed before selecting a tab
+with the same kernel-assets / Windows error 3. No repeated recovery loop or native
+automation workaround was attempted. The next manual test therefore needs the
+user to operate the existing app tab. Main application code is unchanged.
+
+### Save, reopen and compare one synthetic event
+
+Finish or otherwise safely handle any existing unsaved form/notes before refreshing.
+Do not change existing events or clear browser storage. Leave MIC/voice controls off.
+Normal globe feeds may still operate; this is not an offline mode of the main app.
+
+1. In the globe tab, open **AstroEye**. Create a new event using these inputs.
+   If this exact test title already exists, append a fresh suffix rather than
+   reusing or editing an existing record.
+
+   | Field | Test value |
+   | --- | --- |
+   | Event name | QA Host Check 2026-09-14 |
+   | Sport / Competition | QA / QA |
+   | Away team / Home team | QA Away / QA Home |
+   | Local date / Local start time | 2026-09-14 / 12:00 |
+   | Venue time zone | UTC |
+   | Venue name | QA Test Site |
+   | Latitude / Longitude | 40 / -75 |
+   | House system | Equal House |
+   | Duration | Leave blank |
+
+2. Click **Save and view on globe**. Confirm the test title and a 12:00 UTC chart
+   appear. This intentionally creates one synthetic saved event and its chart.
+   Do not create another event if a save error appears; report that error instead.
+3. Refresh the globe tab, reopen **AstroEye → Saved events**, and select the same
+   test title. Confirm it remains present and its chart is at the original 12:00 UTC.
+4. Click **Compare charts → Pin this chart**. In **Time explorer**, click **+15 min**
+   once, then return to **Compare charts**. The pinned snapshot should still be at
+   12:00 UTC and the current chart at 12:15 UTC; the comparison table should appear.
+   If it says **Replace pinned chart** before starting, stop and report that state
+   rather than overwriting an existing pin.
+5. Click **Event start** in Time explorer, then confirm current time returns to
+   12:00 UTC. The pin is session-only; loss of the pin on a later refresh is expected.
+   Leave the test event saved for now; cleanup/deletion is not part of this handoff.
+
+Reply with three results: saved, reopened after refresh, and pinned/current times
+after +15 minutes (plus any error or screenshot limited to the test record). These
+steps are prepared, **not performed or passed**. Even a successful reply will not
+close the complete V3 live/host gate or certify durable backup/recovery.
+
+Documentation/source-label checks only this checkpoint; no new tests or build were
+run. Earlier automated results below remain dated evidence. No live voice, user
+record mutation, credential change or publication was performed by the agent.
+
+## Checkpoint 69 — diagnostic implementation and tool blocker
 
 The embedded-browser tool failed before connecting with `failed to write kernel
 assets` / Windows error 3. A session reset and one retry produced the same result.
@@ -56,8 +119,9 @@ Missing voice prerequisites do not alone prevent manual AstroEye use.
 
 ## Remaining acceptance
 
-An actual embedded-browser report and manual/voice interaction checks are still
-needed. Do not infer V3 acceptance from this Chrome test or from detected APIs.
+The user's prerequisite report is now recorded above. Manual persistence/comparison
+and voice interaction checks are still needed. Do not infer V3 acceptance from this
+Chrome test or from detected APIs.
 Before live voice tests, separately agree microphone use, provider, transmitted
 context, session length and possible charges. A3/V1/V2 remain accepted; twelve
 release gates remain open. No credentials, user records or publication changed.
