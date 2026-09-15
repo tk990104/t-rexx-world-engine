@@ -33,13 +33,17 @@ try {
     const service = createResearchAnnotations(store);
     const selection = { event, chart: { eventId: 'source', calculatedFor: '2026-09-14T12:15:00.000Z' } };
     const qa = { service, store, event, selection, reads: 0, confirms: [], allow: true, downloads: [], fail: false, failRead: false,
-      hold: false, release: null, holdSource: false, sourceReleases: [] };
+      hold: false, release: null, holdSource: false, sourceReleases: [], failRestore: false };
     const wrapped = { ...service,
       load: async () => { qa.reads++; if (qa.failRead) throw new Error('Synthetic read failure'); return service.load(); },
       edit: async (...args) => {
         if (qa.fail) throw new Error('Synthetic quota failure');
         if (qa.hold) await new Promise((resolve) => { qa.release = resolve; });
         return service.edit(...args);
+      },
+      restore: async (...args) => {
+        if (qa.failRestore) throw new Error('Synthetic restore failure');
+        return service.restore(...args);
       },
       sourceState: async (entry) => {
         if (qa.holdSource) return new Promise((resolve) => qa.sourceReleases.push(resolve));
@@ -113,9 +117,29 @@ try {
   await page.evaluate(async () => { await qa.store.restoreDeletedEvent({ event: qa.event, charts: [] }); });
   await click('new'); await edit('Second note'); await click('save');
   const secondId = await page.$eval('[data-annotation="list"]', (node) => node.value);
+  const savedSecond = await page.evaluate(async () => (await qa.service.load()).annotations.at(-1));
+  await edit('Unsaved second-note edit');
   await click('delete');
   assert.deepEqual(await page.evaluate(async () => (await qa.service.load()).annotations.map((entry) => entry.id)), [first.id]);
   assert.notEqual(secondId, first.id);
+  assert.equal(await page.$eval('[data-annotation="undo"]', (node) => node.disabled), false);
+  await page.evaluate(() => { qa.failRestore = true; }); await click('undo');
+  assert.match(await status(), /restore failure/);
+  assert.equal(await page.$eval('[data-annotation="undo"]', (node) => node.disabled), false);
+  await page.evaluate(async () => {
+    qa.failRestore = false;
+    const old = await qa.service.load(); await qa.service.edit(old.annotations[0].id, 'Newer unrelated edit', old);
+  });
+  await click('undo'); assert.match(await status(), /changed in storage/);
+  await click('reload'); await click('undo');
+  assert.equal(await value(), savedSecond.note);
+  assert.deepEqual(await page.evaluate(async () => (await qa.service.load()).annotations.at(-1)), savedSecond);
+  assert.equal(await page.$eval('[data-annotation="undo"]', (node) => node.disabled), true);
+  await click('delete');
+  // Same-ID recreation is never overwritten, even after an explicit reload.
+  await page.evaluate(async (entry) => { await qa.service.restore(entry, await qa.service.load()); }, savedSecond);
+  await click('reload'); await click('undo'); assert.match(await status(), /already in use/);
+  await choose(secondId); await click('delete');
   // Source-status promises from a previously opened note cannot overwrite a newer check.
   await page.evaluate(() => { qa.holdSource = true; });
   await page.select('[data-annotation="list"]', first.id);
@@ -147,6 +171,9 @@ try {
   await page.waitForFunction(async () => (await qa.service.load()).annotations[0].note === 'Pending save');
   assert.equal(await page.$eval('#notes', (node) => node.children.length), 0);
   assert.equal(await dirty(), false);
+  await page.evaluate(() => { qa.panel = qa.mount(); qa.panel.open(); }); await settle();
+  assert.equal(await page.$eval('[data-annotation="undo"]', (node) => node.disabled), true);
+  await page.evaluate(() => qa.panel.destroy());
   assert.deepEqual(await page.evaluate(() => qa.store.getWorkspace('unrelated')), { id: 'unrelated', text: 'Notebook sentinel' });
   assert.deepEqual(await page.evaluate(() => qa.store.listCharts()), []);
   await page.evaluate(() => qa.store.close());
@@ -154,6 +181,7 @@ try {
   report = { passed: true, savedReopenedEditedDeleted: true, frozenCapture: true, inertText: true,
     draftPreservedOnFailure: true, staleSaveAndDeleteRejected: true, missingSource: true, staleSourceResponseIgnored: true,
     delayedNewCaptureFrozen: true, newDraftFocused: true,
+    sessionDeletionUndo: true, undoFailureRetried: true, undoConflictRefused: true, undoClearedOnRemount: true,
     destroyDuringSave: true, userDataAccessed: false, liveProviderRequests: 0, productionMounted: false };
 } finally {
   try { const cleanup = await closeOwnedBrowser(browser, { page }); if (report) report.cleanup = cleanup; }

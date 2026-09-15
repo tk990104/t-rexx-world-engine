@@ -1,4 +1,4 @@
-# Persistent research annotations — R1/R2 candidate, checkpoint 72
+# Persistent research annotations — R1/R2/R3 candidate, checkpoint 73
 
 Status: **storage service and staged editor implemented and tested; not mounted in the app**.
 The editor is exercised only by an isolated synthetic-data harness. No main-app
@@ -46,7 +46,7 @@ Future UI must make saved-source selection and missing-source states explicit.
   captured values. A changed capture must be a new annotation.
 - Remove deletes only the requested annotation from this collection. Removing the
   last entry leaves an empty collection, so stale initial-create baselines still
-  conflict. There is no annotation-deletion undo in this first service.
+  conflict. Checkpoint 73 adds restoration and session-only undo, described below.
 - Source event deletion does not cascade into annotations. `sourceState` reports
   `source-missing`; same-ID restoration reports `source-present`. This means the
   reference resolves, not that all restored event contents are identical. Captured
@@ -91,8 +91,8 @@ by `main.js` or mounted in the AstroEye workspace yet.
 - Saving creates or edits only on request. Selecting another note, reloading, or
   starting another draft asks before discarding dirty text. Panel hide/reopen retains
   drafts. Quota, read, stale-save and stale-delete failures preserve the draft.
-- Deletion requires explicit confirmation and warns that there is no annotation
-  undo yet. Full backups are needed for longer-term recovery. Draft downloads contain
+- At checkpoint 72, deletion required explicit confirmation and had no annotation
+  undo. Checkpoint 73 adds session-only undo; full backups remain needed for longer-term recovery. Draft downloads contain
   only editor text, not an importable backup or captured coordinates/time.
 - Dynamic text uses textContent/value, not HTML. A dirty editor requests the same
   bounded browser leave warning as the notebook. Destroy removes its own handlers;
@@ -113,6 +113,53 @@ accessibility audit, Director integration or full-app acceptance. No production
 build/full suite rerun is claimed because the new editor remains unmounted. No
 user records, credentials or live providers were accessed; nothing was published.
 
-Next: annotation-specific backup/reviewed-import/privacy coverage and deletion
+Next at checkpoint 72: annotation-specific backup/reviewed-import/privacy coverage and deletion
 recovery, then wire the editor into the workspace with selection lifecycle and
 Director checks. Opt-in map display follows separately. No R1/R2/R3 gate is closed.
+
+## Checkpoint 73 — recovery and privacy candidate
+
+The service now exposes `restore(entry, expectedCollection)`. It appends a validated,
+detached entry with its original ID, text, UTC time and coordinates. It refuses an
+existing same-ID record, a stale expected collection, malformed records or a full
+100-note collection. The operation is one atomic compare-and-save transaction; it
+never creates a missing source event, overwrites a newer note or edits the notebook.
+Original list position is not restored: recovered entries are appended.
+
+The staged editor now offers **Undo last note deletion**. Only a successful delete
+replaces its in-memory recovery slot, containing saved text rather than discarded
+unsaved edits. A successful undo consumes it; failed undo leaves it available for a
+deliberate retry after reloading/reviewing current storage. Panel hide/reopen and
+Reload saved event notes retain the slot; destroying/remounting the editor or
+reloading the page clears it. Undo asks before discarding a different dirty draft.
+Full Export all backups remain necessary for recovery beyond this session.
+
+Six new fake-IndexedDB tests verify:
+
+- Full backup and single-use reviewed import preserve exact annotation bytes,
+  including orphan notes, without fabricating sources or changing other workspaces.
+- Import reviews are read-only. Existing collection replacement requires explicit
+  overwrite acknowledgement; a newer local change invalidates approval atomically.
+  Acknowledged imports replace the entire annotation workspace, **not merge notes
+  individually**. Notes absent from the incoming collection are removed. This is
+  the existing generic workspace-import contract; the staged editor now warns of it.
+- Unknown future and malformed annotation payloads round-trip as opaque workspace
+  backup data. The annotation service refuses to read/edit these formats. Import
+  transport does not certify their validity or silently migrate them.
+- Restoration preserves exact captures, other entries and caller snapshots, with
+  no writes on same-ID/stale conflicts, invalid data, cap limits or injected failure.
+- Matching-event exports, comparison reports, decoded view links and Director tour
+  payloads remain byte-identical before/after adding a private annotation collection.
+  Full backups intentionally include that collection; review them before sharing.
+
+**49 focused tests pass** (8.093 seconds): new recovery/privacy tests and existing
+annotation, import-review, notebook, callout, store, leave-guard and cleanup tests.
+The expanded isolated browser harness passes with exit 0 and graceful 0.584-second
+cleanup. It verifies session undo, failure/retry, stale and same-ID refusal, recovery
+of saved rather than unsaved text, and undo loss on remount, alongside checkpoint-72
+checks. Syntax/diff checks pass. Only synthetic test databases were used.
+
+The editor is still unmounted. Next is actual workspace navigation/selection and
+Director-safe integration, including import-review privacy wording, styling and
+browser validation. No full-app build, embedded-host acceptance, live voice, release
+gate closure, user-record access or publication is claimed. Map display remains separate.

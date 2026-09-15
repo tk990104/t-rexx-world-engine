@@ -85,6 +85,13 @@ export function createResearchAnnotations(recordStore, { createId = () => `astro
       if (!before?.annotations.some((entry) => entry.id === id)) throw new Error('Annotation not found in the loaded collection.');
       return save(before.annotations.filter((entry) => entry.id !== id), before);
     },
+    async restore(entry, expected) {
+      const restored = copy(validateResearchAnnotation(entry)), before = baseline(expected);
+      const annotations = before?.annotations ?? [];
+      if (annotations.some((item) => item.id === restored.id)) throw new Error('This annotation ID is already in use. Nothing was restored.');
+      if (annotations.length >= MAX_RESEARCH_ANNOTATIONS) throw new RangeError('The 100 research annotation limit was reached.');
+      return save([...annotations, restored], before);
+    },
     async sourceState(entry) {
       const eventId = validateResearchAnnotation(entry).eventId;
       return await recordStore.getEvent(eventId) ? 'source-present' : 'source-missing';

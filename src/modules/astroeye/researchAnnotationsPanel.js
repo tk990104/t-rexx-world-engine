@@ -18,13 +18,14 @@ export function mountResearchAnnotations(host, { annotations,
     <label>Event note text<textarea rows="6" maxlength="${MAX_ANNOTATION_NOTE_LENGTH}" disabled></textarea></label>
     <p data-annotation="count" class="astroeye-help"></p>
     <div class="astroeye-chart-actions"><button type="button" data-annotation="save" disabled>Save event note</button><button type="button" data-annotation="delete" disabled>Delete event note</button><button type="button" data-annotation="download" disabled>Download draft text</button></div>
-    <p class="astroeye-help">Deletion has no undo yet. Export a backup first. Draft downloads contain only this editor's text, not an importable backup or the captured location/time.</p>
+    <button type="button" data-annotation="undo" disabled>Undo last note deletion</button>
+    <p class="astroeye-help">Undo restores only the last deleted saved note in this session, not unsaved edits. Reloading the page loses undo. Export all is a private backup of the whole note collection; an acknowledged import can replace that entire collection. Draft downloads contain only this editor's text, not an importable backup or the captured location/time.</p>
     <p data-annotation="status" class="astroeye-help" role="status">Open event notes to load this browser's collection.</p>`;
   const node = (name) => host.querySelector(`[data-annotation="${name}"]`);
   const editor = host.querySelector('textarea'), list = node('list');
   const guard = createUnsavedNotebookGuard(host.ownerDocument.defaultView);
   let baseline = null, loaded = false, pending = false, destroyed = false;
-  let current = null, capture = null, editingId = '', savedText = '', sourceVersion = 0;
+  let current = null, capture = null, editingId = '', savedText = '', sourceVersion = 0, deleted = null;
   const dirty = () => !!capture && editor.value !== savedText;
   const count = () => baseline?.annotations.length ?? 0;
   function render() {
@@ -35,6 +36,7 @@ export function mountResearchAnnotations(host, { annotations,
     node('reload').disabled = pending;
     node('save').disabled = pending || !capture || !editor.value.trim() || !dirty();
     node('delete').disabled = pending || !editingId;
+    node('undo').disabled = pending || !loaded || !deleted;
     node('download').disabled = pending || !capture || !editor.value.length;
     node('count').textContent = `${editor.value.length} / ${MAX_ANNOTATION_NOTE_LENGTH} characters · ${count()} / ${MAX_RESEARCH_ANNOTATIONS} saved notes${dirty() ? ' · Unsaved changes' : ''}`;
   }
@@ -112,13 +114,24 @@ export function mountResearchAnnotations(host, { annotations,
   }
   function remove() {
     if (pending || destroyed || !editingId) return;
-    if (!confirmDiscard('Delete this saved event note and any unsaved edits? There is no undo. Export a backup or download draft text first.')) return;
+    if (!confirmDiscard('Delete this saved event note and any unsaved edits? Only the last saved note can be restored with Undo during this session; unsaved text cannot. Export a backup or download draft text first.')) return;
     const id = editingId;
+    const removed = structuredClone(baseline.annotations.find((entry) => entry.id === id));
     return run(async () => {
       const next = await annotations.remove(id, baseline);
       if (destroyed) return;
-      baseline = next; editingId = ''; refreshList(); show(null);
-      node('status').textContent = 'Event note deleted. Source events, charts and the notebook are unchanged.';
+      deleted = removed; baseline = next; editingId = ''; refreshList(); show(null);
+      node('status').textContent = 'Event note deleted. Undo last note deletion is available this session. Source events, charts and the notebook are unchanged.';
+    });
+  }
+  function undo() {
+    if (pending || destroyed || !loaded || !deleted || !discard()) return;
+    const entry = structuredClone(deleted);
+    return run(async () => {
+      const next = await annotations.restore(entry, baseline);
+      if (destroyed) return;
+      baseline = next; deleted = null; refreshList(); show(entry, entry.id, entry.note);
+      node('status').textContent = 'Deleted saved note restored with its original ID, time and location. Unsaved edits were not recovered.';
     });
   }
   function choose() {
@@ -134,6 +147,7 @@ export function mountResearchAnnotations(host, { annotations,
     if (action === 'reload') void load();
     if (action === 'save') void save();
     if (action === 'delete') void remove();
+    if (action === 'undo') void undo();
     if (action === 'download' && !pending && !destroyed && capture && editor.value.length) {
       try {
         downloadDraft({ text: editor.value, filename: 't-rexx-event-note-draft.txt', mimeType: 'text/plain;charset=utf-8' });

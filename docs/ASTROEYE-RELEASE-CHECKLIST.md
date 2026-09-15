@@ -13,6 +13,11 @@ draft preservation and lifecycle checks; see the [annotation candidate](architec
 This is not R2/R3 acceptance: recovery/privacy, actual workspace/Director integration,
 opt-in map behavior and embedded-host verification still need review.
 
+Checkpoint 73 adds annotation-specific backup/import/exclusion tests and session
+deletion undo (49 focused tests plus isolated browser QA passing). Collection-level
+import replacement is explicit, not per-note merge. The candidate is still unmounted;
+actual workspace/Director behavior and reviewed release acceptance remain open.
+
 ## Finish line
 
 Choose or manually enter a sporting event, verify its time and place, inspect its
