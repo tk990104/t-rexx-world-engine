@@ -66,3 +66,39 @@ test('pages are bounded to 25 rows and clamp correctly after a collection shrink
   assert.deepEqual(pageSavedEvents([]), { page: 0, pageCount: 1, total: 0, from: 0, to: 0, items: [] });
   assert.equal(rows.length, 61);
 });
+
+test('empty or whitespace search avoids constructing searchable text but still applies dates', () => {
+  const record = { scheduledLocal: { date: '2026-09-12' },
+    get title() { throw new Error('Empty search must not inspect searchable text'); } };
+  assert.deepEqual(filterSavedEvents([record], { query: '   ' }), [record]);
+  assert.deepEqual(filterSavedEvents([record], { dateFrom: '2026-09-13' }), []);
+  assert.deepEqual(filterSavedEvents([record], { dateTo: '2026-09-12' }), [record]);
+});
+
+test('large mixed-instant ordering retains UTC ties, reference identity and nonmutation', () => {
+  const rows = Array.from({ length: 1000 }, (_, i) => ({ id: `event-${String(i).padStart(4, '0')}`,
+    utcStart: i % 3 ? new Date(Date.UTC(2026, 0, 1) + ((i * 37) % 365) * 86400000).toISOString()
+      : i % 2 ? '2026-09-12T20:00:00-04:00' : '2026-09-13T00:00:00Z' }));
+  const before = structuredClone(rows);
+  for (const sort of ['oldest', 'newest']) {
+    const expected = [...rows].sort((a, b) => {
+      const delta = Date.parse(a.utcStart) - Date.parse(b.utcStart);
+      return delta ? (sort === 'oldest' ? delta : -delta) : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
+    const actual = sortSavedEvents(rows, sort);
+    assert.deepEqual(actual, expected);
+    actual.forEach((record, index) => assert.equal(record, expected[index]));
+  }
+  assert.deepEqual(rows, before);
+});
+
+test('sorting reads each input instant once and does not retain stale timestamps', () => {
+  let reads = 0, first = '2026-09-13T00:00:00Z';
+  const rows = [{ id: 'a', get utcStart() { reads++; return first; } },
+    { id: 'b', get utcStart() { reads++; return '2026-09-12T00:00:00Z'; } }];
+  assert.deepEqual(sortSavedEvents(rows).map((event) => event.id), ['a', 'b']);
+  assert.equal(reads, 2);
+  first = '2026-09-11T00:00:00Z';
+  assert.deepEqual(sortSavedEvents(rows).map((event) => event.id), ['b', 'a']);
+  assert.equal(reads, 4);
+});

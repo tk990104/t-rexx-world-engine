@@ -328,6 +328,14 @@ manual/provider/share/Director/embedded-host acceptance.
   per-frame ephemeris work, stale-response safety and unchanged shared layer/camera behavior.
   Fix regressions or document explicit, reviewed support limits.
 
+Checkpoint 85 provides [synthetic CPU baselines](architecture/astroeye-performance-baseline.md)
+and a tested one-parse-per-record sort/empty-search optimization. 25/100/1,000 and
+10,000-event stress cases pass correctness checks; all 464 platform tests and three
+statistics tests pass, as does the production build. Timing samples exclude actual
+storage, DOM/GPU rendering and host delivery, and do not establish support limits
+or an accepted timing budget. U3 remains open pending mounted/actual-host measures
+and its remaining per-frame/shared-state audit.
+
 ## 5. Release engineering
 
 - [ ] **L1 — Reproducible candidate:** clean install on the declared Node version, production

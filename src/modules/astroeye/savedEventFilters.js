@@ -15,10 +15,12 @@ export function normalizeSavedEventFilters({ query = '', dateFrom = '', dateTo =
 /** Sort actual UTC instants; equal starts always use a stable record-ID tie break. */
 export function sortSavedEvents(events, sort = 'newest') {
   normalizeSavedEventFilters({ sort });
-  return [...events].sort((a, b) => {
-    const time = Date.parse(a.utcStart) - Date.parse(b.utcStart);
-    return time ? (sort === 'oldest' ? time : -time) : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-  });
+  // Parse each instant once, not twice for every comparison in a large list.
+  // Return the original records in a new array; no persistent cache to go stale.
+  return events.map((event) => ({ event, instant: Date.parse(event.utcStart) })).sort((a, b) => {
+    const time = a.instant - b.instant;
+    return time ? (sort === 'oldest' ? time : -time) : a.event.id < b.event.id ? -1 : a.event.id > b.event.id ? 1 : 0;
+  }).map(({ event }) => event);
 }
 
 export const SAVED_EVENT_PAGE_SIZE = 25;
@@ -36,8 +38,9 @@ export function filterSavedEvents(events, input = {}) {
   return events.filter((event) => {
     const date = event.scheduledLocal.date;
     if ((dateFrom && date < dateFrom) || (dateTo && date > dateTo)) return false;
+    if (!needle) return true;
     const text = [event.title, event.sport, event.competition, event.participants?.home,
       event.participants?.away, event.venue.name].filter((value) => typeof value === 'string').join(' ').replace(/\s+/g, ' ').toLowerCase();
-    return !needle || text.includes(needle);
+    return text.includes(needle);
   });
 }
