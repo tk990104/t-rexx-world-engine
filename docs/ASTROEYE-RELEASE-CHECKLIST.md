@@ -45,6 +45,12 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 95: [keyboard focus visibility](architecture/astroeye-responsive-host.md#checkpoint-95--keyboard-focus-clears-sticky-overlays)
+fixes a reproduced narrow-header obstruction on reverse Tab. A lifecycle-safe
+focus handler clears sticky overlays without moving the globe or activating
+controls; narrow/wide host checks and 496 platform tests/build pass. U2 remains
+open for broader state, reduced-motion and screen-reader coverage.
+
 Checkpoint 94: [narrow-host layout evidence](architecture/astroeye-responsive-host.md)
 verifies temporary rail suppression/restoration, sticky Close header, shortcut
 target offsets and bounded compact sky at actual 566px and tested 390/1100px widths.

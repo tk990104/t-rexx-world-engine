@@ -1,5 +1,5 @@
 import './astroeyeWorkspace.css';
-import { stickyWorkspaceInset } from './workspaceLayout.js';
+import { stickyWorkspaceInset, installWorkspaceFocusVisibility } from './workspaceLayout.js';
 
 import { describeDraftTime } from './draftTimeSummary.js';
 import { ASTROEYE_DATE_RANGE_NOTICE, savedChartDateNotice } from './calculation/dateRange.js';
@@ -875,6 +875,7 @@ export function mountAstroEyeWorkspace({
     }
   });
 
+  const removeFocusVisibility = installWorkspaceFocusVisibility(root);
   return Object.freeze({
     root,
     selectSavedEvent,
@@ -953,6 +954,7 @@ export function mountAstroEyeWorkspace({
       previouslyFocused?.focus?.();
     },
     destroy() {
+      removeFocusVisibility();
       resetImportReview();
       comparison.destroy();
       notebookPanel?.destroy();

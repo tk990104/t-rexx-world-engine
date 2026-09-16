@@ -54,3 +54,34 @@ screen-reader, reduced-motion, zoom and draft/leave-warning coverage. These chec
 do not certify every chart/table/form state or an entire supported-device matrix.
 U3 active-motion observations and reviewed device/collection/timing budgets remain
 open. Nothing was published.
+
+## Checkpoint 95 — Keyboard focus clears sticky overlays
+
+September 15 local / September 16 UTC, 2026. At 390 × 480, Saved events followed
+by Shift+Tab focused Create view link at y=32.78–70.78, behind the header ending
+at y=123.19. The control was focused only; no link was created or shared.
+
+`installWorkspaceFocusVisibility` now responds to focusin with a microtask checking
+the latest focus before adjusting only workspace scrollTop. It reserves sticky
+toolbar/status-bar heights plus eight pixels of clearance. Visible controls and
+sticky controls such as Close do not scroll. Oversized sections do not jump past
+their beginning. Closed, detached, removed, superseded or externally moved focus
+does nothing. Destruction removes the listener and invalidates queued work. No
+frame loop, camera calls, control activation, storage or network actions are added.
+
+Actual embedded-host checks after the change:
+
+- Narrow reverse Tab places the button at y=130.78–168.78 below the y=123.19
+  header. Screenshot confirms its visible focus outline.
+- Forward Tab to Clear filters leaves it at y=217.78–261.78 above the y=436 footer.
+- At 1100 × 700, reverse Tab places Create view link at y=145.66 below navigation
+  ending at y=138. The natural host widened during initial inspection; explicit
+  viewport overrides isolated these cases and were reset afterward.
+
+All nine layout tests pass, including five new scroll/lifecycle tests. All 496
+platform tests pass (50.724 seconds). Permission-enabled production build passes
+with 256 modules in 24.21 seconds, with existing node:fs externalization and chunk
+warnings. No full-repository-suite or screen-reader certification is claimed.
+An existing QA event was selected; no save/delete/export/share action occurred.
+Five gates accepted, ten open; U2 reduced-motion/screen-reader and broader state
+coverage remain pending. Nothing published.
