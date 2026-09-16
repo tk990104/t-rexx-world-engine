@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 103: [draft-time form accessibility](architecture/astroeye-draft-time-accessibility.md)
+adds field-linked feedback and focus on rejected time submissions. Embedded checks
+verify gap/range rejection, native repeated-hour selection and corrected UTC text
+without saving a record. All 27 focused and 510 platform tests plus build pass;
+full/allocation suites not rerun. This advances U2, but does not certify spoken
+screen-reader output or close a release gate.
+
 Checkpoint 102: [opt-in host accessibility diagnostics](architecture/astroeye-host-compatibility.md#checkpoint-102--optional-accessibility-checks)
 provide a preference snapshot and sample polite messages without changing settings
 or opening app storage. Embedded keyboard checks expose messages and preserve focus;

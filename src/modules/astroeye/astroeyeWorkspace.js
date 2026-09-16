@@ -2,6 +2,7 @@ import './astroeyeWorkspace.css';
 import { stickyWorkspaceInset, installWorkspaceFocusVisibility } from './workspaceLayout.js';
 
 import { describeDraftTime } from './draftTimeSummary.js';
+import { renderDraftTimeFeedback } from './draftTimeFeedback.js';
 import { ASTROEYE_DATE_RANGE_NOTICE, savedChartDateNotice } from './calculation/dateRange.js';
 import { renderAstroEyeChartWheel } from './chartWheel.js';
 import { mountSportsSchedulePanel } from './sportsSchedulePanel.js';
@@ -126,9 +127,9 @@ export function mountAstroEyeWorkspace({
           <label>Away team<input name="away" required autocomplete="off" /></label>
           <label>Home team<input name="home" required autocomplete="off" /></label>
           <p class="astroeye-help" data-role="date-range">${ASTROEYE_DATE_RANGE_NOTICE}</p>
-          <label>Local date<input name="localDate" type="date" required /></label>
-          <label>Local start time<input name="localTime" type="time" step="1" required /></label>
-          <label class="astroeye-span-2">Venue time zone<input name="timeZone" required list="astroeye-time-zones" placeholder="America/New_York" autocomplete="off" /></label>
+          <label>Local date<input name="localDate" type="date" required aria-describedby="astroeye-draft-time-summary" /></label>
+          <label>Local start time<input name="localTime" type="time" step="1" required aria-describedby="astroeye-draft-time-summary" /></label>
+          <label class="astroeye-span-2">Venue time zone<input name="timeZone" required list="astroeye-time-zones" placeholder="America/New_York" autocomplete="off" aria-describedby="astroeye-draft-time-summary" /></label>
           <datalist id="astroeye-time-zones">
             <option value="America/New_York"></option><option value="America/Chicago"></option>
             <option value="America/Denver"></option><option value="America/Los_Angeles"></option>
@@ -136,8 +137,8 @@ export function mountAstroEyeWorkspace({
             <option value="Australia/Melbourne"></option><option value="Europe/Berlin"></option>
             <option value="Europe/Madrid"></option><option value="America/Phoenix"></option>
           </datalist>
-          <label class="astroeye-span-2 astroeye-utc-choice" data-role="utc-choice" hidden>Repeated-hour choice<select name="utcStart"></select></label>
-          <p class="astroeye-help astroeye-span-2" data-role="draft-time-summary" role="status" aria-live="polite"></p>
+          <label class="astroeye-span-2 astroeye-utc-choice" data-role="utc-choice" hidden>Repeated-hour choice<select name="utcStart" aria-describedby="astroeye-draft-time-summary"></select></label>
+          <p class="astroeye-help astroeye-span-2" id="astroeye-draft-time-summary" data-role="draft-time-summary" tabindex="-1" role="status" aria-live="polite" aria-atomic="true"></p>
           <label class="astroeye-span-2">Venue name<input name="venueName" required placeholder="Stadium or arena" autocomplete="off" /></label>
           <label>Latitude<input name="latitude" type="number" min="-90" max="90" step="any" required placeholder="40.7505" /></label>
           <label>Longitude<input name="longitude" type="number" min="-180" max="180" step="any" required placeholder="-73.9934" /></label>
@@ -388,9 +389,7 @@ export function mountAstroEyeWorkspace({
   function refreshDraftTimeSummary() {
     const summary = describeDraftTime(Object.fromEntries(['localDate', 'localTime', 'timeZone', 'utcStart'].map((name) => [name, field(form, name).value])));
     const node = root.querySelector('[data-role="draft-time-summary"]');
-    node.textContent = summary.text;
-    node.dataset.state = summary.state;
-    return summary;
+    return renderDraftTimeFeedback(form, node, summary);
   }
 
   function refreshTimeResolution() {
@@ -425,6 +424,10 @@ export function mountAstroEyeWorkspace({
         if (resolution.candidates.includes(previousChoice)) select.value = previousChoice;
         setStatus('This hour occurs twice. Choose the first or second occurrence.');
       }
+      if (summary.state === 'out-of-range') {
+        setStatus(summary.text, 'error');
+        return false;
+      }
       return true;
     } catch (error) {
       setStatus(error?.message || 'Check the date, time, and venue time zone.', 'error');
@@ -452,8 +455,8 @@ export function mountAstroEyeWorkspace({
     if (event.target.name !== 'scheduleReviewed') field(form, 'scheduleReviewed').checked = false;
     if (['localDate', 'localTime', 'timeZone', 'utcStart'].includes(event.target.name)) {
       const node = root.querySelector('[data-role="draft-time-summary"]');
-      node.textContent = 'Time fields edited. Finish editing to check the updated draft start.';
-      node.dataset.state = 'pending';
+      renderDraftTimeFeedback(form, node, { state: 'pending',
+        text: 'Time fields edited. Finish editing to check the updated draft start.' });
     }
   });
   refreshDraftTimeSummary();
@@ -614,7 +617,10 @@ export function mountAstroEyeWorkspace({
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;
-    if (!refreshTimeResolution()) return;
+    if (!refreshTimeResolution()) {
+      root.querySelector('[data-role="draft-time-summary"]').focus();
+      return;
+    }
     if (!form.reportValidity()) return;
     const draft = Object.fromEntries(new FormData(form).entries());
     if (scheduleSelection) {
