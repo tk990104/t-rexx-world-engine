@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 102: [opt-in host accessibility diagnostics](architecture/astroeye-host-compatibility.md#checkpoint-102--optional-accessibility-checks)
+provide a preference snapshot and sample polite messages without changing settings
+or opening app storage. Embedded keyboard checks expose messages and preserve focus;
+the current host reports no reduced-motion preference. All 16 focused tests and
+build pass. This is diagnostic evidence only, not screen-reader speech or actual
+camera-behavior acceptance; U2 and the five-accepted/ten-open tally are unchanged.
+
 Checkpoint 101: [Director status and focus visibility](architecture/director-accessibility.md#checkpoint-101--playback-announcements-and-focus-visibility)
 adds accessible lifecycle announcements and clearer playback controls. An actual
 embedded keyboard Start/Escape check verifies status exposure and restored Start

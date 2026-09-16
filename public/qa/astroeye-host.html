@@ -31,6 +31,31 @@
       <p>The report contains only these checks, not your browser identity, location, keys or records.
         Nothing is sent automatically.</p>
     </section>
+    <section aria-labelledby="accessibility-heading">
+      <h2 id="accessibility-heading">Optional accessibility checks</h2>
+      <p>These checks do not change Windows or browser settings, start a tour, or play
+        synthesized speech. They do not detect whether a screen reader is running.</p>
+      <h3>1. Read the motion preference</h3>
+      <button id="read-motion" type="button">Read current motion preference</button>
+      <p id="motion-status" role="status" aria-live="polite" aria-atomic="true">Not read. Activate the button to take a snapshot.</p>
+      <div id="accessibility-results" hidden>
+        <label for="accessibility-report">Optional accessibility report — copy manually if you wish to share</label>
+        <textarea id="accessibility-report" rows="8" readonly spellcheck="false"></textarea>
+      </div>
+      <h3>2. Try status announcements with your screen reader</h3>
+      <p>If you already use a screen reader, Tab to the sample buttons and press Enter
+        on each in turn. Pause between them to hear the update. Focus should stay on
+        the button. These sample messages use a polite status region, like Director;
+        they do not verify Director playback itself.</p>
+      <div class="sample-actions">
+        <button id="announce-running" type="button">Announce sample running</button>
+        <button id="announce-stopped" type="button">Announce sample stopped</button>
+      </div>
+      <p id="announcement-sample" role="status" aria-live="polite" aria-atomic="true"></p>
+      <p>A visible message is not proof that speech was heard. The report deliberately
+        leaves screen-reader speech and app camera behavior unverified. No result is
+        saved or sent automatically; reloading clears this page's results.</p>
+    </section>
     <noscript>JavaScript is unavailable or blocked. No checks were run.</noscript>
   </main>
 </body>

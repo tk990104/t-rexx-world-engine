@@ -138,3 +138,54 @@ from those reports, the isolated Chrome tests or detected APIs alone.
 Before live voice tests, separately agree microphone use, provider, transmitted
 context, session length and possible charges. A3/V1/V2 remain accepted; twelve
 release gates remain open. No credentials, user records or publication changed.
+
+## Checkpoint 102 — Optional accessibility checks
+
+September 16, 2026, from `c910bd0`. The separate `/qa/astroeye-host.html` page now
+offers two opt-in checks. Neither imports the app, reads records, changes settings,
+requests permission, synthesizes speech, starts a tour or installs preference
+listeners. Existing eight-feature output and its schema are unchanged.
+
+- **Read current motion preference** samples both reduce and no-preference media
+  queries. Missing, throwing, malformed, contradictory or unsupported responses
+  return unavailable rather than guessing. Read again after a preference change.
+  Its separate report uses `trexx-host-accessibility-v1` and
+  `preference-snapshot-only`; speech and camera behavior stay `not-verified`.
+- **Announce sample running/stopped** changes a fixed polite, atomic status region
+  with explicitly synthetic text. Focus stays on the activated button. Nothing
+  detects a screen reader or upgrades the report based on a click or visible text.
+  Pause between activations to allow speech; repeated identical text may not be
+  announced. These samples do not exercise actual Director playback.
+
+The page retains its restrictive CSP and manual-copy-only reports. Reload clears
+results. No OS preference was changed and no screenshot, identity or error string
+is included in the report. The diagnostic tab remains available separately from
+the user's untouched globe tab.
+
+### Current verification
+
+All 16 focused probe/cleanup tests pass (0.331 seconds), including silent mounting,
+explicit resampling, unavailable fallbacks, clean listener teardown, sample text,
+no speech certification and fixed live-region/CSP markup. Production build passes
+with 258 modules in 9.61 seconds and existing externalization/chunk warnings; SHA256
+comparison confirms all three QA assets are copied unchanged into dist. Main app
+and full repository/allocation tests were not rerun; production app code is unchanged.
+
+In the actual embedded browser, keyboard activation reports **no-preference**.
+Both sample messages appear in its accessibility tree, Tab/Enter reaches the next
+button and preserves focus, and the current-width page has no horizontal overflow.
+The feature-check list remains empty: these checks did not run WebGL or the eight
+prerequisite probes. A reload clears the report/message and hides the result block.
+This is not audible screen-reader verification or a reduced-motion camera pass.
+
+### Manual acceptance still needed
+
+If using a screen reader, activate the sample buttons and report whether each new
+message is heard once while focus remains on the button. Separately, in Director,
+check its real preparation/running/Stop messages and Escape focus return. If you
+choose to enable your system's reduced-motion preference, read the snapshot again
+and verify real LOAD/NEXT and tour camera cuts, retained timing and Stop behavior.
+No agent changes that setting as part of this check. Restore your preference when
+finished if you changed it only for testing. Record the host and observed outcome;
+do not infer a pass from the snapshot alone. Five release gates accepted, ten open;
+U2 remains open. Nothing published.

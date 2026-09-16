@@ -31,6 +31,47 @@ export function inspectHostFeatures(surface) {
   return { schema: 'trexx-host-features-v1', scope: 'prerequisites-only', checks };
 }
 
+/** Explicit snapshot only: no listeners, settings changes or inferred speech support. */
+export function inspectHostAccessibility(surface) {
+  let motionPreference = 'unavailable';
+  try {
+    const reduce = surface.matchMedia('(prefers-reduced-motion: reduce)');
+    const normal = surface.matchMedia('(prefers-reduced-motion: no-preference)');
+    if (reduce.matches === true && normal.matches === false) motionPreference = 'reduce';
+    if (reduce.matches === false && normal.matches === true) motionPreference = 'no-preference';
+  } catch { /* Report an unknown preference without exposing host errors. */ }
+  return { schema: 'trexx-host-accessibility-v1', scope: 'preference-snapshot-only',
+    motionPreference, screenReaderSpeech: 'not-verified', appCameraBehavior: 'not-verified' };
+}
+
+export function mountAccessibilityCheck(document, surface) {
+  const bindings = [];
+  const bind = (id, handler) => {
+    const button = document.getElementById(id);
+    button?.addEventListener('click', handler);
+    if (button) bindings.push(() => button.removeEventListener('click', handler));
+  };
+  bind('read-motion', () => {
+    const report = inspectHostAccessibility(surface);
+    const descriptions = {
+      reduce: 'This browser currently requests reduced motion.',
+      'no-preference': 'This browser currently reports no reduced-motion preference.',
+      unavailable: 'This browser could not report a definite motion preference.',
+    };
+    document.getElementById('motion-status').textContent = descriptions[report.motionPreference]
+      + ' This is a snapshot, not a camera test. Read again after any preference change.';
+    document.getElementById('accessibility-report').value = JSON.stringify(report, null, 2);
+    document.getElementById('accessibility-results').hidden = false;
+  });
+  bind('announce-running', () => {
+    document.getElementById('announcement-sample').textContent = 'Sample only: scene playback is running. No tour has started.';
+  });
+  bind('announce-stopped', () => {
+    document.getElementById('announcement-sample').textContent = 'Sample only: scene playback has stopped. No tour was running.';
+  });
+  return () => bindings.forEach((remove) => remove());
+}
+
 export function mountHostCheck(document, surface) {
   const button = document.getElementById('run');
   const run = () => {
@@ -51,4 +92,7 @@ export function mountHostCheck(document, surface) {
   button.addEventListener('click', run);
   return () => button.removeEventListener('click', run);
 }
-if (typeof window !== 'undefined' && document.getElementById('run')) mountHostCheck(document, window);
+if (typeof window !== 'undefined' && document.getElementById('run')) {
+  mountHostCheck(document, window);
+  mountAccessibilityCheck(document, window);
+}
