@@ -295,12 +295,92 @@ function makeDirector(options = {}) {
   const viewer = fakeViewer();
   const styleManager = fakeStyleManager(options.style);
   const dataManager = fakeDataManager(options.data);
-  const director = new SceneDirector(viewer, styleManager, dataManager);
+  const director = new SceneDirector(viewer, styleManager, dataManager, options.motion);
   // Telemetry is only accumulated during a run; observable-failure assertions
   // need the accumulator without driving a whole run.
   director._activeRun = { events: [] };
   return { director, viewer, styleManager, dataManager, restore };
 }
+
+test('manual shot loads sample motion preference without changing framing or saved tours', async () => {
+  let reduced = false, reads = 0, writes = 0;
+  const { director, viewer, restore } = makeDirector({ motion: { durationFor(seconds) {
+    reads++; return reduced ? 0 : seconds;
+  } } });
+  const before = structuredClone(director._project);
+  localStorage.setItem = () => { writes++; };
+  try {
+    await director.loadShot('scene-1', 'shot-a');
+    reduced = true;
+    await director.loadShot('scene-1', 'shot-a');
+    reduced = false;
+    await director.loadShot('scene-1', 'shot-a', { flyDuration: 1.5 });
+    assert.deepEqual(viewer.flights.map((flight) => flight.duration), [2.2, 0, 1.5]);
+    assert.deepEqual(viewer.flights[0].destination, viewer.flights[1].destination);
+    assert.deepEqual(viewer.flights[0].orientation, viewer.flights[1].orientation);
+    assert.equal(reads, 3);
+    assert.equal(writes, 0);
+    assert.deepEqual(director._project, before);
+  } finally { restore(); }
+});
+
+test('invalid, busy and camera-denied loads never query the motion preference', async () => {
+  let reads = 0;
+  const { director, viewer, styleManager, restore } = makeDirector({ motion: {
+    durationFor() { reads++; return 0; },
+  } });
+  try {
+    await director.loadShot('missing', 'missing');
+    director._running = true;
+    await director.loadShot('scene-1', 'shot-a');
+    director._running = false;
+    styleManager.runImmediateNavigation = () => false;
+    await director.loadShot('scene-1', 'shot-a');
+    assert.equal(reads, 0);
+    assert.equal(viewer.flights.length, 0);
+  } finally { restore(); }
+});
+
+test('authored playback keeps its shot durations and never consults the manual-load preference', async () => {
+  const { director, viewer, restore } = makeDirector({ motion: {
+    durationFor() { assert.fail('authored playback is not manual navigation'); },
+  } });
+  const before = structuredClone(director._project);
+  try {
+    await director.startScene('scene-1');
+    assert.deepEqual(viewer.flights.map((flight) => flight.duration), [0.2, 0.2]);
+    assert.deepEqual(director._project, before);
+  } finally { director.stopScene('cleanup'); restore(); }
+});
+
+test('instant camera completion does not leave a safety timer behind', async (t) => {
+  const { director, viewer, restore } = makeDirector();
+  let timers = 0;
+  t.mock.method(globalThis, 'setTimeout', () => { timers++; return 1; });
+  viewer.camera.flyTo = (options) => {
+    assert.equal(options.duration, 0);
+    options.complete(); options.cancel();
+  };
+  try {
+    await director._flyCamera(PROJECT_FIXTURE.scenes[0].shots[0].camera, 0, { cancelled: false });
+    assert.equal(timers, 0);
+  } finally { restore(); }
+});
+
+test('asynchronous camera completion clears the safety timer once', async (t) => {
+  const { director, viewer, restore } = makeDirector();
+  let flight, delay, cleared = 0;
+  t.mock.method(globalThis, 'setTimeout', (_callback, ms) => { delay = ms; return 123; });
+  t.mock.method(globalThis, 'clearTimeout', (id) => { assert.equal(id, 123); cleared++; });
+  viewer.camera.flyTo = (options) => { flight = options; };
+  try {
+    const move = director._flyCamera(PROJECT_FIXTURE.scenes[0].shots[0].camera, 1.5, { cancelled: false });
+    assert.equal(delay, 2100);
+    flight.cancel(); flight.complete();
+    await move;
+    assert.equal(cleared, 1);
+  } finally { restore(); }
+});
 
 // Exercise the real start/finish lifecycle, not just source adjacency. Stop must
 // be enabled before focus moves there; focus returns only to a connected origin.
@@ -768,7 +848,9 @@ test('the newest LOAD wins when two loads race', async () => {
 });
 
 test('a scene run supersedes a LOAD still suspended on its visual await', async () => {
-  const { director, styleManager, dataManager, restore } = makeDirector();
+  const { director, styleManager, dataManager, restore } = makeDirector({ motion: {
+    durationFor() { assert.fail('a superseded load must not query the motion preference'); },
+  } });
   let releaseLoadVisual;
   let calls = 0;
   styleManager.applyVisualState = (visual) => {

@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 99: [Director manual-load reduced motion and host keyboard check](architecture/director-accessibility.md)
+verifies Start/Stop/Escape focus in the refreshed embedded preview, with original
+view restored. Manual LOAD/NEXT use the same preference policy as AstroEye; saved
+tour timing is unchanged. All 80 focused and 3,311 ordinary tests plus build pass.
+Allocation probes were not rerun. Actual-host reduced-motion operation, authored
+playback policy and broader U2 review remain open; no additional gate acceptance.
+
 Checkpoint 98: [source-test portability and Director focus restoration](architecture/astroeye-test-portability.md)
 resolve all 25 failures from checkpoint 97, preserving the frozen base voice-schema
 hash. Director now re-enables controls before restoring focus to Start. All 412

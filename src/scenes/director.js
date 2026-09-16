@@ -16,6 +16,7 @@ import * as Cesium from 'cesium';
 import { SCENE_RECIPES } from './recipes.js';
 import { normalizeSceneModules } from './moduleState.js';
 import { sceneLayerPlan, sceneRequiresContextModeExit } from './scenePolicy.js';
+import { motionDuration } from '../core/motionPreference.js';
 import {
   BLOOM_INTENSITY_DEFAULT,
   BLOOM_SCALE_VERSION,
@@ -296,11 +297,13 @@ export class SceneDirector {
    * @param {Cesium.Viewer} viewer - The Cesium viewer instance
    * @param {Object} styleManager - Controls visual state (bloom, sharpen, HUD, detection, style presets)
    * @param {Object} dataManager - Manages data layer enable/disable and per-layer params
+   * @param {Object} [options] - Explicit navigation preference adapter (not authored playback timing)
    */
-  constructor(viewer, styleManager, dataManager) {
+  constructor(viewer, styleManager, dataManager, { durationFor = motionDuration } = {}) {
     this.viewer = viewer;
     this.styleManager = styleManager;
     this.dataManager = dataManager;
+    this._durationFor = durationFor;
     this._moduleAdapters = new Map();
 
     /** @type {boolean} True while a scene run is in progress */
@@ -775,7 +778,7 @@ export class SceneDirector {
    * @param {string} sceneId
    * @param {string} shotId
    * @param {Object} [options]
-   * @param {number} [options.flyDuration=2.2] - Camera flight duration in seconds
+   * @param {number} [options.flyDuration=2.2] - Seconds before applying the reduced-motion preference
    */
   async loadShot(sceneId, shotId, { flyDuration = 2.2 } = {}) {
     if (this._running) return;
@@ -808,7 +811,7 @@ export class SceneDirector {
       if (token.cancelled) return;
       await this._applyModuleStates(preparedModules, token);
       if (token.cancelled) return;
-      await this._flyCamera(shot.camera, flyDuration, token);
+      await this._flyCamera(shot.camera, this._durationFor(flyDuration), token);
       if (token.cancelled) return;
       this._updateStatus(`Loaded: ${scene.title} / ${shot.title}`);
       this._updateRuntime('');
@@ -1302,7 +1305,7 @@ export class SceneDirector {
     // a free-text search the shot has already flown away from.
     this.styleManager?.clearSearchedLocation?.();
 
-    const duration = Math.max(0.2, Number(durationSec) || DEFAULT_SHOT_DURATION_SEC);
+    const duration = durationSec === 0 ? 0 : Math.max(0.2, Number(durationSec) || DEFAULT_SHOT_DURATION_SEC);
     const destination = Cesium.Cartesian3.fromDegrees(
       cameraState.lon,
       cameraState.lat,
@@ -1312,9 +1315,11 @@ export class SceneDirector {
     await new Promise((resolve) => {
       // Guard against double-resolve from both callback and timeout
       let done = false;
+      let safetyTimer = null;
       const finish = () => {
         if (done) return;
         done = true;
+        if (safetyTimer !== null) clearTimeout(safetyTimer);
         resolve();
       };
 
@@ -1332,7 +1337,8 @@ export class SceneDirector {
       });
 
       // Safety timeout in case Cesium callbacks fail to fire
-      setTimeout(finish, (duration + 0.6) * 1000);
+      // Zero-duration Cesium flights may complete synchronously.
+      if (!done) safetyTimer = setTimeout(finish, (duration + 0.6) * 1000);
     });
   }
 

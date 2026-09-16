@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { astroEyeMotionDuration, astroEyeVenueOptions } from './motionPreference.js';
+import { motionDuration } from '../../core/motionPreference.js';
+
+test('AstroEye and Director share the same host preference policy', () => {
+  assert.equal(astroEyeMotionDuration, motionDuration);
+});
 
 test('reduced motion uses zero duration and rereads preference on each action', () => {
   let reduced = false, reads = 0;
