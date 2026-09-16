@@ -45,6 +45,12 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 100: [tour camera cuts with preserved timing](architecture/director-accessibility.md#checkpoint-100--reduced-motion-tour-camera-playback)
+extend reduced motion to START without rewriting saved tours. A cancellable dwell
+replaces the flight interval and retains the authored hold. All 79 focused and
+3,317 ordinary tests plus build pass; allocation probes were not rerun. Actual-host
+reduced-motion observation and broader U2 review remain pending. No new gate closes.
+
 Checkpoint 99: [Director manual-load reduced motion and host keyboard check](architecture/director-accessibility.md)
 verifies Start/Stop/Escape focus in the refreshed embedded preview, with original
 view restored. Manual LOAD/NEXT use the same preference policy as AstroEye; saved

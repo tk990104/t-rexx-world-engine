@@ -61,3 +61,42 @@ zero-duration coverage is controlled-test evidence only. Five release gates rema
 accepted and ten open. Next: an explicit authored-playback motion policy, broader
 keyboard/assistive-technology coverage and actual-host reduced-motion validation.
 Nothing published.
+
+## Checkpoint 100 — Reduced-motion tour camera playback
+
+September 16, 2026, from `e382591`. This supersedes checkpoint 99's temporary
+exclusion of authored START playback from the motion preference policy.
+
+After a shot's visual, layer and module restoration succeeds and cancellation is
+checked, START samples the same host preference as LOAD/NEXT. Reduced motion cuts
+the camera to the unchanged destination/orientation with zero flight duration.
+It then uses the existing cancellable sleep for the authored flight duration plus
+the authored hold. Normal motion keeps the original flight and hold. The saved
+project is never rewritten, and estimated progress duration is unchanged.
+
+The runtime caption identifies reduced motion and preserved timing. This policy
+also applies to programmatic/voice START through the same entry point, without
+new voice schema fields or service calls. It does not remove motion in shaders,
+weather or live layers. A preference change takes effect at the next shot boundary;
+there is no listener that interrupts a shot already in progress.
+
+Timing tests cover normal, reduced and mixed-preference two-shot runs: each retains
+a 6.5-second planned flight-plus-hold budget, identical saved project, and zero
+storage writes. These are planned-duration checks, not wall-clock benchmarks:
+data loading, rendering and the existing sleep polling can add overhead. Stop and
+Escape tests drive the real sleep with a controlled clock, stop during the first
+replacement dwell, and verify no second camera move or preference read occurs.
+Missing/busy/denied tours and superseded manual loads preserve their guards.
+
+All 79 focused tests pass (4.061 seconds). Production build passes with 258 modules
+in 21.44 seconds, retaining the existing node:fs externalization and chunk warnings.
+All 3,317 ordinary repository tests pass (157.007 seconds), with zero failures,
+cancellations or skips. Allocation probes were not rerun; their last passing
+checkpoint remains 98. This is not a fresh full `npm test` allocation claim.
+
+No new actual-host reduced-motion or live voice verification is claimed. The
+checkpoint 99 refreshed-host keyboard Escape observation remains the latest host
+evidence; new tour-cut/timing/cancellation evidence is controlled-test coverage.
+No saved records, browser/OS preferences or publication changed. Five release gates
+accepted, ten open. Next: actual-host reduced-motion observation and broader U2
+labels/status, keyboard and assistive-technology review.

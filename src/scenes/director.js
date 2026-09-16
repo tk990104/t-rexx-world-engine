@@ -297,7 +297,7 @@ export class SceneDirector {
    * @param {Cesium.Viewer} viewer - The Cesium viewer instance
    * @param {Object} styleManager - Controls visual state (bloom, sharpen, HUD, detection, style presets)
    * @param {Object} dataManager - Manages data layer enable/disable and per-layer params
-   * @param {Object} [options] - Explicit navigation preference adapter (not authored playback timing)
+   * @param {Object} [options] - Motion preference adapter; zero selects cuts without rewriting shot timing
    */
   constructor(viewer, styleManager, dataManager, { durationFor = motionDuration } = {}) {
     this.viewer = viewer;
@@ -1062,10 +1062,16 @@ export class SceneDirector {
         if (token.cancelled) break;
         await this._applyModuleStates(moduleSteps[idx], token);
         if (token.cancelled) break;
-        await this._flyCamera(shot.camera, shot.durationSec || DEFAULT_SHOT_DURATION_SEC, token);
+        // Sample only after restoration is still current. A cut replaces travel
+        // with a cancellable dwell, preserving authored shot + hold duration.
+        const authoredDuration = shot.durationSec || DEFAULT_SHOT_DURATION_SEC;
+        const reducedMotion = this._durationFor(authoredDuration) === 0;
+        if (reducedMotion) this._updateRuntime(`${scene.title} · ${shot.title} · Reduced motion: cut, timing preserved`);
+        await this._flyCamera(shot.camera, reducedMotion ? 0 : authoredDuration, token);
         if (token.cancelled) break;
-        // Hold on the final frame before transitioning to the next shot
-        await this._sleep((shot.holdSec || 0) * 1000, token);
+        // Normal mode keeps the existing hold; reduced mode also dwells for
+        // the authored travel time. STOP/Escape cancels either through the token.
+        await this._sleep(((reducedMotion ? authoredDuration : 0) + (shot.holdSec || 0)) * 1000, token);
         if (token.cancelled) break;
 
         this._logEvent('shot_end', {

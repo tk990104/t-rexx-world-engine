@@ -341,17 +341,110 @@ test('invalid, busy and camera-denied loads never query the motion preference', 
   } finally { restore(); }
 });
 
-test('authored playback keeps its shot durations and never consults the manual-load preference', async () => {
+test('normal authored playback keeps its shot durations and samples each transition', async () => {
+  const reads = [];
   const { director, viewer, restore } = makeDirector({ motion: {
-    durationFor() { assert.fail('authored playback is not manual navigation'); },
+    durationFor(seconds) { reads.push(seconds); return seconds; },
   } });
   const before = structuredClone(director._project);
   try {
     await director.startScene('scene-1');
     assert.deepEqual(viewer.flights.map((flight) => flight.duration), [0.2, 0.2]);
+    assert.deepEqual(reads, [0.2, 0.2]);
     assert.deepEqual(director._project, before);
   } finally { director.stopScene('cleanup'); restore(); }
 });
+
+for (const [label, preferences, flights, dwells] of [
+  ['normal', [false, false], [2, 3], [1000, 500]],
+  ['reduced', [true, true], [0, 0], [3000, 3500]],
+  ['preference changes between shots', [false, true], [2, 0], [1000, 3500]],
+]) {
+  test(`tour timing and saved project are preserved: ${label}`, async () => {
+    const project = structuredClone(PROJECT_FIXTURE);
+    Object.assign(project.scenes[0].shots[0], { durationSec: 2, holdSec: 1 });
+    Object.assign(project.scenes[0].shots[1], { durationSec: 3, holdSec: 0.5 });
+    const reads = [], waits = [], runtime = [];
+    let writes = 0;
+    const { director, viewer, restore } = makeDirector({ project, motion: {
+      durationFor(seconds) { const reduced = preferences[reads.length]; reads.push(seconds); return reduced ? 0 : seconds; },
+    } });
+    const before = structuredClone(director._project);
+    localStorage.setItem = () => { writes++; };
+    director._sleep = async (ms) => { waits.push(ms); };
+    director._updateRuntime = (text) => runtime.push(text);
+    try {
+      const result = await director.startScene('scene-1');
+      assert.equal(result.completed, true);
+      assert.deepEqual(reads, [2, 3]);
+      assert.deepEqual(viewer.flights.map((flight) => flight.duration), flights);
+      assert.deepEqual(waits, dwells);
+      assert.equal(flights.reduce((a, b) => a + b, 0) + waits.reduce((a, b) => a + b, 0) / 1000, 6.5);
+      assert.equal(director._lastRun.estimatedDurationSec, 6.5);
+      assert.equal(runtime.some((text) => text.includes('Reduced motion: cut, timing preserved')), preferences.includes(true));
+      assert.deepEqual(director._project, before);
+      assert.equal(writes, 0);
+    } finally { director.stopScene('cleanup'); restore(); }
+  });
+}
+
+test('invalid, busy and camera-denied tours do not sample the motion preference', async () => {
+  let reads = 0;
+  const { director, viewer, styleManager, restore } = makeDirector({ motion: {
+    durationFor() { reads++; return 0; },
+  } });
+  try {
+    assert.equal((await director.startScene('missing')).started, false);
+    director._running = true;
+    assert.equal((await director.startScene('scene-1')).started, false);
+    director._running = false;
+    styleManager.runImmediateNavigation = () => false;
+    assert.equal((await director.startScene('scene-1')).started, false);
+    assert.equal(reads, 0);
+    assert.equal(viewer.flights.length, 0);
+  } finally { restore(); }
+});
+
+for (const escape of [false, true]) {
+  test(`${escape ? 'Escape' : 'Stop'} interrupts the real reduced-motion dwell before another shot`, async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10_000 });
+    const project = structuredClone(PROJECT_FIXTURE);
+    Object.assign(project.scenes[0].shots[0], { durationSec: 2, holdSec: 1 });
+    let reads = 0;
+    const waits = [];
+    const { director, viewer, restore } = makeDirector({ project, motion: {
+      durationFor() { reads++; return 0; },
+    } });
+    const sleep = director._sleep.bind(director);
+    director._sleep = (ms, token) => { waits.push(ms); return sleep(ms, token); };
+    director._startProgressTicker = () => {};
+    let run;
+    try {
+      run = director.startScene('scene-1');
+      await settle(30);
+      assert.deepEqual(waits, [3000]);
+      assert.equal(director.running, true);
+      assert.equal(viewer.flights.length, 1);
+      t.mock.timers.tick(140);
+      await settle();
+      assert.equal(director.running, true, 'the replacement dwell must not complete immediately');
+      if (escape) director._onKeyDown({ key: 'Escape' });
+      else director.stopScene('Stopped');
+      t.mock.timers.tick(70);
+      const result = await run;
+      assert.equal(result.cancelled, true);
+      assert.equal(result.completed, false);
+      assert.equal(viewer.flights.length, 1);
+      assert.equal(reads, 1);
+      assert.equal(director.running, false);
+      assert.equal(director._progressTimer, null);
+    } finally {
+      director.stopScene('cleanup');
+      t.mock.timers.tick(70);
+      try { await run; } finally { restore(); }
+    }
+  });
+}
 
 test('instant camera completion does not leave a safety timer behind', async (t) => {
   const { director, viewer, restore } = makeDirector();
@@ -848,8 +941,9 @@ test('the newest LOAD wins when two loads race', async () => {
 });
 
 test('a scene run supersedes a LOAD still suspended on its visual await', async () => {
+  const motionReads = [];
   const { director, styleManager, dataManager, restore } = makeDirector({ motion: {
-    durationFor() { assert.fail('a superseded load must not query the motion preference'); },
+    durationFor(seconds) { motionReads.push(seconds); return seconds; },
   } });
   let releaseLoadVisual;
   let calls = 0;
@@ -864,6 +958,8 @@ test('a scene run supersedes a LOAD still suspended on its visual await', async 
     const run = director.startScene('scene-1', { single: true });
     releaseLoadVisual();
     await Promise.all([load, run]);
+
+    assert.deepEqual(motionReads, [0.2, 0.2], 'only live playback shots sample; superseded manual LOAD does not');
 
     // Only the run's own shots reconciled; the stale LOAD's flights never did.
     assert.deepEqual(
