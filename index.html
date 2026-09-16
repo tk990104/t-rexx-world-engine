@@ -696,10 +696,11 @@
       </div>
       <div id="scene-shot-list" class="scene-shot-list"></div>
       <div class="scene-controls">
-        <button id="scene-start-btn" class="scene-btn">START</button>
-        <button id="scene-stop-btn" class="scene-btn scene-btn-danger">STOP</button>
-        <button id="scene-next-btn" class="scene-btn">NEXT</button>
+        <button id="scene-start-btn" class="scene-btn" aria-label="Start scene playback" aria-describedby="scene-playback-help">START</button>
+        <button id="scene-stop-btn" class="scene-btn scene-btn-danger" aria-label="Stop scene playback" aria-keyshortcuts="Escape">STOP</button>
+        <button id="scene-next-btn" class="scene-btn" aria-label="Load next shot">NEXT</button>
       </div>
+      <p id="scene-playback-help">Escape stops playback. Reduced camera motion follows your system preference; cuts preserve tour timing.</p>
       <div class="scene-controls">
         <button id="scene-export-btn" class="scene-btn">EXPORT PRESETS</button>
         <button id="scene-import-btn" class="scene-btn">IMPORT</button>
@@ -867,7 +868,8 @@
   </aside>
 
   <div id="scene-runtime"></div>
-  <button id="scene-playback-stop" type="button" disabled>Stop preview · Esc</button>
+  <div id="scene-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
+  <button id="scene-playback-stop" type="button" aria-keyshortcuts="Escape" aria-describedby="scene-playback-help" disabled>Stop preview · Esc</button>
 
   <!-- Explicit mission choice on a fresh session. Live feeds are not auto-enabled
        until the visitor asks; shared links skip this surface entirely. It returns

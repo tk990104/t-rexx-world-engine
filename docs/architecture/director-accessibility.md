@@ -100,3 +100,38 @@ evidence; new tour-cut/timing/cancellation evidence is controlled-test coverage.
 No saved records, browser/OS preferences or publication changed. Five release gates
 accepted, ten open. Next: actual-host reduced-motion observation and broader U2
 labels/status, keyboard and assistive-technology review.
+
+## Checkpoint 101 — Playback announcements and focus visibility
+
+September 16, 2026, from `90fd15c`. Director now publishes meaningful status
+changes through a persistent polite, atomic status region outside the Scenes
+panel. It stays in the accessibility tree while recording hides that panel.
+Preparation is distinguished from running; running identifies reduced-motion
+cuts when selected. Stop, completion and errors remain available after cleanup.
+Identical text is deduplicated, literal titles use textContent, and progress ticks
+do not announce. The Start/Stop/Next controls have descriptive accessible names,
+Escape shortcut metadata and visible playback/motion guidance.
+
+The embedded browser reproduced Escape leaving focus on the document body even
+after Start had been explicitly focused. Scene buttons used transition: all,
+including inherited visibility during recording-mode cleanup. Limiting scene
+and shot button transitions to visual colors/opacity removes that interference
+and avoids animating focus outlines. After a fresh reload, keyboard Enter started
+the sample tour, its preparation status appeared in the accessibility tree, and
+Escape returned focus to enabled Start with Stopped (Esc) still exposed. This is
+one actual-host cancellation path, not exhaustive keyboard certification.
+
+The original URL/view and collapsed Scenes panel were restored by navigation plus
+reload, with recording and playback both false. No saved records were changed.
+The browser advertises viewport and visibility controls but no motion-preference
+emulation; no OS preference was changed. Actual-host reduced-motion operation and
+screen-reader speech remain unverified, and U2 remains open. Five release gates
+accepted, ten open. Nothing published.
+
+Checkpoint 101 verification: all 80 focused tests pass (5.348 seconds), covering
+status deduplication, literal text, quiet progress updates, mode/lifecycle/error
+messages, Stop/Escape and non-animated visibility/outline rules. All 3,322 ordinary
+repository tests pass (186.872 seconds), with zero failures, cancellations or
+skips. Production build passes (258 modules, 55.57 seconds) with existing node:fs
+externalization and chunk-size warnings. Allocation probes were not rerun; all
+14 last passed at checkpoint 98. This is not a fresh full npm test allocation claim.

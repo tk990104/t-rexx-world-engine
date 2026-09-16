@@ -45,6 +45,17 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 101: [Director status and focus visibility](architecture/director-accessibility.md#checkpoint-101--playback-announcements-and-focus-visibility)
+adds accessible lifecycle announcements and clearer playback controls. An actual
+embedded keyboard Start/Escape check verifies status exposure and restored Start
+focus after limiting button transitions. Original view restored. All 80 focused
+tests and build pass; screen-reader speech and host reduced-motion observation
+remain unverified. This is partial U2 evidence, not a newly accepted gate.
+
+Checkpoint 101 ordinary repository regression: 3,322 pass, zero failures,
+cancellations or skips (186.872 seconds). Allocation probes not rerun; last
+all-14 pass is checkpoint 98. No new allocation-budget acceptance is claimed.
+
 Checkpoint 100: [tour camera cuts with preserved timing](architecture/director-accessibility.md#checkpoint-100--reduced-motion-tour-camera-playback)
 extend reduced motion to START without rewriting saved tours. A cancellable dwell
 replaces the flight interval and retains the authored hold. All 79 focused and

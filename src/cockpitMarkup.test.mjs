@@ -277,6 +277,20 @@ test('Cockpit owns a focused shared Display portal and compact Radio controls', 
   assert.match(ui, /setAttribute\('aria-hidden', String\(hiddenSibling\)\)/);
 });
 
+test('Director status remains accessible outside hidden panels and playback controls name their action', () => {
+  assert.match(html, /id="scene-announcement" role="status" aria-live="polite" aria-atomic="true"/);
+  assert.ok(html.indexOf('id="scene-announcement"') > html.indexOf('id="scene-runtime"'));
+  const rule = css.match(/#scene-announcement \{([^}]+)\}/)?.[1];
+  assert.ok(rule);
+  assert.match(rule, /clip-path: inset\(50%\)/);
+  assert.doesNotMatch(rule, /display:\s*none|visibility:\s*hidden/);
+  assert.match(html, /id="scene-start-btn"[^>]*aria-label="Start scene playback"[^>]*aria-describedby="scene-playback-help"/);
+  assert.match(html, /id="scene-stop-btn"[^>]*aria-label="Stop scene playback"[^>]*aria-keyshortcuts="Escape"/);
+  assert.match(html, /id="scene-next-btn"[^>]*aria-label="Load next shot"/);
+  assert.match(html, /id="scene-playback-stop"[^>]*aria-keyshortcuts="Escape"[^>]*aria-describedby="scene-playback-help"/);
+  assert.match(html, /id="scene-playback-help">Escape stops playback\./);
+});
+
 test('Display orders 3D above Celestial, Clean UI below it, and Parameters below Detection', () => {
   const display = html.match(/id="pp-toggles"[\s\S]*?id="clean-view-exit"/);
   assert.ok(display, 'Display markup is missing');
@@ -841,6 +855,14 @@ test('voice Cockpit entry refuses when the entry gate is shut', () => {
   assert.match(branch, /if \(!this\.cockpitView\.isEntryAllowed\?\.\(\)\) \{/);
   assert.match(branch, /Contacts must be active to enter Cockpit/);
   assert.match(branch, /Contacts is still starting up/);
+});
+
+test('Director controls never animate visibility or keyboard focus outlines', () => {
+  for (const selector of ['.scene-btn', '.scene-shot-btn']) {
+    const rule = css.slice(css.indexOf(`${selector} {`)).split('}')[0];
+    assert.match(rule, /transition: background-color/);
+    assert.doesNotMatch(rule, /transition:[^;]*(?:\ball\b|visibility|outline)/);
+  }
 });
 
 test('cockpit state cannot report entryAllowed while already active', () => {

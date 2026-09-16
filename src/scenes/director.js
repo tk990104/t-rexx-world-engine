@@ -347,6 +347,7 @@ export class SceneDirector {
     this._sceneImportFile = document.getElementById('scene-import-file');
     this._sceneDownloadBtn = document.getElementById('scene-download-btn');
     this._sceneStatus = document.getElementById('scene-status');
+    this._sceneAnnouncement = document.getElementById('scene-announcement');
     this._sceneProgressFill = document.getElementById('scene-progress-fill');
     this._sceneRuntime = document.getElementById('scene-runtime');
 
@@ -1035,7 +1036,7 @@ export class SceneDirector {
         this._renderSceneSelect();
         this._renderShotList();
 
-        this._updateStatus(`Running ${idx + 1}/${queue.length}: ${scene.title} / ${shot.title}`);
+        this._updateStatus(`Preparing ${idx + 1}/${queue.length}: ${scene.title} / ${shot.title}`);
         this._updateRuntime(`${scene.title} · ${shot.title}`);
 
         this._logEvent('shot_start', {
@@ -1066,6 +1067,7 @@ export class SceneDirector {
         // with a cancellable dwell, preserving authored shot + hold duration.
         const authoredDuration = shot.durationSec || DEFAULT_SHOT_DURATION_SEC;
         const reducedMotion = this._durationFor(authoredDuration) === 0;
+        this._updateStatus(`Running ${idx + 1}/${queue.length}: ${scene.title} / ${shot.title}${reducedMotion ? ' · Reduced motion: cut, timing preserved' : ''}`);
         if (reducedMotion) this._updateRuntime(`${scene.title} · ${shot.title} · Reduced motion: cut, timing preserved`);
         await this._flyCamera(shot.camera, reducedMotion ? 0 : authoredDuration, token);
         if (token.cancelled) break;
@@ -1455,6 +1457,11 @@ export class SceneDirector {
    */
   _updateStatus(text) {
     if (this._sceneStatus) this._sceneStatus.textContent = text;
+    // A separate, persistent region survives panel hiding during playback.
+    // Only meaningful state changes announce; progress ticks never enter here.
+    if (this._sceneAnnouncement && this._sceneAnnouncement.textContent !== text) {
+      this._sceneAnnouncement.textContent = text;
+    }
   }
 
   /**

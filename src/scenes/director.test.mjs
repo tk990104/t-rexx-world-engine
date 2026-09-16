@@ -418,6 +418,7 @@ for (const escape of [false, true]) {
     const sleep = director._sleep.bind(director);
     director._sleep = (ms, token) => { waits.push(ms); return sleep(ms, token); };
     director._startProgressTicker = () => {};
+    director._sceneAnnouncement = { textContent: '' };
     let run;
     try {
       run = director.startScene('scene-1');
@@ -438,6 +439,7 @@ for (const escape of [false, true]) {
       assert.equal(reads, 1);
       assert.equal(director.running, false);
       assert.equal(director._progressTimer, null);
+      assert.equal(director._sceneAnnouncement.textContent, escape ? 'Stopped (Esc)' : 'Stopped');
     } finally {
       director.stopScene('cleanup');
       t.mock.timers.tick(70);
@@ -445,6 +447,58 @@ for (const escape of [false, true]) {
     }
   });
 }
+
+test('status announcements deduplicate text, preserve literal content and ignore progress ticks', () => {
+  const { director, restore } = makeDirector();
+  const messages = [];
+  let text = '';
+  director._sceneAnnouncement = {
+    get textContent() { return text; },
+    set textContent(value) { text = value; messages.push(value); },
+    set innerHTML(_value) { assert.fail('status must not interpret markup'); },
+  };
+  director._sceneStatus = { textContent: '' };
+  director._sceneProgressFill = { style: {}, textContent: '' };
+  try {
+    director._updateStatus('Stopped'); director._updateStatus('Stopped');
+    for (let i = 0; i <= 100; i++) director._setProgress(i / 100);
+    assert.deepEqual(messages, ['Stopped']);
+    director._updateStatus('<img src=x onerror=alert(1)>');
+    assert.equal(text, '<img src=x onerror=alert(1)>');
+    assert.equal(director._sceneStatus.textContent, text);
+  } finally { restore(); }
+});
+
+test('reduced-motion playback announces preparation, running mode and completion', async () => {
+  const { director, restore } = makeDirector({ motion: { durationFor: () => 0 } });
+  const messages = [];
+  let text = '';
+  director._sceneAnnouncement = {
+    get textContent() { return text; },
+    set textContent(value) { text = value; messages.push(value); },
+  };
+  director._sleep = async () => {};
+  try {
+    assert.equal((await director.startScene('scene-1')).completed, true);
+    assert.equal(messages.length, 5);
+    assert.match(messages[0], /^Preparing 1\/2:/);
+    assert.match(messages[1], /^Running 1\/2:.*Reduced motion: cut, timing preserved$/);
+    assert.match(messages[2], /^Preparing 2\/2:/);
+    assert.match(messages[3], /^Running 2\/2:.*Reduced motion: cut, timing preserved$/);
+    assert.equal(messages[4], 'Scene run complete');
+  } finally { director.stopScene('cleanup'); restore(); }
+});
+
+test('playback errors remain announced after cleanup hides the runtime caption', async () => {
+  const { director, styleManager, restore } = makeDirector();
+  director._sceneAnnouncement = { textContent: '' };
+  styleManager.applyVisualState = async () => { throw new Error('Controlled failure'); };
+  try {
+    assert.equal((await director.startScene('scene-1')).completed, false);
+    assert.equal(director._sceneAnnouncement.textContent, 'Error: Controlled failure');
+    assert.equal(director.running, false);
+  } finally { director.stopScene('cleanup'); restore(); }
+});
 
 test('instant camera completion does not leave a safety timer behind', async (t) => {
   const { director, viewer, restore } = makeDirector();

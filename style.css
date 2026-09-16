@@ -6587,7 +6587,8 @@ body.cockpit-mode #intel-hud .hud-right-edge { right: 22px; }
   letter-spacing: 1.2px;
   padding: 6px 9px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  /* Visibility must settle immediately when playback reveals the focus origin. */
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
   white-space: nowrap;
   flex: 1;
   min-width: 72px;
@@ -6681,7 +6682,7 @@ body.cockpit-mode #intel-hud .hud-right-edge { right: 22px; }
   letter-spacing: 0.8px;
   padding: 4px 6px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .scene-shot-btn:hover {
@@ -6744,6 +6745,29 @@ body.cockpit-mode #intel-hud .hud-right-edge { right: 22px; }
   letter-spacing: 1px;
   color: var(--text-secondary);
 }
+
+/* Remains accessible while recording hides the editable Scenes panel. */
+#scene-announcement {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#scene-playback-help {
+  margin: 6px 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+#scene-panel.collapsed #scene-playback-help { display: none; }
 
 #scene-runtime {
   position: fixed;
