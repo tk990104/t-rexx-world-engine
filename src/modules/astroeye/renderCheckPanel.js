@@ -1,4 +1,5 @@
 import { createRenderCheck } from './renderCheck.js';
+import { summarizeRenderCheck } from './renderCheckSummary.js';
 
 export function mountRenderCheckPanel({ host, postRender, readCounters }) {
   const document = host.ownerDocument;
@@ -30,8 +31,7 @@ export function mountRenderCheckPanel({ host, postRender, readCounters }) {
       const result = await check.start();
       if (disposed) return;
       report.value = JSON.stringify(result, null, 2); report.hidden = false;
-      status.textContent = result.status === 'completed' ? 'Observation complete. No settings or records were changed.'
-        : `Observation incomplete: ${result.reason}. You can retry when ready.`;
+      status.textContent = summarizeRenderCheck(result);
     } catch (error) { if (!disposed) status.textContent = error.message; }
     finally { if (!disposed) { start.disabled = false; cancel.hidden = true; } }
   };

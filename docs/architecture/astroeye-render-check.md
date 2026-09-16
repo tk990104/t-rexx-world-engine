@@ -61,3 +61,43 @@ No new actual-browser run, UI-layout observation, full-repository test suite or
 host timing result is claimed. The panel is ready for the user-run handoff above.
 Five release gates remain accepted, ten open; U3 and actual-host acceptance remain
 pending. No saved user records were accessed or changed; nothing was published.
+
+## Checkpoint 92 — Embedded host observation and readable results
+
+September 15 local / September 16 UTC, 2026. The earlier browser-connection block
+is no longer present. After the preceding preview-server restart, the existing
+embedded tab was accessed through its normal browser interface, without any policy
+bypass. AstroEye's disclosure, Start button and completed report were verified.
+
+Two actual-host observations (before and after the summary-only change) completed:
+
+| Sample | Elapsed ms | Scene renders | Mode at both endpoints | Continuous holds | Event sky | Ephemeris delta |
+| --- | ---: | ---: | --- | ---: | --- | ---: |
+| Initial | 10006 | 0 | idle | 0 | off | 0 |
+| Readable-result verification | 10007 | 0 | idle | 0 | off | 0 |
+
+These samples are consistent with idle rendering, not proof of GPU efficiency,
+maximum FPS, active-scene responsiveness, chart latency or supported-device budgets.
+No event was selected for these checks. Existing camera/layer settings were left
+alone. Normal feeds continued, and opening AstroEye displayed the existing saved
+list; no records were created, edited, deleted or exported. No private event details,
+coordinates or browser identifiers are copied into this evidence table.
+
+`renderCheckSummary.js` now formats the local report into plain-English status text.
+It describes observed counts, unavailable/reset counters, endpoint differences and
+reason-specific retry advice. Identical endpoints are explicitly not evidence of
+constant configuration throughout. It never adds an FPS estimate or release pass,
+and unknown reasons/extra fields are not echoed. The panel uses `textContent` and
+retains its readonly JSON report without automatic clipboard or network actions.
+
+All 15 focused tests pass (6.630 seconds), including seven new summary tests.
+All 487 platform tests pass (24.799 seconds). Production build passes with 255
+modules in 8.05 seconds after the sandbox config-read failure and a normal approved
+permission-enabled retry; existing node:fs externalization and chunk-size warnings
+remain. The hot-reloaded embedded UI completed the second observation and displayed
+matching human-readable and JSON values. No full-repository-suite, responsive-layout
+or assistive-technology certification is claimed.
+
+Five release gates remain accepted, ten open. Next: event-sky/active-scene host
+observations and explicit U3 device, collection-size and timing-budget decisions.
+No publication or release acceptance is implied.

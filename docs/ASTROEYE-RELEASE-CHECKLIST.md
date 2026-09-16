@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 92: [actual embedded-host idle observations](architecture/astroeye-render-check.md#checkpoint-92--embedded-host-observation-and-readable-results)
+complete twice at 10,006/10,007 ms with zero scene renders, no continuous holds,
+event sky off and zero ephemeris delta. The new readable summary is verified in the
+embedded UI; 487 platform tests and the production build pass. This closes the
+pending idle-observer UI check only, not U3: active/event-sky cases, device/collection
+support and timing budgets remain open. No release gate is newly accepted.
+
 Checkpoint 78: [research acceptance review](architecture/astroeye-research-acceptance.md)
 accepts R1/R3 for runtime `8bb14d9`, backed by 57 current focused tests, native
 IndexedDB competing-connection/backup checks and editor recovery QA. Both browsers
