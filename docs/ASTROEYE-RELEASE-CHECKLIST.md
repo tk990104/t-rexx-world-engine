@@ -381,6 +381,14 @@ the production build pass. This is source/unit evidence, not an actual-host idle
 or GPU trace. U3 remains open for host measurements and supported-device,
 collection-size and timing-budget acceptance; five gates accepted, ten open.
 
+Checkpoint 91 adds an opt-in [passive ten-second host observer](architecture/astroeye-render-check.md).
+The panel counts existing post-render callbacks and minimal governor/sky counters
+without forcing frames or accessing records. Unit coverage verifies cancellation,
+timing-window and privacy boundaries; all 480 platform tests and build pass.
+Actual browser connection failed before tab access with a request-header-policy
+load error. No actual-host UI/timing result is claimed; the user-run report remains
+pending. U3 is still open and this observer is not a GPU/FPS acceptance benchmark.
+
 ## 5. Release engineering
 
 - [ ] **L1 — Reproducible candidate:** clean install on the declared Node version, production

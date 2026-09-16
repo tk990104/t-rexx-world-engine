@@ -479,6 +479,11 @@ export class CelestialRing {
     return this._directionSnapshot ? structuredClone(this._directionSnapshot) : null;
   }
 
+  /** Minimal diagnostic counters; no event times, vectors or camera coordinates. */
+  getPerformanceCounters() {
+    return { eventSkyEnabled: this._directionSnapshot?.owner === 'astroeye', ephemerisUpdates: this._ephemerisUpdateCount };
+  }
+
   /** Whether the current camera already frames the complete globe inside the keyhole. */
   isGlobeFullyVisible() {
     const canvas = this.viewer.scene.canvas;

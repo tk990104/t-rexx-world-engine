@@ -62,6 +62,7 @@ import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.
 import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js';
 import { readSharedViewHash } from './modules/astroeye/shareView.js';
 import { createEventSky } from './modules/astroeye/eventSky.js';
+import { mountRenderCheckPanel } from './modules/astroeye/renderCheckPanel.js';
 import { createAstroEyeTour, normalizeAstroEyeSceneView } from './modules/astroeye/directorRecipe.js';
 import { mountVenueContextPanel } from './modules/astroeye/venueContextPanel.js';
 import { installAstroEyeVenueInteraction } from './modules/astroeye/venueInteraction.js';
@@ -656,6 +657,16 @@ async function init() {
     // nothing animates per frame. Installed AFTER every module above has had
     // its chance to register pre-install holds. (perf wave 2)
     installRenderGovernor(viewer);
+
+    if (astroEyeWorkspace) {
+      const renderCheck = mountRenderCheckPanel({ host: astroEyeWorkspace.root, postRender: viewer.scene.postRender,
+        readCounters: () => {
+          const governor = getRenderGovernorDiagnostics();
+          return { governorMode: governor.mode, continuousHolds: governor.holds.length,
+            ...styleManager.celestialRing.getPerformanceCounters() };
+        } });
+      window.addEventListener('pagehide', () => renderCheck.destroy(), { once: true });
+    }
 
     // The explicit scope mask replaces the emergent six-pass artifact —
     // see src/scopeMask.js. Installed before the UI so the DISPLAY-rail

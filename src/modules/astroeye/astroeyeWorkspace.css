@@ -20,10 +20,13 @@
 .astroeye-workspace[hidden] { display: none; }
 .astroeye-quick-start { margin: 12px 16px; padding: 12px 14px; border: 1px solid rgba(120,231,255,.3); border-radius: 8px; color: #e4ddec; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .astroeye-quick-start summary { cursor: pointer; color: var(--astro-cyan); min-height: 24px; }
+.astroeye-render-check button { min-height: 44px; margin: 4px; padding: 8px; border: 1px solid var(--astro-cyan); border-radius: 6px; background: #1b2337; color: #fff; font: inherit; cursor: pointer; }
+.astroeye-render-check textarea { display: block; width: 100%; box-sizing: border-box; resize: vertical; background: #140b20; color: #e7c9ff; }
 .astroeye-quick-start summary:focus-visible { outline: 2px solid var(--astro-cyan); outline-offset: 3px; }
 .astroeye-quick-start ol { padding-left: 22px; }
 .astroeye-quick-start li + li { margin-top: 10px; }
 .astroeye-workspace[data-sky-compact="true"] .astroeye-quick-start { display: none; }
+.astroeye-workspace[data-sky-compact="true"] .astroeye-render-check { display: block; }
 .astroeye-quick-nav { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px; background: #100d20; border-bottom: 1px solid rgba(120,231,255,.3); }
 .astroeye-quick-nav button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--astro-cyan); border-radius: 7px; background: #1b2337; color: #fff; font: inherit; font-size: 12px; cursor: pointer; }
 .astroeye-quick-nav :focus-visible, .astroeye-comparison:focus-visible, .astroeye-empty:focus-visible, [data-role="saved-events-heading"]:focus-visible { outline: 2px solid var(--astro-cyan); outline-offset: 2px; }
