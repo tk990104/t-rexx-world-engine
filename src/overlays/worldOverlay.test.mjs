@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readSourceSync } from '../testSupport/sourceText.mjs';
 import * as Cesium from 'cesium';
 import {
   getKeyholeGeometry,
@@ -462,12 +462,12 @@ test('lifecycle is idempotent and teardown removes listeners, observers, and DOM
   assert.deepEqual(root.children, [canvas],
     'the overlay root carries only the shared card canvas');
   assert.doesNotMatch(
-    readFileSync(new URL('../../index.html', import.meta.url), 'utf8'),
+    readSourceSync(new URL('../../index.html', import.meta.url)),
     /world-overlay-detection-surface/,
     'the surface is runtime host-owned, not static markup',
   );
   assert.match(
-    readFileSync(new URL('../../style.css', import.meta.url), 'utf8'),
+    readSourceSync(new URL('../../style.css', import.meta.url)),
     /#world-overlay-detection-surface,\n#world-overlay-canvas \{\n  position: absolute;\n  inset: 0;[\s\S]*?pointer-events: none;/,
     'both host surfaces share absolute positioning and pointer passthrough',
   );
@@ -484,7 +484,7 @@ test('lifecycle is idempotent and teardown removes listeners, observers, and DOM
 });
 
 /** The shipped stylesheet, read once — fixtures must stack as production does. */
-const SHIPPED_CSS = readFileSync(new URL('../../style.css', import.meta.url), 'utf8');
+const SHIPPED_CSS = readSourceSync(new URL('../../style.css', import.meta.url));
 
 /**
  * Position + z-index the SHIPPED stylesheet gives a selector. Fixtures are built
@@ -551,7 +551,7 @@ test('no ancestor isolates the detection surface, so `screen` reaches the scene'
   // builds and evaluates each node against the shipped stylesheet.
   const env = installMockEnvironment();
   initWorldOverlay(env.viewer);
-  const css = readFileSync(new URL('../../style.css', import.meta.url), 'utf8');
+  const css = readSourceSync(new URL('../../style.css', import.meta.url));
   const surface = env.document.getElementById('world-overlay-detection-surface');
   assert.ok(surface, 'the host owns a detection surface');
 

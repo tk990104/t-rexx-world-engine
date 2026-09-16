@@ -26,7 +26,7 @@
 //     quietly take a separate landed behaviour with it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { readSourceSync } from './testSupport/sourceText.mjs';
 
 import { KEYHOLE_OUTER_RADIUS, KEYHOLE_OUTSIDE_OPACITY_DEFAULT, KEYHOLE_LABEL_FEATHER_RATIO } from './celestialRing.js';
 import { AIRCRAFT_BRACKET_FLOOR_ANCHOR } from './data/detectionPolicy.js';
@@ -38,9 +38,9 @@ import {
 } from './scopeMask.js';
 import { ShareLinkManager } from './sharelink.js';
 
-const uiSource = fs.readFileSync(new URL('./ui.js', import.meta.url), 'utf8');
-const indexHtml = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const shareSource = fs.readFileSync(new URL('./sharelink.js', import.meta.url), 'utf8');
+const uiSource = readSourceSync(new URL('./ui.js', import.meta.url));
+const indexHtml = readSourceSync(new URL('../index.html', import.meta.url));
+const shareSource = readSourceSync(new URL('./sharelink.js', import.meta.url));
 
 /** Slice ui.js between two literal anchors, so a pin reads one method, not the file. */
 function uiBlock(start, end) {

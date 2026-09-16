@@ -1,18 +1,18 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { readSourceSync } from './testSupport/sourceText.mjs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const ui = fs.readFileSync(path.join(ROOT, 'src', 'ui.js'), 'utf8');
-const css = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
-const sceneDirector = fs.readFileSync(path.join(ROOT, 'src', 'scenes', 'director.js'), 'utf8');
-const manager = fs.readFileSync(path.join(ROOT, 'src', 'data', 'manager.js'), 'utf8');
-const contextLayer = fs.readFileSync(path.join(ROOT, 'src', 'data', 'militaryAwareness.js'), 'utf8');
-const voiceActions = fs.readFileSync(path.join(ROOT, 'src', 'voice', 'gevActions.js'), 'utf8');
+const html = readSourceSync(path.join(ROOT, 'index.html'));
+const ui = readSourceSync(path.join(ROOT, 'src', 'ui.js'));
+const css = readSourceSync(path.join(ROOT, 'style.css'));
+const sceneDirector = readSourceSync(path.join(ROOT, 'src', 'scenes', 'director.js'));
+const manager = readSourceSync(path.join(ROOT, 'src', 'data', 'manager.js'));
+const contextLayer = readSourceSync(path.join(ROOT, 'src', 'data', 'militaryAwareness.js'));
+const voiceActions = readSourceSync(path.join(ROOT, 'src', 'voice', 'gevActions.js'));
 
 test('Cockpit has one reset action beside its bottom exit path', () => {
   assert.doesNotMatch(html, /id="cockpit-quick-entry"/);
@@ -227,7 +227,7 @@ test('Cockpit owns a focused shared Display portal and compact Radio controls', 
     css,
     /body\.scene-playback-mode :is\(#clear-selected-layers, #reset-globe-view\)\s*\{\s*display:\s*none !important;/,
   );
-  assert.match(sceneDirector, /this\._running = true;\s*document\.body\.classList\.add\('scene-playback-mode'\);/);
+  assert.match(sceneDirector, /this\._running = true;\s*this\._playbackFocus = document\.activeElement;\s*document\.body\.classList\.add\('scene-playback-mode'\);/);
   assert.match(sceneDirector, /styleManager\.setRecordingMode\(false\);\s*document\.body\.classList\.remove\('scene-playback-mode'\);/);
   assert.equal((html.match(/id="hud-toggle"/g) || []).length, 1, 'HUD control must have one stateful DOM owner');
   assert.equal((html.match(/id="detection-toggle"/g) || []).length, 1, 'Detection control must have one stateful DOM owner');

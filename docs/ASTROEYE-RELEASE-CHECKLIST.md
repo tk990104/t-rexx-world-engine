@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 98: [source-test portability and Director focus restoration](architecture/astroeye-test-portability.md)
+resolve all 25 failures from checkpoint 97, preserving the frozen base voice-schema
+hash. Director now re-enables controls before restoring focus to Start. All 412
+focused tests, all 3,319 full-suite tests (including 14 allocation tests), and the
+production build pass. Actual-host Director keyboard and reduced-motion review
+remain pending; this does not close U2 or change the five-accepted/ten-open tally.
+
 Checkpoint 97: [event-sky reduced motion](architecture/astroeye-responsive-host.md#checkpoint-97--reduced-motion-event-sky-zoom)
 preserves globe framing, visual validation and camera-neutral restore paths. All
 40 focused and 503 platform tests plus production build pass. Actual host enters

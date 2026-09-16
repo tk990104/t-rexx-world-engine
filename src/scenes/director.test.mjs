@@ -302,6 +302,53 @@ function makeDirector(options = {}) {
   return { director, viewer, styleManager, dataManager, restore };
 }
 
+// Exercise the real start/finish lifecycle, not just source adjacency. Stop must
+// be enabled before focus moves there; focus returns only to a connected origin.
+for (const [label, cancel, connected] of [
+  ['completion', false, true],
+  ['cancellation', true, true],
+  ['cancellation after origin removal', true, false],
+]) {
+  test(`Director playback focus survives ${label}`, async () => {
+    const { director, restore } = makeDirector();
+    const classes = new Set();
+    const focus = [];
+    let run;
+    const origin = { isConnected: connected, disabled: false, focus() {
+      assert.equal(this.disabled, false, 'the original Start control must be enabled before focus returns');
+      assert.equal(director.running, false);
+      assert.equal(classes.has('scene-playback-mode'), false);
+      assert.equal(director._playbackStopBtn.disabled, true);
+      focus.push('origin');
+    } };
+    document.activeElement = origin;
+    director._sceneStartBtn = origin;
+    document.body.classList = { add: (name) => classes.add(name), remove: (name) => classes.delete(name) };
+    director._playbackStopBtn = { disabled: true, focus() {
+      assert.equal(this.disabled, false);
+      assert.equal(director.running, true);
+      assert.equal(classes.has('scene-playback-mode'), true);
+      assert.equal(director._playbackFocus, origin);
+      document.activeElement = this;
+      focus.push('stop');
+    } };
+    try {
+      run = director.startScene('scene-1');
+      assert.deepEqual(focus, ['stop']);
+      if (cancel) director.stopScene('Stopped');
+      await run;
+      assert.deepEqual(focus, connected ? ['stop', 'origin'] : ['stop']);
+      assert.equal(director._playbackFocus, null);
+      assert.equal(classes.has('scene-playback-mode'), false);
+      assert.equal(director.running, false);
+    } finally {
+      director.stopScene('cleanup');
+      await run;
+      restore();
+    }
+  });
+}
+
 /** The layer map a shipped recipe declares, in normalized form. */
 function recipeLayers(recipeId) {
   const recipe = SCENE_RECIPES.find((item) => item.id === recipeId);

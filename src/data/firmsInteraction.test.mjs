@@ -9,14 +9,12 @@ import { createFirmsHeatmapLayer, applyFirmsOverlayPolicy, buildCellCard } from 
 import { fireDetectionKey } from './firmsLabels.js';
 import { registerPickOwner, unregisterPickOwner } from './pickRegistry.js';
 import { WORLD_FOCUS_REQUEST_EVENT } from '../worldFocus.js';
-import fs from 'node:fs';
+import { readSourceSync } from '../testSupport/sourceText.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const LAYER_SOURCE = fs.readFileSync(
-  path.join(path.dirname(fileURLToPath(import.meta.url)), 'firmsHeatmap.js'),
-  'utf8',
-);
+const LAYER_SOURCE = readSourceSync(
+  path.join(path.dirname(fileURLToPath(import.meta.url)), 'firmsHeatmap.js'));
 
 function makeFire(overrides = {}) {
   return {

@@ -15,7 +15,7 @@
 // plain node:test.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { readSourceSync } from '../testSupport/sourceText.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as Cesium from 'cesium';
@@ -67,10 +67,8 @@ import {
   activateCctvCameraFromWorldClick,
 } from '../cctvFocusRequest.js';
 
-const UI_SOURCE = fs.readFileSync(
-  path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'ui.js'),
-  'utf8',
-);
+const UI_SOURCE = readSourceSync(
+  path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'ui.js'));
 
 const ASPECT = 16 / 9;
 const toRad = (deg) => (deg * Math.PI) / 180;

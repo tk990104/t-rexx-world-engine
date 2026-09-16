@@ -1386,9 +1386,6 @@ export class SceneDirector {
     this._updateRuntime('');
     this._running = false;
 
-    if (this._playbackFocus?.isConnected) this._playbackFocus.focus?.();
-    this._playbackFocus = null;
-
     // Finalize telemetry and archive it for download
     if (this._activeRun) {
       this._activeRun.endedAt = new Date().toISOString();
@@ -1400,6 +1397,10 @@ export class SceneDirector {
 
     this._runToken = null;
     this._setButtons(false);
+
+    // Start/edit controls cannot receive focus while still disabled by playback.
+    if (this._playbackFocus?.isConnected) this._playbackFocus.focus?.();
+    this._playbackFocus = null;
   }
 
   /**
