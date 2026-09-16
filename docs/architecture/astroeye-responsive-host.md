@@ -85,3 +85,27 @@ warnings. No full-repository-suite or screen-reader certification is claimed.
 An existing QA event was selected; no save/delete/export/share action occurred.
 Five gates accepted, ten open; U2 reduced-motion/screen-reader and broader state
 coverage remain pending. Nothing published.
+
+## Checkpoint 96 — Reduced motion for venue and marker navigation
+
+September 15 local / September 16 UTC, 2026. Explicit venue navigation, guarded
+venue commands and saved-marker framing now read `prefers-reduced-motion: reduce`
+at action time. True selects zero duration; normal/unavailable preference retains
+2.4-second venue and 1.8-second marker flights. No listeners, polling, storage or
+system-setting changes are added. Presenter and command share fresh venue options.
+Read-only presentation and denied navigation do not query the preference. Geometry,
+camera guards and cancellation remain unchanged. Installed Cesium Camera.flyTo
+uses setView and completion callbacks for duration <=0; flyToLandmark forwards
+zero through flyToBoundingSphere rather than replacing it with its default.
+
+All 13 focused tests pass (5.030 seconds), including preference changes, unavailable
+APIs, strict boolean matching, unchanged destinations and denied/read-only paths.
+All 501 platform tests pass (26.428 seconds); production build passes with 257
+modules in 9.68 seconds via permission-enabled execution, with existing node:fs
+externalization and chunk-size warnings. Actual preview loads and AstroEye opens.
+No actual reduced-motion host preference was changed/emulated, and no microphone
+or live voice command was tested. Controlled tests are not host certification.
+
+Event-sky full-globe zoom and Director playback remain separate follow-ups. This
+is not a global motion policy or complete U2 acceptance. Five gates accepted, ten
+open; no saved-event changes or publication.

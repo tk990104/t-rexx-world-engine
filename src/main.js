@@ -59,6 +59,7 @@ import { createResearchAnnotations } from './modules/astroeye/researchAnnotation
 import { createResearchAnnotationLayer } from './modules/astroeye/researchAnnotationLayer.js';
 import { createAstroEyeWorkspaceController } from './modules/astroeye/workspaceController.js';
 import { createAstroEyeWorldPresenter } from './modules/astroeye/worldPresenter.js';
+import { astroEyeVenueOptions } from './modules/astroeye/motionPreference.js';
 import { mountAstroEyeWorkspace } from './modules/astroeye/astroeyeWorkspace.js';
 import { readSharedViewHash } from './modules/astroeye/shareView.js';
 import { createEventSky } from './modules/astroeye/eventSky.js';
@@ -430,7 +431,7 @@ async function init() {
           return styleManager.runImmediateNavigation('AstroEye venue', () => {
             if (!isCurrent()) return false;
             flyToLandmark(viewer, selection.event.venue.latitude, selection.event.venue.longitude,
-              { range: 12000, pitch: -42, heading: 12, buildingHeight: 0, duration: 2.4 });
+              astroEyeVenueOptions());
             return true;
           }) === true;
         },

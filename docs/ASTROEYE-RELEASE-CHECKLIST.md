@@ -45,6 +45,12 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 96: [reduced-motion venue and marker paths](architecture/astroeye-responsive-host.md#checkpoint-96--reduced-motion-for-venue-and-marker-navigation)
+use zero-duration moves on an explicit reduced-motion preference. Geometry and
+ownership/read-only boundaries pass controlled tests; all 501 platform tests/build
+pass. Actual host preference verification, event-sky zoom and Director motion
+remain pending. U2 is not accepted by this partial motion-policy change.
+
 Checkpoint 95: [keyboard focus visibility](architecture/astroeye-responsive-host.md#checkpoint-95--keyboard-focus-clears-sticky-overlays)
 fixes a reproduced narrow-header obstruction on reverse Tab. A lifecycle-safe
 focus handler clears sticky overlays without moving the globe or activating

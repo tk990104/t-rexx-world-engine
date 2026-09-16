@@ -11,6 +11,21 @@ const EVENT = {
   venue: { latitude: 40.7505, longitude: -73.9934 },
 };
 
+test('venue navigation uses the current motion preference; read-only presentation does not query it', async () => {
+  let reduced = false, reads = 0;
+  const calls = [];
+  const viewer = { entities: { add: (value) => value, removeById() {} }, scene: { requestRender() {} } };
+  const present = createAstroEyeWorldPresenter({ viewer,
+    durationFor: (seconds) => { reads++; return reduced ? 0 : seconds; },
+    navigate: (_viewer, latitude, longitude, options) => calls.push({ latitude, longitude, options }) });
+  await present(EVENT, null);
+  reduced = true; await present(EVENT, null);
+  assert.equal(calls[0].options.duration, 2.4); assert.equal(calls[1].options.duration, 0);
+  assert.deepEqual({ ...calls[1], options: { ...calls[1].options, duration: 2.4 } }, calls[0]);
+  await present(EVENT, null, { navigate: false }); await present(null, null);
+  assert.equal(reads, 2); assert.equal(calls.length, 2);
+});
+
 test('read-only venue presentation never accesses the viewer clock, camera or unrelated entities', async () => {
   const unrelated = { id: 'live-feed-owned', value: 'unchanged' };
   const entities = new Map([[unrelated.id, unrelated]]);

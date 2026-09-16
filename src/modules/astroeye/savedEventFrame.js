@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { astroEyeMotionDuration } from './motionPreference.js';
 
 const wrap = (value) => ((value + 180) % 360 + 360) % 360 - 180;
 
@@ -25,7 +26,7 @@ export function savedEventFrame(points) {
 }
 
 /** Explicit camera route only; callers retain ownership of records and chart time. */
-export function createSavedEventFramer({ viewer, getPoints, canInteract, runNavigation }) {
+export function createSavedEventFramer({ viewer, getPoints, canInteract, runNavigation, durationFor = astroEyeMotionDuration }) {
   return () => {
     if (!canInteract()) throw new Error('Stop the current preview before viewing matching markers.');
     const frame = savedEventFrame(getPoints());
@@ -34,7 +35,7 @@ export function createSavedEventFramer({ viewer, getPoints, canInteract, runNavi
         ? Cesium.Cartesian3.fromDegrees(frame.longitude, frame.latitude, 18000000)
         : Cesium.Rectangle.fromDegrees(frame.west, frame.south, frame.east, frame.north);
       viewer.camera.cancelFlight();
-      viewer.camera.flyTo({ destination, duration: 1.8,
+      viewer.camera.flyTo({ destination, duration: durationFor(1.8),
         orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 }, endTransform: Cesium.Matrix4.IDENTITY });
       return frame;
     });

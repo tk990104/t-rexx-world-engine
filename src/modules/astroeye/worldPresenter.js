@@ -1,11 +1,12 @@
 import * as Cesium from 'cesium';
 
 import { flyToLandmark } from '../../locations.js';
+import { astroEyeMotionDuration, astroEyeVenueOptions } from './motionPreference.js';
 
 export const ASTROEYE_EVENT_ENTITY_ID = 't-rexx-astroeye-selected-event';
 
 /** Presents the selected AstroEye venue without taking ownership of live-feed time. */
-export function createAstroEyeWorldPresenter({ viewer, navigate = flyToLandmark } = {}) {
+export function createAstroEyeWorldPresenter({ viewer, navigate = flyToLandmark, durationFor = astroEyeMotionDuration } = {}) {
   if (!viewer?.entities?.add || !viewer?.entities?.removeById) {
     throw new TypeError('AstroEye world presentation requires a Cesium viewer entity collection');
   }
@@ -50,13 +51,7 @@ export function createAstroEyeWorldPresenter({ viewer, navigate = flyToLandmark 
       },
     });
 
-    if (shouldNavigate) navigate(viewer, latitude, longitude, {
-      range: 12000,
-      pitch: -42,
-      heading: 12,
-      buildingHeight: 0,
-      duration: 2.4,
-    });
+    if (shouldNavigate) navigate(viewer, latitude, longitude, astroEyeVenueOptions(durationFor));
     viewer.scene?.requestRender?.();
     return entity;
   };

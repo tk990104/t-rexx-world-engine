@@ -5,6 +5,22 @@ import { savedEventFrame, createSavedEventFramer } from './savedEventFrame.js';
 import { runExplicitNavigation } from '../../navigationPolicy.js';
 
 const point = (latitude, longitude) => ({ latitude, longitude });
+test('reduced-motion framing preserves region/globe geometry and reads preference only for permitted navigation', () => {
+  for (const points of [[point(40, -74)], [point(0, 0), point(0, 180)]]) {
+    let reduced = false, allowed = true, ownership = true, reads = 0;
+    const flights = [];
+    const frame = createSavedEventFramer({ viewer: { camera: { cancelFlight() {}, flyTo: (options) => flights.push(options) } },
+      getPoints: () => points, canInteract: () => allowed,
+      runNavigation: (_noun, navigate) => ownership ? navigate() : false,
+      durationFor: (seconds) => { reads++; return reduced ? 0 : seconds; } });
+    frame(); reduced = true; frame();
+    assert.equal(flights[0].duration, 1.8); assert.equal(flights[1].duration, 0);
+    assert.deepEqual({ ...flights[1], duration: 1.8 }, flights[0]);
+    allowed = false; assert.throws(frame, /Stop/);
+    allowed = true; ownership = false; assert.throws(frame, /Exit/);
+    assert.equal(reads, 2); assert.equal(flights.length, 2);
+  }
+});
 test('one or overlapping venues receive a nonzero regional frame', () => {
   const frame = savedEventFrame([point(40, -74), point(40, -74)]);
   assert.equal(frame.mode, 'region');
