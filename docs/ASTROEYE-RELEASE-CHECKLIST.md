@@ -45,6 +45,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 93: [event-sky host checks](architecture/astroeye-render-check.md#checkpoint-93--event-sky-preview-and-compact-panel)
+complete at event start and after a +15-minute unsaved preview, with one counter
+advance between samples and no ephemeris updates within either idle window.
+Restoring Event start and leaving sky restore chart time and the prior ring-off
+preference. Compact shortcuts now scroll instead of obscuring controls, verified
+in host screenshots. All 487 platform tests/build pass. U2/U3 remain open: broader
+narrow-host layout, accessibility, active-motion and budget work is not certified.
+
 Checkpoint 92: [actual embedded-host idle observations](architecture/astroeye-render-check.md#checkpoint-92--embedded-host-observation-and-readable-results)
 complete twice at 10,006/10,007 ms with zero scene renders, no continuous holds,
 event sky off and zero ephemeris delta. The new readable summary is verified in the

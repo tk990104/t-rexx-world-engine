@@ -101,3 +101,44 @@ or assistive-technology certification is claimed.
 Five release gates remain accepted, ten open. Next: event-sky/active-scene host
 observations and explicit U3 device, collection-size and timing-budget decisions.
 No publication or release acceptance is implied.
+
+## Checkpoint 93 — Event sky, preview and compact panel
+
+September 15 local / September 16 UTC, 2026. Normal UI actions selected an existing
+QA-labeled saved event, enabled event sky, and advanced the unsaved preview by
+15 minutes. No Save, Delete, Export, microphone or sharing action was used. Event
+selection and Show event sky intentionally moved the camera to venue/global views;
+no claim of camera preservation is made for those navigation actions.
+
+| Sample | Elapsed ms | Renders | Mode / holds at both endpoints | Sky | Ephemeris before / after |
+| --- | ---: | ---: | --- | --- | --- |
+| Selected event start | 10002 | 0 | idle / 0 | on | 1 / 1 |
+| After +15-minute preview | 10004 | 0 | idle / 0 | on | 2 / 2 |
+
+Both observations completed through the embedded UI. The explicit preview update
+advanced the counter once between samples; neither observation saw further
+ephemeris updates. These are settled event-sky samples, not active-motion samples,
+per-frame stress tests or GPU traces. The zero-frame windows alone cannot prove
+no per-frame calculation; retain the separate source/unit audit for that claim.
+Normal background feeds continued. No private event details are copied here.
+
+The actual narrow-host screenshot revealed that wrapped sticky shortcuts occupied
+roughly half the compact panel height and obscured scrolling content. The compact
+`.astroeye-quick-nav` now uses `position: static`; full-workspace sticky navigation
+is unchanged. Hot-reloaded UI scrolling and screenshots show the report and Time
+explorer reachable without the shortcut overlay. Background map panels still
+crowd this narrow host; this is not broad responsive/accessibility acceptance.
+
+After verification, Event start restored offset 0 and the original displayed chart
+time. Leave event sky restored the prior Celestial-off preference and full chart
+panel. The camera remains at the global view reached by the test; no unrelated
+layers were deliberately toggled. No saved record was edited, created, deleted or
+exported; no byte-for-byte user-database audit is claimed.
+
+All 20 focused event-sky/observer/summary tests pass (5.358 seconds); all 487
+platform tests pass (39.751 seconds). The permission-enabled production build
+passes with 255 modules in 18.09 seconds, retaining the existing node:fs
+externalization and large-chunk warnings. No new full-repository test-suite claim.
+Five gates accepted, ten open. Next: narrow-host layout/accessibility review,
+active-motion observations and explicit device/collection/timing budgets. Nothing
+was published.
