@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AstroEye synthetic note focus checks</title>
+<style>body{font:16px system-ui;margin:24px;max-width:800px}section{border:1px solid #888;padding:16px;margin:16px 0}textarea{display:block;width:95%}button{margin:5px;padding:8px}:focus{outline:3px solid #b40}label{display:block}</style>
+<h1>Synthetic note focus checks</h1>
+<p>Development fixture: real editor modules, memory-only fake services. No app bootstrap, saved records, downloads or provider calls. Reload resets all synthetic data.</p>
+<label><input id="hold" type="checkbox">Hold operations until released</label>
+<label><input id="fail" type="checkbox">Fail next operation</label>
+<button id="release">Release held operations</button>
+<button id="outside">Outside focus target</button>
+<button id="suspend">Suspend event notes</button>
+<button id="resume">Resume event notes</button>
+<button id="dispose">Dispose test panels</button>
+<p id="pending" role="status">No operations held.</p>
+<section id="notebook" aria-label="Synthetic notebook"></section>
+<section id="annotations" aria-label="Synthetic event notes"></section>
+<script type="module">
+import { mountResearchNotebook } from '/src/modules/astroeye/researchNotebookPanel.js';
+import { mountResearchAnnotations } from '/src/modules/astroeye/researchAnnotationsPanel.js';
+const node = id => document.getElementById(id);
+let gates = [], notebook = { text: 'Synthetic notebook' }, notes = { annotations: [] };
+async function operation(action) {
+  const fail = node('fail').checked; node('fail').checked = false;
+  if (node('hold').checked) await new Promise(resolve => { gates.push(resolve); node('pending').textContent = 'Operation held.'; });
+  if (fail) throw new Error('Synthetic operation failure.');
+  return structuredClone(action());
+}
+const notebookPanel = mountResearchNotebook(node('notebook'), { notebook: {
+  load: () => operation(() => notebook),
+  save: text => operation(() => notebook = { text }),
+}, confirmDiscard: () => true, downloadDraft: () => { throw new Error('Downloads disabled in fixture'); } });
+const annotationPanel = mountResearchAnnotations(node('annotations'), { annotations: {
+  load: () => operation(() => notes),
+  sourceState: () => operation(() => 'source-present'),
+  add: (selection, note) => operation(() => { notes = { annotations: [...notes.annotations, {
+    id: 'astroeye-note:fixture', schemaVersion: 1, eventId: selection.event.id,
+    chartTimeUtc: selection.chart.calculatedFor, latitude: 40, longitude: -75, note,
+  }] }; return notes; }),
+  edit: (id, note) => operation(() => { notes = { annotations: notes.annotations.map(entry => entry.id === id ? {...entry, note} : entry) }; return notes; }),
+  remove: id => operation(() => { notes = { annotations: notes.annotations.filter(entry => entry.id !== id) }; return notes; }),
+  restore: entry => operation(() => { notes = { annotations: [...notes.annotations, entry] }; return notes; }),
+}, confirmDiscard: () => true, downloadDraft: () => { throw new Error('Downloads disabled in fixture'); } });
+annotationPanel.updateSelection({ event: { id: 'synthetic-event', venue: { latitude: 40, longitude: -75 } },
+  chart: { eventId: 'synthetic-event', calculatedFor: '2026-09-16T12:00:00.000Z' } });
+node('release').onclick = () => { const pending = gates; gates = []; node('hold').checked = false; pending.forEach(resolve => resolve()); node('pending').textContent = 'Held operations released.'; };
+node('suspend').onclick = () => annotationPanel.setSuspended(true);
+node('resume').onclick = () => annotationPanel.setSuspended(false);
+node('dispose').onclick = () => { notebookPanel.destroy(); annotationPanel.destroy(); node('release').click(); };
+notebookPanel.open(); annotationPanel.open();
+</script></html>

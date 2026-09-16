@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 104: [async note-editor focus](architecture/astroeye-note-focus.md) covers
+success/failure, delayed user-focus handoff, disabled-control fallbacks and
+suspension/teardown. Embedded checks use real panels with memory-only synthetic
+services, not real persistence or main-workspace composition. Eleven focused and
+521 platform tests plus build pass; full/allocation suites not rerun. U2/R2 remain
+open, with no saved-data access, new gate acceptance or publication.
+
 Checkpoint 103: [draft-time form accessibility](architecture/astroeye-draft-time-accessibility.md)
 adds field-linked feedback and focus on rejected time submissions. Embedded checks
 verify gap/range rejection, native repeated-hour selection and corrected UTC text

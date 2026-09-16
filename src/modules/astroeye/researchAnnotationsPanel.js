@@ -1,6 +1,7 @@
 import { MAX_RESEARCH_ANNOTATIONS, MAX_ANNOTATION_NOTE_LENGTH, validateResearchAnnotation } from './researchAnnotations.js';
 import { createUnsavedNotebookGuard } from './unsavedNotebookGuard.js';
 import { downloadNotebookDraft } from './notebookDraftDownload.js';
+import { capturePanelOperationFocus } from './panelOperationFocus.js';
 
 /** Local event notes; host controls suspension without discarding the draft. */
 export function mountResearchAnnotations(host, { annotations,
@@ -40,6 +41,7 @@ export function mountResearchAnnotations(host, { annotations,
     node('map-status').textContent = state.error || (!state.available ? 'Note markers are unavailable during playback or an unsaved shared view.' : state.loading ? 'Loading saved note markers…' : `${state.shown} / ${state.limit} note markers shown · ${state.enabled ? 'On for this session' : 'Off'}`);
   }
   let baseline = null, loaded = false, pending = false, destroyed = false;
+  let pendingFocus = null;
   let opened = false, suspended = false, suspensionVersion = 0;
   const allowed = () => !suspended && canInteract();
   let current = null, capture = null, editingId = '', savedText = '', sourceVersion = 0, deleted = null;
@@ -92,12 +94,18 @@ export function mountResearchAnnotations(host, { annotations,
     if (entry) void sourceStatus(entry);
     render();
   }
-  async function run(action) {
+  async function run(action, preferredFocus = () => []) {
     if (pending || destroyed || !allowed()) return;
+    const restoreFocus = pendingFocus = capturePanelOperationFocus(host);
     pending = true; render();
     try { await action(); }
     catch (cause) { if (!destroyed) node('status').textContent = `${cause.message || 'Operation failed.'} Draft unchanged; copy or download it before reloading.`; }
-    finally { pending = false; if (!destroyed) render(); }
+    finally {
+      pending = false;
+      if (!destroyed) render();
+      restoreFocus({ preferred: destroyed ? [] : preferredFocus(), fallback: [editor, list, node('reload')] });
+      pendingFocus = null;
+    }
   }
   function load() {
     if (pending || destroyed || !discard()) return;
@@ -118,7 +126,7 @@ export function mountResearchAnnotations(host, { annotations,
       if (destroyed || !allowed() || version !== suspensionVersion) return;
       show(snapshot);
       node('status').textContent = 'New draft captured. Write text, then Save event note. No record has been written yet.';
-    }).then(() => { if (!destroyed && capture === snapshot) editor.focus(); });
+    }, () => capture === snapshot ? [editor] : []);
   }
   function save() {
     if (pending || destroyed || !capture || !dirty() || !editor.value.trim()) return;
@@ -202,7 +210,7 @@ export function mountResearchAnnotations(host, { annotations,
       render();
     },
     open() { if (destroyed || !allowed()) return false; opened = true; render(); if (!loaded) void load(); return true; },
-    setSuspended(value) { if (destroyed) return; if (value === true && !suspended) suspensionVersion++; suspended = value === true; render(); },
-    destroy() { destroyed = true; sourceVersion++; unsubscribeMap?.(); guard.destroy(); host.removeEventListener('click', click); editor.removeEventListener('input', input); list.removeEventListener('change', choose); host.replaceChildren(); },
+    setSuspended(value) { if (destroyed) return; if (value === true && !suspended) suspensionVersion++; if (value === true) pendingFocus?.({ cancel: true }); suspended = value === true; render(); },
+    destroy() { destroyed = true; pendingFocus?.({ cancel: true }); pendingFocus = null; sourceVersion++; unsubscribeMap?.(); guard.destroy(); host.removeEventListener('click', click); editor.removeEventListener('input', input); list.removeEventListener('change', choose); host.replaceChildren(); },
   });
 }

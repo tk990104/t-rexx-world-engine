@@ -2,6 +2,7 @@ import { MAX_RESEARCH_NOTE_LENGTH } from './researchNotebook.js';
 import { createNotebookChartReference, appendNotebookChartReference } from './notebookChartReference.js';
 import { createNotebookDraftDownload, downloadNotebookDraft } from './notebookDraftDownload.js';
 import { createUnsavedNotebookGuard } from './unsavedNotebookGuard.js';
+import { capturePanelOperationFocus } from './panelOperationFocus.js';
 
 export function mountResearchNotebook(host, { notebook, downloadDraft = downloadNotebookDraft, confirmDiscard = (message) => window.confirm(message) }) {
   host.innerHTML = `<h3 tabindex="-1">Research notebook</h3>
@@ -22,6 +23,7 @@ export function mountResearchNotebook(host, { notebook, downloadDraft = download
   const node = (name) => host.querySelector(`[data-note="${name}"]`);
   let baseline = null, baselineText = '', loaded = false, pending = false, destroyed = false;
   let reference = null;
+  let pendingFocus = null;
   const dirty = () => loaded && textarea.value !== baselineText;
   const leaveGuard = createUnsavedNotebookGuard(host.ownerDocument.defaultView);
   function render() {
@@ -36,6 +38,7 @@ export function mountResearchNotebook(host, { notebook, downloadDraft = download
   async function load() {
     if (pending || destroyed) return;
     if (dirty() && !confirmDiscard('Discard unsaved notebook edits and reload saved notes?')) return;
+    const restoreFocus = pendingFocus = capturePanelOperationFocus(host);
     pending = true; render(); node('status').textContent = 'Loading saved notes…'; node('download-status').textContent = '';
     try {
       const record = await notebook.load();
@@ -43,18 +46,19 @@ export function mountResearchNotebook(host, { notebook, downloadDraft = download
       baseline = record; loaded = true; textarea.value = record?.text ?? ''; baselineText = textarea.value;
       node('status').textContent = record ? 'Saved notes loaded.' : 'No saved notes yet. Write observations, then Save notes.';
     } catch (cause) { if (!destroyed) node('status').textContent = cause.message || 'Could not load notes. Your draft is unchanged.'; }
-    finally { pending = false; if (!destroyed) render(); }
+    finally { pending = false; if (!destroyed) render(); restoreFocus({ fallback: [textarea, node('reload')] }); pendingFocus = null; }
   }
   async function save() {
     if (pending || destroyed || !dirty()) return;
     const text = textarea.value;
+    const restoreFocus = pendingFocus = capturePanelOperationFocus(host);
     pending = true; render(); node('status').textContent = 'Saving notes…'; node('download-status').textContent = '';
     try {
       const record = await notebook.save(text, baseline);
       if (destroyed) return;
       baseline = record; baselineText = text; node('status').textContent = 'Notes saved in this browser. Use Export all for a backup.';
     } catch (cause) { if (!destroyed) node('status').textContent = cause.message || 'Could not save notes. Your draft is unchanged.'; }
-    finally { pending = false; if (!destroyed) render(); }
+    finally { pending = false; if (!destroyed) render(); restoreFocus({ fallback: [textarea, node('reload')] }); pendingFocus = null; }
   }
   function input() { render(); node('download-status').textContent = ''; node('status').textContent = dirty() ? 'Unsaved changes. Choose Save notes to keep them.' : 'No unsaved changes.'; }
   function click(event) {
@@ -91,6 +95,6 @@ export function mountResearchNotebook(host, { notebook, downloadDraft = download
       render();
     },
     open() { host.hidden = false; if (!loaded) void load(); },
-    destroy() { destroyed = true; leaveGuard.destroy(); host.removeEventListener('click', click); textarea.removeEventListener('input', input); host.replaceChildren(); },
+    destroy() { destroyed = true; pendingFocus?.({ cancel: true }); pendingFocus = null; leaveGuard.destroy(); host.removeEventListener('click', click); textarea.removeEventListener('input', input); host.replaceChildren(); },
   });
 }
