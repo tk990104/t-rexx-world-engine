@@ -550,7 +550,7 @@ test('every explicit visual control facade claims restore authority before mutat
     ['  setDetection({ enabled, mode, densityPct, allocationStrategy, fadePct, outsideOpacityPct } = {}) {', '  async setMapStack(stackId) {', 'this._setDetectionAllocation(', 'setDetection'],
     ['  setBloom({ enabled, intensityPct } = {}) {', '  setSharpen({ enabled, intensityPct } = {}) {', 'this._setBloomIntensity(', 'setBloom'],
     ['  setSharpen({ enabled, intensityPct } = {}) {', '  get celestialRingEnabled() {', 'this._applySharpenIntensity(', 'setSharpen'],
-    ['  setCelestialRingEnabled(enabled, { syncShare = true, focus = false } = {}) {', '  setOrbit(enabled) {', 'this.celestialRing?.setEnabled(', 'setCelestialRingEnabled'],
+    ['  setCelestialRingEnabled(enabled, { syncShare = true, focus = false, focusDuration = 2.4 } = {}) {', '  setOrbit(enabled) {', 'this.celestialRing?.setEnabled(', 'setCelestialRingEnabled'],
   ];
   for (const [start, end, mutation, label] of facadeRoutes) {
     assertClaimsBefore(sourceBlock(start, end), mutation, label);
@@ -585,12 +585,13 @@ test('public visual facades reject the complete invalid request before authority
     {
       label: 'setCelestialRingEnabled',
       block: sourceBlock(
-        '  setCelestialRingEnabled(enabled, { syncShare = true, focus = false } = {}) {',
+        '  setCelestialRingEnabled(enabled, { syncShare = true, focus = false, focusDuration = 2.4 } = {}) {',
         '  setOrbit(enabled) {',
       ),
       validations: [
         'Invalid celestial ring enabled value',
         'Celestial ring options must be boolean',
+        'Invalid celestial ring focus duration',
         'Celestial ring is available only in Normal style',
       ],
     },
@@ -605,6 +606,32 @@ test('public visual facades reject the complete invalid request before authority
     }
   }
   assert.doesNotMatch(cases.at(-1).block, /!!enabled/);
+});
+
+test('celestial facade forwards zero duration, defaults unchanged and rejects invalid duration before mutation', () => {
+  const block = sourceBlock('  setCelestialRingEnabled(enabled, { syncShare = true, focus = false, focusDuration = 2.4 } = {}) {', '  setOrbit(enabled) {');
+  // Execute the actual isolated facade without mounting the full UI or a browser.
+  const method = Function('isCelestialRingStyleSupported',
+    `return ({${block.slice(0, block.lastIndexOf('\n  }') + 4)}}).setCelestialRingEnabled;`)((style) => style === 'normal');
+  const actions = [];
+  const host = { activeStyle: 'normal', celestialRingEnabled: false,
+    celestialRing: { visible: false, setEnabled: (value) => actions.push(['enabled', value]),
+      focusFullGlobe: (options) => { actions.push(['focus', options.duration]); return true; } },
+    shareLinkManager: { claimRestoreLane: (lane) => actions.push(['claim', lane]) },
+    _syncShareState: () => actions.push(['sync']) };
+  for (const focusDuration of [-1, NaN, Infinity, '0', null]) {
+    assert.equal(method.call(host, true, { focus: true, focusDuration }).ok, false);
+    assert.deepEqual(actions, []);
+  }
+  assert.equal(method.call(host, true, { focus: true, focusDuration: 0 }).cameraFocused, true);
+  assert.deepEqual(actions.splice(0), [['claim', 'visual'], ['enabled', true], ['focus', 0], ['sync']]);
+  method.call(host, true, { focus: true });
+  assert.equal(actions.find(([name]) => name === 'focus')[1], 2.4); actions.length = 0;
+  method.call(host, true, { focus: false, focusDuration: 0 });
+  assert.equal(actions.some(([name]) => name === 'focus'), false); actions.length = 0;
+  host.activeStyle = 'night';
+  assert.equal(method.call(host, true, { focus: true, focusDuration: 0 }).ok, false);
+  assert.deepEqual(actions, []);
 });
 
 test('share apply completion waits for both callback work and camera settlement', async () => {

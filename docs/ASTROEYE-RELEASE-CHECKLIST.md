@@ -45,6 +45,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 97: [event-sky reduced motion](architecture/astroeye-responsive-host.md#checkpoint-97--reduced-motion-event-sky-zoom)
+preserves globe framing, visual validation and camera-neutral restore paths. All
+40 focused and 503 platform tests plus production build pass. Actual host enters
+and exits event sky, but reduced-motion preference operation is not certified.
+Full repository suite is not green: 3,273 passed and 25 failed; source-text/line-
+ending failures need triage, and allocation probes were not reached. U2 and the
+other nine open gates remain open; Director motion is a separate follow-up.
+
 Checkpoint 96: [reduced-motion venue and marker paths](architecture/astroeye-responsive-host.md#checkpoint-96--reduced-motion-for-venue-and-marker-navigation)
 use zero-duration moves on an explicit reduced-motion preference. Geometry and
 ownership/read-only boundaries pass controlled tests; all 501 platform tests/build

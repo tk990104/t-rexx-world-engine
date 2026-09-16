@@ -109,3 +109,40 @@ or live voice command was tested. Controlled tests are not host certification.
 Event-sky full-globe zoom and Director playback remain separate follow-ups. This
 is not a global motion policy or complete U2 acceptance. Five gates accepted, ten
 open; no saved-event changes or publication.
+
+## Checkpoint 97 — Reduced-motion event-sky zoom
+
+Explicit event-sky focus now reads the browser motion preference at action time:
+zero seconds for reduced motion, otherwise the existing 2.4-second full-globe
+flight. The shared visual facade accepts a finite, nonnegative `focusDuration`
+and rejects invalid values before claiming restore authority or mutating state.
+Other callers retain their default duration. Chart updates, disabling, destruction
+and `focus: false` activation neither query the preference nor initiate a flight.
+No persistent preference, event, chart or voice-tool schema changes are added.
+
+All 40 focused tests pass (3.920 seconds). Tests execute the isolated actual UI
+facade, preserve validation/authority order, compare real ring-method destination
+and orientation at normal/zero duration, and verify synchronous completion clears
+the ring's focus-in-progress state. All 503 platform tests pass (46.764 seconds).
+Production build passes with 257 modules in 31.95 seconds, retaining the existing
+node:fs externalization and chunk-size warnings.
+
+The full repository run is **not green**: 3,298 tests, 3,273 passed, 25 failed
+(151.430 seconds on the summary rerun). Failures occur in cameraHandoff,
+cockpitMarkup, cctv, firmsInteraction, militaryAwareness, militaryInstallations,
+trackedModelRegime, firstRunExperience, loadingFeedback, locationReadouts,
+worldOverlay and reasonableDefaults tests. These include literal source anchors
+and newline-sensitive regexes. A read-only diagnostic normalizing CRLF to LF in
+memory makes all nine reasonableDefaults tests pass; this identifies that group's
+line-ending sensitivity, not the cause of every failure. No blanket baseline-pass
+or pre-existing-failure claim is made. The runner stops before its two serialized
+allocation probes when ordinary tests fail. Broader test portability/schema
+triage remains separate work; unrelated runtime code was not changed.
+
+Actual embedded preview: selecting an existing QA event, entering event sky and
+leaving it succeeds, with the prior ring-off preference restored. No records were
+saved, deleted, exported or shared. The actual host's reduced-motion preference
+was not changed/emulated, and no microphone or live voice operation was tested.
+Controlled zero-duration tests are not actual-host reduced-motion certification.
+Director playback and broader U2 review remain pending. Five gates accepted, ten
+open; nothing published.

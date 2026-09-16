@@ -93,3 +93,37 @@ test('shared event sky is opt-in and legacy AstroEye links default to no overrid
   assert.equal(decodeSharedView(encodeSharedView({ ...snapshot, skyEnabled: true })).skyEnabled, true);
   assert.throws(() => encodeSharedView({ ...snapshot, skyEnabled: 'yes' }), /Invalid shared/);
 });
+
+test('event-sky zoom uses current reduced motion while nonfocusing paths do not query it', () => {
+  let reduced = false, reads = 0, snapshot = null;
+  const calls = [];
+  const ring = { enabled: false, getDirectionSnapshot: () => snapshot, setDirectionSnapshot: (next) => { snapshot = next; } };
+  const sky = createEventSky({ ring, durationFor: (seconds) => { reads++; return reduced ? 0 : seconds; },
+    setRingEnabled: (enabled, options) => { calls.push({ enabled, options }); ring.enabled = enabled; return { ok: true }; } });
+  assert.throws(() => sky.setEnabled(true), /Choose/); assert.equal(reads, 0);
+  sky.update(chart); sky.setEnabled(true);
+  assert.equal(calls.at(-1).options.focusDuration, 2.4);
+  reduced = true; sky.setEnabled(true);
+  assert.equal(calls.at(-1).options.focusDuration, 0);
+  assert.equal(snapshot.time, chart.calculatedFor);
+  sky.setEnabled(true, { focus: false });
+  assert.equal(calls.at(-1).options.focus, false);
+  assert.equal('focusDuration' in calls.at(-1).options, false);
+  sky.update(chart); sky.setEnabled(false); sky.destroy();
+  assert.equal(reads, 2); assert.equal(ring.enabled, false); assert.equal(snapshot, null);
+});
+
+test('zero-duration ring focus preserves geometry and clears its in-progress state synchronously', () => {
+  const flights = [];
+  const ring = Object.create(CelestialRing.prototype);
+  let renders = 0;
+  ring.viewer = { scene: { canvas: { clientWidth: 900, clientHeight: 700 }, requestRender() { renders++; } },
+    camera: { positionCartographic: { longitude: -.8, latitude: .5 }, frustum: { fovy: Math.PI / 3 }, heading: .2,
+      flyTo(options) { flights.push(options); if (options.duration === 0) options.complete(); } } };
+  assert.equal(ring.focusFullGlobe(), true); assert.equal(ring._focusInProgress, true);
+  flights[0].complete();
+  assert.equal(ring.focusFullGlobe({ duration: 0 }), true); assert.equal(ring._focusInProgress, false);
+  assert.equal(flights[0].duration, 2.4); assert.equal(flights[1].duration, 0);
+  assert.deepEqual(flights[1].destination, flights[0].destination);
+  assert.deepEqual(flights[1].orientation, flights[0].orientation); assert.equal(renders, 2);
+});

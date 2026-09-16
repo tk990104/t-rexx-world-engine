@@ -8220,9 +8220,10 @@ export class StyleManager {
    * @param {object} [options]
    * @param {boolean} [options.syncShare=true]
    * @param {boolean} [options.focus=false]
+   * @param {number} [options.focusDuration=2.4] Nonnegative seconds; zero moves immediately.
    * @returns {{ok:boolean, celestialRing:{enabled:boolean,visible:boolean}, cameraFocused:boolean, error?:string}}
    */
-  setCelestialRingEnabled(enabled, { syncShare = true, focus = false } = {}) {
+  setCelestialRingEnabled(enabled, { syncShare = true, focus = false, focusDuration = 2.4 } = {}) {
     const styleSupported = isCelestialRingStyleSupported(this.activeStyle);
     const current = () => ({
       enabled: this.celestialRingEnabled,
@@ -8243,6 +8244,10 @@ export class StyleManager {
         cameraFocused: false,
         error: 'Celestial ring options must be boolean',
       };
+    }
+    if (!Number.isFinite(focusDuration) || focusDuration < 0) {
+      return { ok: false, celestialRing: current(), cameraFocused: false,
+        error: 'Invalid celestial ring focus duration' };
     }
     if (!styleSupported && enabled) {
       return {
@@ -8266,7 +8271,7 @@ export class StyleManager {
     }
     let cameraFocused = false;
     if (nextEnabled && focus) {
-      cameraFocused = !!this.celestialRing?.focusFullGlobe();
+      cameraFocused = !!this.celestialRing?.focusFullGlobe({ duration: focusDuration });
     }
     if (syncShare) this._syncShareState();
     return {

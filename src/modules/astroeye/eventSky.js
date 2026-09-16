@@ -1,4 +1,5 @@
 import * as Astronomy from 'astronomy-engine';
+import { astroEyeMotionDuration } from './motionPreference.js';
 
 /** Chart ECT directions -> true equator of date -> Earth-fixed (no observer parallax). */
 export function eventSkyDirections(chart) {
@@ -25,7 +26,7 @@ export function eventSkyDirections(chart) {
 }
 
 /** Small adapter: the ring owns drawing; AstroEye supplies cached chart directions. */
-export function createEventSky({ ring, setRingEnabled } = {}) {
+export function createEventSky({ ring, setRingEnabled, durationFor = astroEyeMotionDuration } = {}) {
   let chart = null;
   let previousEnabled = false;
   const isEnabled = () => ring.getDirectionSnapshot()?.owner === 'astroeye';
@@ -47,7 +48,8 @@ export function createEventSky({ ring, setRingEnabled } = {}) {
       const snapshot = eventSkyDirections(chart);
       const wasActive = isEnabled();
       const wasEnabled = ring.enabled;
-      const result = setRingEnabled(true, { focus, syncShare: true });
+      const result = setRingEnabled(true, { focus, syncShare: true,
+        ...(focus ? { focusDuration: durationFor(2.4) } : {}) });
       if (!result.ok) throw new Error(result.error || 'The event sky could not be enabled.');
       if (!wasActive) previousEnabled = wasEnabled;
       ring.setDirectionSnapshot(snapshot);
