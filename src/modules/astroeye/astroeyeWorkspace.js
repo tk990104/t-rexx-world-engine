@@ -1,4 +1,5 @@
 import './astroeyeWorkspace.css';
+import { stickyWorkspaceInset } from './workspaceLayout.js';
 
 import { describeDraftTime } from './draftTimeSummary.js';
 import { ASTROEYE_DATE_RANGE_NOTICE, savedChartDateNotice } from './calculation/dateRange.js';
@@ -649,8 +650,7 @@ export function mountAstroEyeWorkspace({
     // Expand only the panel, as Full chart does; do not alter event sky or globe state.
     delete root.dataset.skyCompact;
     target.focus({ preventScroll: true });
-    const navigationHeight = root.querySelector('.astroeye-quick-nav').getBoundingClientRect().height;
-    root.scrollTop += target.getBoundingClientRect().top - root.getBoundingClientRect().top - navigationHeight - 12;
+    root.scrollTop += target.getBoundingClientRect().top - root.getBoundingClientRect().top - stickyWorkspaceInset(root) - 12;
   }
 
   root.addEventListener('click', async (event) => {

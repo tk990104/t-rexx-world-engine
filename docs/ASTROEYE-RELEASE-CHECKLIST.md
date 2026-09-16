@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 94: [narrow-host layout evidence](architecture/astroeye-responsive-host.md)
+verifies temporary rail suppression/restoration, sticky Close header, shortcut
+target offsets and bounded compact sky at actual 566px and tested 390/1100px widths.
+Keyboard Close returns launcher focus; temporary viewport overrides are reset.
+All 491 platform tests/build pass. U2 remains open for broader accessibility and
+state coverage; no supported-device matrix or new release gate is accepted.
+
 Checkpoint 93: [event-sky host checks](architecture/astroeye-render-check.md#checkpoint-93--event-sky-preview-and-compact-panel)
 complete at event start and after a +15-minute unsaved preview, with one counter
 advance between samples and no ephemeris updates within either idle window.

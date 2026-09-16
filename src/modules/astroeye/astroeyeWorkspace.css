@@ -209,7 +209,24 @@
 .astroeye-live-status[data-tone="error"] { color: #ff9eaa; }
 
 @media (max-width: 720px) {
-  .astroeye-workspace { inset: 12px; width: auto; }
+  /* Presentation only: no layer toggles or saved panel preferences are changed. */
+  body:has(#astroeye-workspace:not([hidden])) #left-panel-stack,
+  body:has(#astroeye-workspace:not([hidden])) #right-context-rail { display: none; }
+  .astroeye-workspace { inset: 12px; width: auto; overscroll-behavior: contain; }
+  .astroeye-header { position: sticky; top: 0; z-index: 3; gap: 12px; padding: 14px 16px; background: #100d20; }
+  .astroeye-header > div { min-width: 0; }
+  .astroeye-header h2 { font-size: 24px; }
+  .astroeye-header p { font-size: 11px; }
+  .astroeye-icon-button { flex: 0 0 44px; width: 44px; height: 44px; }
+  .astroeye-quick-nav { position: static; padding: 10px 16px; }
+  .astroeye-entry, .astroeye-results { min-width: 0; padding: 18px 16px; }
+  .astroeye-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .astroeye-form label { min-width: 0; }
+  .astroeye-workspace[data-sky-compact="true"] {
+    inset: auto 12px 70px;
+    width: auto;
+    max-height: min(430px, calc(100dvh - 100px));
+  }
   .astroeye-body { grid-template-columns: 1fr; }
   .astroeye-entry { border-right: 0; border-bottom: 1px solid rgba(214,166,255,.14); }
 }
