@@ -453,7 +453,11 @@ export function mountAstroEyeWorkspace({
     });
   }
   field(form, 'utcStart').addEventListener('change', refreshDraftTimeSummary);
+  // New manual edits supersede an older provider-to-form request. Cover native
+  // text input as well as change-only selects/checkboxes and host integrations.
+  form.addEventListener('change', () => schedulePanel.cancelSelection());
   form.addEventListener('input', (event) => {
+    schedulePanel.cancelSelection();
     if (event.target.name !== 'scheduleReviewed') field(form, 'scheduleReviewed').checked = false;
     if (['localDate', 'localTime', 'timeZone', 'utcStart'].includes(event.target.name)) {
       const node = root.querySelector('[data-role="draft-time-summary"]');

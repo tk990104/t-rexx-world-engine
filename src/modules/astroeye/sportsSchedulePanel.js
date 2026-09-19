@@ -19,6 +19,7 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
   const status = host.querySelector('[data-schedule="status"]');
   let events = [];
   let request;
+  let requestKind = null;
   let generation = 0;
   let destroyed = false, pendingFocus = null;
 
@@ -27,6 +28,7 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
     pendingFocus?.({ cancel: true }); pendingFocus = null;
     request?.abort();
     request = null;
+    requestKind = null;
     host.querySelectorAll('button').forEach((button) => { button.disabled = false; });
   }
 
@@ -45,6 +47,7 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
     let selectedTarget = null;
     const current = generation;
     request = new AbortController();
+    requestKind = action === 'next' || action === 'day' ? 'schedule' : 'selection';
     const signal = request.signal;
     host.querySelectorAll('button').forEach((item) => { item.disabled = true; });
     try {
@@ -87,11 +90,20 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
       if (current === generation) {
         host.querySelectorAll('button').forEach((item) => { item.disabled = false; });
         request = null;
+        requestKind = null;
       }
       restoreFocus({ preferred: [selectedTarget], cancel: destroyed || current !== generation });
       if (pendingFocus === restoreFocus) pendingFocus = null;
     }
   }
   host.addEventListener('click', click);
-  return { cancel, destroy() { destroyed = true; cancel(); host.removeEventListener('click', click); } };
+  return { cancel,
+    cancelSelection() {
+      if (destroyed || requestKind !== 'selection') return false;
+      cancel();
+      status.textContent = 'Venue lookup cancelled to preserve your form edits. Select the game again when you are ready to replace the draft.';
+      return true;
+    },
+    destroy() { destroyed = true; cancel(); host.removeEventListener('click', click); },
+  };
 }

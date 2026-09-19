@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 112: [manual edits during venue lookup](architecture/astroeye-schedule-drafts.md)
+cancel stale form handoffs without cancelling discovery. All 44 focused tests and
+build pass. Full-workspace draft-conflict browser acceptance remains incomplete:
+mount timeout, then one retry timed out in cleanup without emitting its assertion
+result. No browser pass or new gate acceptance claimed. Preview restarted by
+request; user records untouched. U2 remains open.
+
 Checkpoint 111: [schedule keyboard focus and disposal](architecture/astroeye-schedule-focus.md)
 restores enabled lookup controls, guards delayed review-field focus and removes
 disposed interaction. All 38 focused tests, two synthetic browser suites and build
