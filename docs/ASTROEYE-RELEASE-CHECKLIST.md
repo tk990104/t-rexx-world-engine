@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 105: [background/close note lifecycle](architecture/astroeye-note-focus.md#checkpoint-105--background-and-closereopen-lifecycle)
+cancels focus restoration after leaving the document. Sixteen focused and 526
+platform tests plus build pass. Embedded memory-only synthetic-wrapper tests
+verify close/reopen success/failure and disposal during reload; actual native
+tab switching and main-workspace composition are not newly certified. No gate
+closes; full/allocation suites not rerun and user research is untouched.
+
 Checkpoint 104: [async note-editor focus](architecture/astroeye-note-focus.md) covers
 success/failure, delayed user-focus handoff, disabled-control fallbacks and
 suspension/teardown. Embedded checks use real panels with memory-only synthetic

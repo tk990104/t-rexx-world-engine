@@ -4,11 +4,15 @@ import { capturePanelOperationFocus } from './panelOperationFocus.js';
 import { readSourceSync } from '../../testSupport/sourceText.mjs';
 
 function fixture() {
-  const listeners = new Map(), children = new Set(), focused = [];
-  const document = { body: {}, hidden: false, activeElement: null,
-    addEventListener(name, handler, capture) { assert.equal(capture, true); listeners.set(name, handler); },
-    removeEventListener(name, handler, capture) { assert.equal(capture, true); assert.equal(listeners.get(name), handler); listeners.delete(name); },
-    defaultView: { getComputedStyle: (node) => ({ visibility: node.visibility ?? 'visible' }) } };
+  const listeners = new Map(), windowListeners = new Map(), children = new Set(), focused = [];
+  const document = { body: {}, hidden: false, focused: true, activeElement: null,
+    hasFocus() { return this.focused; },
+    addEventListener(name, handler, capture) { assert.equal(capture, name === 'visibilitychange' ? undefined : true); listeners.set(name, handler); },
+    removeEventListener(name, handler, capture) { assert.equal(capture, name === 'visibilitychange' ? undefined : true); assert.equal(listeners.get(name), handler); listeners.delete(name); },
+    defaultView: { getComputedStyle: (node) => ({ visibility: node.visibility ?? 'visible' }),
+      addEventListener(name, handler) { windowListeners.set(name, handler); },
+      removeEventListener(name, handler) { assert.equal(windowListeners.get(name), handler); windowListeners.delete(name); },
+    } };
   const host = { ownerDocument: document, isConnected: true, contains: (node) => children.has(node) };
   const element = (name) => {
     const node = { name, isConnected: true, disabled: false, hiddenAncestor: false, rects: [{}],
@@ -18,7 +22,7 @@ function fixture() {
   };
   const origin = element('origin'), editor = element('editor');
   document.activeElement = origin;
-  return { document, host, listeners, children, focused, origin, editor, element };
+  return { document, host, listeners, windowListeners, children, focused, origin, editor, element };
 }
 
 test('re-enabled origin regains focus and listeners clean up exactly once', () => {
@@ -85,4 +89,41 @@ test('both editors restore only after enabling controls and cancel on teardown o
   const annotations = readSourceSync(new URL('researchAnnotationsPanel.js', import.meta.url));
   assert.match(annotations, /if \(value === true\) pendingFocus\?\.\(\{ cancel: true \}\)/);
   assert.doesNotMatch(annotations, /\.then\(\(\) => .*editor.focus/);
+});
+
+test('leaving the document cancels restoration even after returning before completion', () => {
+  for (const leave of [f => f.windowListeners.get('blur')(), f => {
+    f.document.hidden = true; f.listeners.get('visibilitychange')(); f.document.hidden = false;
+  }]) {
+    const f = fixture(), restore = capturePanelOperationFocus(f.host);
+    leave(f); f.document.activeElement = f.document.body;
+    restore({ preferred: [f.editor] });
+    assert.deepEqual(f.focused, []);
+    assert.equal(f.listeners.size, 0); assert.equal(f.windowListeners.size, 0);
+  }
+});
+test('a visible-only notification does not cancel an otherwise owned operation', () => {
+  const f = fixture(), restore = capturePanelOperationFocus(f.host);
+  f.listeners.get('visibilitychange')(); restore();
+  assert.deepEqual(f.focused, ['origin']); assert.equal(f.windowListeners.size, 0);
+});
+test('already hidden or unfocused documents capture no focus responsibility', () => {
+  for (const alter of [f => { f.document.hidden = true; }, f => { f.document.focused = false; }]) {
+    const f = fixture(); alter(f);
+    const restore = capturePanelOperationFocus(f.host);
+    assert.equal(f.listeners.size, 0); assert.equal(f.windowListeners.size, 0);
+    f.document.hidden = false; f.document.focused = true;
+    restore({ preferred: [f.editor] }); assert.deepEqual(f.focused, []);
+  }
+});
+test('loss of document focus at completion is guarded even without a blur event', () => {
+  const f = fixture(), restore = capturePanelOperationFocus(f.host);
+  f.document.focused = false; restore();
+  assert.deepEqual(f.focused, []); assert.equal(f.windowListeners.size, 0);
+});
+test('cancellation is permanent and removes window and document listeners immediately', () => {
+  const f = fixture(), restore = capturePanelOperationFocus(f.host);
+  restore({ cancel: true });
+  assert.equal(f.listeners.size, 0); assert.equal(f.windowListeners.size, 0);
+  restore({ preferred: [f.editor] }); assert.deepEqual(f.focused, []);
 });

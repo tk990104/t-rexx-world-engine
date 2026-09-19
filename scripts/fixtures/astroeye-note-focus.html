@@ -10,10 +10,14 @@
 <button id="outside">Outside focus target</button>
 <button id="suspend">Suspend event notes</button>
 <button id="resume">Resume event notes</button>
+<button id="close-panels">Close synthetic workspace</button>
+<button id="open-panels">Reopen synthetic workspace</button>
 <button id="dispose">Dispose test panels</button>
 <p id="pending" role="status">No operations held.</p>
+<div id="workspace">
 <section id="notebook" aria-label="Synthetic notebook"></section>
 <section id="annotations" aria-label="Synthetic event notes"></section>
+</div>
 <script type="module">
 import { mountResearchNotebook } from '/src/modules/astroeye/researchNotebookPanel.js';
 import { mountResearchAnnotations } from '/src/modules/astroeye/researchAnnotationsPanel.js';
@@ -45,6 +49,8 @@ annotationPanel.updateSelection({ event: { id: 'synthetic-event', venue: { latit
 node('release').onclick = () => { const pending = gates; gates = []; node('hold').checked = false; pending.forEach(resolve => resolve()); node('pending').textContent = 'Held operations released.'; };
 node('suspend').onclick = () => annotationPanel.setSuspended(true);
 node('resume').onclick = () => annotationPanel.setSuspended(false);
+node('close-panels').onclick = () => { node('workspace').hidden = true; };
+node('open-panels').onclick = () => { node('workspace').hidden = false; };
 node('dispose').onclick = () => { notebookPanel.destroy(); annotationPanel.destroy(); node('release').click(); };
 notebookPanel.open(); annotationPanel.open();
 </script></html>

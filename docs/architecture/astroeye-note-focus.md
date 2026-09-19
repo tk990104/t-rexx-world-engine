@@ -60,3 +60,35 @@ not a production route.
 Five release gates remain accepted and ten open. This advances U2 keyboard
 coverage; it does not verify audible screen-reader behavior or close R2/U2.
 No saved-record/schema, calculation, provider or publication changes.
+
+## Checkpoint 105 — Background and close/reopen lifecycle
+
+September 17, 2026, from `93cad84`. A focus owner now relinquishes restoration
+on window blur or a hidden-document notification, even if the user returns before
+the pending operation settles. Already hidden/unfocused documents do not capture
+ownership; completion also checks document focus. Window and visibility listeners
+are removed alongside the existing input listeners on completion/cancellation.
+This changes focus only, not whether an already-requested save is allowed to finish.
+
+All sixteen focused tests pass (0.801 seconds), including leave-and-return,
+unfocused start/completion, harmless visible notifications and permanent
+cancellation. All 526 platform tests pass (56.105 seconds), with zero failures,
+cancellations or skips. Production build passes (260 modules, 32.76 seconds),
+with existing externalization/chunk-size warnings. Full repository/allocation
+suites were not rerun. Background transitions are controlled unit-test evidence,
+not a newly verified native tab-switch or OS-window interaction.
+
+The fixture now has Close/Reopen synthetic workspace controls around both real
+editors. In the actual embedded browser, a normal notebook save still restores
+editor focus. A held notebook save completes while the wrapper is hidden and
+reopens with its saved text and disabled clean Save button, without moving focus
+from Reopen. A held failing save preserves unsaved text, exposes the error and
+leaves Save enabled on reopen, again without stealing focus. A held event-note
+save preserves its captured UTC time, location and synthetic text through the
+same close/reopen sequence. Dispose during a held event-note reload completes
+with focus on Dispose; the temporary tab was then closed.
+
+These close/reopen checks use a synthetic wrapper and memory-only services, not
+the main workspace or native IndexedDB. User notes and the original globe tab
+were untouched. No records were exported, no settings or permissions changed,
+and nothing was published. Five gates accepted, ten open; U2 and R2 remain open.
