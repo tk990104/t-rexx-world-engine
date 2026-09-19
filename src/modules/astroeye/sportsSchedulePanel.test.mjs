@@ -7,12 +7,13 @@ import { readSourceSync } from '../../testSupport/sourceText.mjs';
 function fixture({ holdSchedule = false } = {}) {
   const element = () => ({ dataset: {}, disabled: false, textContent: '', children: [],
     append(...nodes) { this.children.push(...nodes); }, replaceChildren() { this.children = []; } });
-  const nodes = Object.fromEntries(['next', 'day', 'date', 'results', 'status'].map(name => [name, element()]));
+  const nodes = Object.fromEntries(['next', 'day', 'cancel', 'date', 'results', 'status'].map(name => [name, element()]));
   nodes.next.dataset.schedule = 'next'; nodes.day.dataset.schedule = 'day';
+  nodes.cancel.dataset.schedule = 'cancel'; nodes.cancel.hidden = true;
   const listeners = new Map(), calls = [], selections = [];
   const host = { ownerDocument: { activeElement: null }, contains: () => false,
     querySelector: selector => nodes[selector.match(/"(\w+)"/)[1]],
-    querySelectorAll: () => [nodes.next, nodes.day, ...nodes.results.children],
+    querySelectorAll: () => [nodes.next, nodes.day, nodes.cancel, ...nodes.results.children],
     addEventListener: (name, listener) => listeners.set(name, listener),
     removeEventListener: (name, listener) => { assert.equal(listeners.get(name), listener); listeners.delete(name); },
   };
@@ -76,6 +77,47 @@ test('destruction aborts selection and makes subsequent cancellation inert', asy
     assert.equal(f.calls[0].signal.aborted, true); assert.equal(f.panel.cancelSelection(), false);
     f.calls[0].resolve({ venue: {} }); await task;
     assert.equal(f.listeners.size, 0); assert.equal(f.selections.length, 0);
+  } finally { f.dispose(); }
+});
+
+for (const kind of ['schedule', 'selection']) for (const fail of [false, true]) {
+  test(`Cancel lookup stops ${kind} and ignores late ${fail ? 'failure' : 'success'}`, async () => {
+    const f = fixture({ holdSchedule: kind === 'schedule' });
+    try {
+      if (kind === 'selection') await f.load();
+      const task = f.click(kind === 'schedule' ? f.nodes.next : f.nodes.results.children[0]);
+      assert.equal(f.nodes.cancel.hidden, false); assert.equal(f.nodes.cancel.disabled, false);
+      assert.equal(f.nodes.next.disabled, true);
+      await f.click(f.nodes.cancel);
+      const message = f.nodes.status.textContent;
+      assert.match(message, /lookup cancelled/); assert.doesNotMatch(message, /Loading/);
+      assert.equal(f.calls[0].signal.aborted, true); assert.equal(f.nodes.cancel.hidden, true);
+      assert.equal(f.nodes.next.disabled, false);
+      if (fail) f.calls[0].reject(new Error('Late error'));
+      else f.calls[0].resolve(kind === 'schedule' ? f.response : { venue: {} });
+      await task; await f.click(f.nodes.cancel);
+      assert.equal(f.nodes.status.textContent, message); assert.equal(f.selections.length, 0);
+      if (kind === 'schedule') assert.equal(f.nodes.results.children.length, 0);
+    } finally { f.dispose(); }
+  });
+}
+
+test('workspace close cancellation replaces Loading with retry guidance', async () => {
+  const f = fixture({ holdSchedule: true });
+  try {
+    const task = f.click(f.nodes.next); f.panel.cancel();
+    assert.match(f.nodes.status.textContent, /Schedule lookup cancelled/);
+    f.calls[0].resolve(f.response); await task;
+    assert.match(f.nodes.status.textContent, /try again/);
+  } finally { f.dispose(); }
+});
+
+test('idle cancellation preserves a completed result status', async () => {
+  const f = fixture();
+  try {
+    await f.load(); const message = f.nodes.status.textContent;
+    f.panel.cancel(); assert.equal(f.nodes.status.textContent, message);
+    assert.equal(f.nodes.cancel.hidden, true);
   } finally { f.dispose(); }
 });
 

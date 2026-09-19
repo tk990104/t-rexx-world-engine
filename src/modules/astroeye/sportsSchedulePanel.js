@@ -9,6 +9,7 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
       <button type="button" data-schedule="next">Upcoming</button>
       <label>Schedule date (UTC)<input type="date" data-schedule="date" aria-label="Schedule date (UTC)" /></label>
       <button type="button" data-schedule="day">Find games</button>
+      <button type="button" data-schedule="cancel" hidden>Cancel lookup</button>
     </div>
     <p class="astroeye-help">Schedule data from <a href="https://www.thesportsdb.com/" target="_blank" rel="noopener noreferrer">TheSportsDB</a>. Limited results; this is not a full league schedule.</p>
     <p class="astroeye-help" data-schedule="status" role="status">Choose upcoming games or a date.</p>
@@ -17,28 +18,45 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
   date.value = new Date().toISOString().slice(0, 10);
   const results = host.querySelector('[data-schedule="results"]');
   const status = host.querySelector('[data-schedule="status"]');
+  const cancelButton = host.querySelector('[data-schedule="cancel"]');
+  const upcoming = host.querySelector('[data-schedule="next"]');
   let events = [];
   let request;
   let requestKind = null;
   let generation = 0;
   let destroyed = false, pendingFocus = null;
 
-  function cancel() {
+  function setBusy(busy) {
+    host.querySelectorAll('button').forEach((button) => { button.disabled = busy && button !== cancelButton; });
+    cancelButton.hidden = !busy;
+  }
+
+  function cancel({ announce = true } = {}) {
+    const kind = requestKind;
     generation += 1;
     pendingFocus?.({ cancel: true }); pendingFocus = null;
     request?.abort();
     request = null;
     requestKind = null;
-    host.querySelectorAll('button').forEach((button) => { button.disabled = false; });
+    setBusy(false);
+    if (announce && kind && !destroyed) status.textContent = kind === 'selection'
+      ? 'Venue lookup cancelled. The event form is unchanged. Select a game to try again.'
+      : 'Schedule lookup cancelled. Choose upcoming games or a date to try again.';
   }
 
   async function click(event) {
     const button = event.target.closest('button');
     if (destroyed || !button || button.disabled) return;
     const action = button.dataset.schedule;
+    if (action === 'cancel') {
+      if (!request) return;
+      const restore = host.contains(host.ownerDocument.activeElement) ? capturePanelOperationFocus(focusHost) : () => {};
+      cancel(); restore({ fallback: [upcoming, date] });
+      return;
+    }
     if (!action && button.dataset.scheduleIndex == null) return;
     if (action === 'day' && !date.value) { status.textContent = 'Choose a date first.'; return; }
-    cancel();
+    cancel({ announce: false });
     // Capture only actions originating here; a wider host permits the reviewed
     // form handoff, but does not grant ownership of unrelated external focus.
     const restoreFocus = host.contains(host.ownerDocument.activeElement)
@@ -49,7 +67,7 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
     request = new AbortController();
     requestKind = action === 'next' || action === 'day' ? 'schedule' : 'selection';
     const signal = request.signal;
-    host.querySelectorAll('button').forEach((item) => { item.disabled = true; });
+    setBusy(true);
     try {
       if (action === 'next' || action === 'day') {
         status.textContent = 'Loading NFL schedule…';
@@ -88,9 +106,13 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
       if (current === generation && !signal.aborted) status.textContent = error.message || 'Schedules are unavailable. Enter an event manually.';
     } finally {
       if (current === generation) {
-        host.querySelectorAll('button').forEach((item) => { item.disabled = false; });
+        // Completion may hide Cancel while the user is focused on it.
+        const restoreCancel = host.ownerDocument.activeElement === cancelButton
+          ? capturePanelOperationFocus(focusHost) : () => {};
+        setBusy(false);
         request = null;
         requestKind = null;
+        restoreCancel({ fallback: [button, upcoming, date] });
       }
       restoreFocus({ preferred: [selectedTarget], cancel: destroyed || current !== generation });
       if (pendingFocus === restoreFocus) pendingFocus = null;
@@ -100,10 +122,10 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
   return { cancel,
     cancelSelection() {
       if (destroyed || requestKind !== 'selection') return false;
-      cancel();
+      cancel({ announce: false });
       status.textContent = 'Venue lookup cancelled to preserve your form edits. Select the game again when you are ready to replace the draft.';
       return true;
     },
-    destroy() { destroyed = true; cancel(); host.removeEventListener('click', click); },
+    destroy() { destroyed = true; cancel({ announce: false }); host.removeEventListener('click', click); },
   };
 }

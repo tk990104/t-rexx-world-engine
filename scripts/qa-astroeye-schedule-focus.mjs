@@ -78,6 +78,30 @@ try {
   assert.equal(await active(), 'outside', 'late venue completion does not steal later focus');
   await page.$eval(result, el => el.click()); await settle();
   assert.equal(await active(), 'outside', 'programmatic action does not acquire external focus ownership');
+  phase = 'visible cancellation and completion focus';
+  for (const target of [selector('next'), result]) for (const outcome of ['success', 'failure']) {
+    if (target === result && !await page.$(result)) { await activate(selector('next')); await settle(); }
+    const selectedBefore = await page.evaluate(() => qa.selections);
+    await activate(target);
+    assert.equal(await page.$eval(selector('cancel'), el => !el.hidden && !el.disabled), true);
+    await activate(selector('cancel'));
+    assert.equal(await active(), 'next');
+    assert.equal(await page.evaluate(() => qa.calls.at(-1).signal.aborted), true);
+    const message = await page.$eval(selector('status'), el => el.textContent);
+    assert.match(message, /lookup cancelled/);
+    assert.equal(await page.$eval(selector('cancel'), el => el.hidden), true);
+    await settle(outcome);
+    assert.equal(await page.$eval(selector('status'), el => el.textContent), message);
+    assert.equal(await page.evaluate(() => qa.selections), selectedBefore);
+    assert.equal(await active(), 'next');
+  }
+  // If a request completes while Cancel is focused, its disappearance must not
+  // strand keyboard focus or trigger an unsolicited review-field handoff.
+  for (const target of [selector('next'), selector('day'), result]) {
+    await activate(target); await page.focus(selector('cancel')); await settle();
+    assert.equal(await page.$eval(target, el => document.activeElement === el), true);
+    assert.equal(await page.$eval(selector('cancel'), el => el.hidden), true);
+  }
   phase = 'cancel and stale completion';
   await activate(result);
   const selections = await page.evaluate(() => { qa.stale = qa.calls.at(-1); qa.panel.cancel(); return qa.selections; });
@@ -102,8 +126,10 @@ try {
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
   report = { passed: true, successfulEmptyAndFailedLookupFocus: true, guardedReviewHandoff: true,
     cancellationAndStaleCompletion: true, disposalRemovesInteraction: true,
+    keyboardCancelLookup: true, completionWhileCancelFocused: true,
     mainAppBootstrapped: false, userDataAccessed: false, liveProviderRequests: 0 };
 } finally {
+  if (report) console.error(JSON.stringify({ validation: report }));
   phase = 'cleanup';
   try {
     const cleanup = await closeOwnedBrowser(browser, { page });

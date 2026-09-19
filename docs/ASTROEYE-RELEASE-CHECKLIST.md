@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 114: [visible Cancel lookup](architecture/astroeye-schedule-focus.md#checkpoint-114--visible-cancel-lookup-control)
+supports keyboard cancellation without leaving AstroEye, truthful retry status
+and safe focus when completion hides Cancel. All 50 focused tests, isolated
+schedule browser QA and build pass; browser closes gracefully without force.
+Preview remains closed; no saved-data changes or newly accepted release gate.
+Broader workspace/host acceptance and U2 remain open.
+
 Checkpoint 113: [draft-conflict browser regression](architecture/astroeye-schedule-drafts.md#checkpoint-113--bounded-browser-verification-completed)
 passes all eight edit/late-result cases plus discovery/retry on unchanged runtime.
 One bounded run exits 0 with graceful cleanup and no force after the user closed
