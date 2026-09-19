@@ -2,10 +2,11 @@ import { captureComparison, compareCharts } from './chartComparison.js';
 import { serializeComparisonReport, downloadComparisonReport } from './comparisonReport.js';
 import { compareCrossChartAspects, crossAspectSummary, CROSS_ASPECT_RULES, CROSS_ASPECT_SCOPE } from './crossChartAspects.js';
 import { filterCrossChartAspects, normalizeCrossAspectFilters, crossAspectFilterSummary } from './crossAspectFilters.js';
+import { capturePanelOperationFocus } from './panelOperationFocus.js';
 
 /** Session-only comparison UI: deliberately has no storage, clock or camera capabilities. */
 export function mountChartComparison(host, { downloadReport = downloadComparisonReport } = {}) {
-  host.innerHTML = `<h4>Chart comparison</h4>
+  host.innerHTML = `<h4 data-comparison="heading" tabindex="-1">Chart comparison</h4>
     <p class="astroeye-help">Pin the displayed chart, including its current time preview. Then select another event or explore another time. Pinning does not change saved records or the globe.</p>
     <div class="astroeye-chart-actions"><button type="button" data-comparison="pin">Pin this chart</button><button type="button" data-comparison="clear" disabled>Clear pinned chart</button></div>
     <div class="astroeye-chart-actions"><button type="button" data-comparison="export" disabled>Download comparison report (.txt)</button></div>
@@ -36,7 +37,8 @@ export function mountChartComparison(host, { downloadReport = downloadComparison
   const node = (name) => host.querySelector(`[data-comparison="${name}"]`);
   const describe = (value) => `${value.title} · ${value.calculatedFor} · ${value.houseSystem} houses · ${value.engine} ${value.version} · calculation model ${value.calculationVersion} · ${value.zodiac} · ${value.frame}${value.timeNote ? ' · ' + value.timeNote : ''}`;
   const degrees = (value) => value == null ? 'Unavailable' : `${value.toFixed(2)}°`;
-  function render() {
+  function render({ preferred = [] } = {}) {
+    const restoreFocus = capturePanelOperationFocus(host);
     node('pin').disabled = !current;
     node('pin').textContent = pinned ? 'Replace pinned chart' : 'Pin this chart';
     node('clear').disabled = !pinned;
@@ -82,6 +84,7 @@ export function mountChartComparison(host, { downloadReport = downloadComparison
       }
       body.append(tr);
     }
+    restoreFocus({ preferred, fallback: [node('pin'), node('clear'), node('heading')] });
   }
   function click(event) {
     const action = event.target.closest('button')?.dataset.comparison;
@@ -98,9 +101,8 @@ export function mountChartComparison(host, { downloadReport = downloadComparison
     else if (action === 'aspects-toggle' && pinned && current && compareCharts(pinned, current).rows.length) showAspects = !showAspects;
     else return;
     node('export-status').textContent = '';
-    render();
-    if (action === 'clear') node('pin').focus();
-    if (action === 'reset-filters') node('aspect-kind').focus();
+    render({ preferred: action === 'clear' ? [node('pin')]
+      : action === 'reset-filters' ? [node('aspect-kind')] : [] });
   }
   function change(event) {
     if (!['aspect-kind', 'aspect-orb'].includes(event.target.dataset.comparison)) return;

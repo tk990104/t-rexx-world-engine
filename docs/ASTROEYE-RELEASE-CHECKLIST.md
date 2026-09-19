@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 110: [comparison focus recovery](architecture/astroeye-comparison-focus.md)
+keeps keyboard position usable after missing/incompatible chart updates and Clear
+without a current chart, without stealing external focus. All 51 focused tests,
+expanded isolated comparison QA and production build pass; browser exits 0 with
+graceful cleanup. Main-app/screen-reader acceptance and U2 remain open. No
+platform/full/allocation rerun, user-data access or publication.
+
 Checkpoint 109: [shutdown diagnostics and exit confirmation](architecture/astroeye-browser-shutdown.md)
 adds bounded forced-exit observation and removable stage listeners. Twelve helper
 tests and two isolated venue runs pass; both browser runs now close gracefully.
