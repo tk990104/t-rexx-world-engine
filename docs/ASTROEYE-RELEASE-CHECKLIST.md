@@ -45,6 +45,12 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 109: [shutdown diagnostics and exit confirmation](architecture/astroeye-browser-shutdown.md)
+adds bounded forced-exit observation and removable stage listeners. Twelve helper
+tests and two isolated venue runs pass; both browser runs now close gracefully.
+Blank connection-mode probes also pass, but do not establish the earlier timeout's
+cause. Tooling-only changes; earlier caveats remain and no release gate closes.
+
 Checkpoint 108: [venue-card dismissal](architecture/astroeye-venue-dismissal.md)
 keeps Close/Escape available during callout work without cancelling the requested
 callout. Host policy, duplicate-close suppression and failure retry are covered.
