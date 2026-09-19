@@ -1,5 +1,6 @@
 import './venueContextPanel.css';
 import { createVenueContextModel } from './venueContext.js';
+import { consumeWorkspaceEscape } from './workspaceKeyboard.js';
 
 /** Compact context panel and keyboard-accessible selected-event shortcut. */
 export function mountVenueContextPanel({ getSelection, eventBus, onOpen, onClose, onChart, onVenue, callouts = null, canInteract = () => true, host = document.body }) {
@@ -41,6 +42,7 @@ export function mountVenueContextPanel({ getSelection, eventBus, onOpen, onClose
   const status = root.querySelector('[data-venue-status]');
   let disposed = false;
   let busy = false;
+  let closing = false;
   let lastEventId = null;
   function render() {
     const selection = getSelection();
@@ -57,20 +59,30 @@ export function mountVenueContextPanel({ getSelection, eventBus, onOpen, onClose
     root.querySelector('[data-venue-action="clear-callouts"]').disabled = !callouts;
   }
   async function action(callback) {
-    if (busy || disposed || !canInteract()) return;
+    if (busy || closing || disposed || !canInteract()) return;
     busy = true; status.textContent = '';
     try { await callback(); }
-    catch (error) { status.textContent = error.message || 'Could not open event details.'; }
+    catch (error) { if (!disposed) status.textContent = error.message || 'Could not open event details.'; }
     finally { busy = false; }
+  }
+  // Dismissal must remain available while an already-requested callout settles.
+  // It does not cancel that operation or bypass the host's interaction policy.
+  async function dismiss() {
+    if (closing || disposed || !canInteract()) return;
+    closing = true;
+    try { await onClose(); }
+    catch (error) { if (!disposed) status.textContent = error.message || 'Could not close event details.'; }
+    finally { closing = false; }
   }
   launcher.addEventListener('click', () => { void action(onOpen); });
   root.addEventListener('click', (event) => {
     const kind = event.target.closest('[data-venue-action]')?.dataset.venueAction;
-    if (kind === 'close') void action(onClose);
+    if (kind === 'close') void dismiss();
     else if (kind === 'chart') void action(onChart);
     else if (kind === 'venue') void action(onVenue);
     else if (kind === 'callout' && callouts) void action(async () => {
       const result = await callouts.add(root.querySelector('#astroeye-callout-note').value);
+      if (disposed) return;
       render();
       status.textContent = result.cancelled ? 'Callout cancelled.' : `Callout added · ${result.label}. Close this card to view the map. Saved records are unchanged.`;
     });
@@ -81,9 +93,8 @@ export function mountVenueContextPanel({ getSelection, eventBus, onOpen, onClose
     });
   });
   root.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault(); event.stopPropagation();
-    void action(onClose);
+    if (!consumeWorkspaceEscape(event)) return;
+    void dismiss();
   });
   const subscriptions = ['astroeye:event-selected', 'astroeye:time-preview', 'astroeye:event-deleted'].map((type) => eventBus.on(type, render));
   render();

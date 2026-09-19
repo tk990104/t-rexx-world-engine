@@ -33,3 +33,11 @@ test('workspace checks Escape ownership before cancellation or close', () => {
   const source = readSourceSync(new URL('astroeyeWorkspace.js', import.meta.url));
   assert.match(source, /if \(!consumeWorkspaceEscape\(event\)\) return;\s*resetImportReview\(\);\s*schedulePanel.cancel\(\);/);
 });
+
+test('venue details uses the shared Escape guard and dismissal independent of pending actions', () => {
+  const source = readSourceSync(new URL('venueContextPanel.js', import.meta.url));
+  assert.match(source, /if \(!consumeWorkspaceEscape\(event\)\) return;\s*void dismiss\(\);/);
+  assert.match(source, /if \(kind === 'close'\) void dismiss\(\);/);
+  assert.match(source, /async function dismiss\(\) \{\s*if \(closing \|\| disposed \|\| !canInteract\(\)\) return;/);
+  assert.match(source, /await callouts.add\([^;]+;\s*if \(disposed\) return;/);
+});

@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 108: [venue-card dismissal](architecture/astroeye-venue-dismissal.md)
+keeps Close/Escape available during callout work without cancelling the requested
+callout. Host policy, duplicate-close suppression and failure retry are covered.
+All 23 focused tests and build pass. Isolated browser functional assertions pass,
+but shutdown requires forced cleanup (exit 1); native IME/speech and full app
+integration remain unverified. U2 remains open; user research untouched.
+
 Checkpoint 107: [Escape ownership and unsaved drafts](architecture/astroeye-note-focus.md#checkpoint-107--escape-ownership-and-unsaved-draft-recovery)
 protects composition/child-handled keys and stops handled Escape bubbling. Both
 editor close/reopen draft checks pass; native IME and speech remain unverified.
