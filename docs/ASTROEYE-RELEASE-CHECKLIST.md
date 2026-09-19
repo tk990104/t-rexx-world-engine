@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 111: [schedule keyboard focus and disposal](architecture/astroeye-schedule-focus.md)
+restores enabled lookup controls, guards delayed review-field focus and removes
+disposed interaction. All 38 focused tests, two synthetic browser suites and build
+pass; both browsers close gracefully. Real workspace provider-review regression
+uses the existing diagnostic asset relay, not live/embedded acceptance. U2 and
+pending-form-edit conflict review remain open; user research untouched.
+
 Checkpoint 110: [comparison focus recovery](architecture/astroeye-comparison-focus.md)
 keeps keyboard position usable after missing/incompatible chart updates and Clear
 without a current chart, without stealing external focus. All 51 focused tests,

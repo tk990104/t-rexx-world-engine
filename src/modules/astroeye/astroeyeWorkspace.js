@@ -365,6 +365,7 @@ export function mountAstroEyeWorkspace({
   let scheduleSelection = null;
   const scheduleReview = root.querySelector('[data-role="schedule-review"]');
   const schedulePanel = mountSportsSchedulePanel(root.querySelector('[data-role="schedule"]'), {
+    focusHost: root,
     onSelect(game, venue) {
       scheduleSelection = game;
       form.reset();
@@ -377,8 +378,8 @@ export function mountAstroEyeWorkspace({
       scheduleReview.hidden = false;
       root.querySelector('[data-role="schedule-origin"]').textContent = `TheSportsDB · ${game.city || game.country || game.venueName} · ${game.utcStart ? `Source time ${game.utcStart.replace('T', ' ').replace('.000Z', ' UTC')}. Choosing a venue time zone converts this time.` : game.timeNote}`;
       refreshTimeResolution();
-      field(form, 'timeZone').focus();
       setStatus('Schedule loaded. Choose the venue time zone and review the event details.');
+      return field(form, 'timeZone');
     },
   });
 

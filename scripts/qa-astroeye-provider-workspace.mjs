@@ -117,8 +117,12 @@ try {
     report = { passed: true, collections, externalRequests: 0, userDataAccessed: false };
   } else {
   mark('provider-review');
-  await click('[data-schedule="next"]'); await page.waitForSelector('[data-schedule-index="0"]');
-  await click('[data-schedule-index="0"]'); await page.waitForSelector('[data-role="schedule-review"]:not([hidden])');
+  await page.focus('[data-schedule="next"]'); await page.keyboard.press('Enter');
+  await page.waitForSelector('[data-schedule-index="0"]');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.schedule), 'next');
+  await page.focus('[data-schedule-index="0"]'); await page.keyboard.press('Enter');
+  await page.waitForSelector('[data-role="schedule-review"]:not([hidden])');
+  assert.equal(await page.evaluate(() => document.activeElement.name), 'timeZone');
   assert.equal(await records(), empty);
   assert.equal(await field('timeZone'), '', 'Provider hint must not silently choose a zone');
   await setField('timeZone', 'America/New_York');

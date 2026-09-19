@@ -1,7 +1,8 @@
 import { createSportsScheduleClient } from './sportsSchedule.js';
+import { capturePanelOperationFocus } from './panelOperationFocus.js';
 
 /** Read-only discovery; choosing a result prepares the event form, never saves. */
-export function mountSportsSchedulePanel(host, { onSelect, client = createSportsScheduleClient() }) {
+export function mountSportsSchedulePanel(host, { onSelect, client = createSportsScheduleClient(), focusHost = host }) {
   host.innerHTML = `
     <div class="astroeye-section-heading"><div><h3>NFL schedule</h3></div></div>
     <div class="astroeye-schedule-controls">
@@ -19,20 +20,29 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
   let events = [];
   let request;
   let generation = 0;
+  let destroyed = false, pendingFocus = null;
 
   function cancel() {
     generation += 1;
+    pendingFocus?.({ cancel: true }); pendingFocus = null;
     request?.abort();
+    request = null;
     host.querySelectorAll('button').forEach((button) => { button.disabled = false; });
   }
 
-  host.addEventListener('click', async (event) => {
+  async function click(event) {
     const button = event.target.closest('button');
-    if (!button || button.disabled) return;
+    if (destroyed || !button || button.disabled) return;
     const action = button.dataset.schedule;
     if (!action && button.dataset.scheduleIndex == null) return;
     if (action === 'day' && !date.value) { status.textContent = 'Choose a date first.'; return; }
     cancel();
+    // Capture only actions originating here; a wider host permits the reviewed
+    // form handoff, but does not grant ownership of unrelated external focus.
+    const restoreFocus = host.contains(host.ownerDocument.activeElement)
+      ? capturePanelOperationFocus(focusHost) : () => {};
+    pendingFocus = restoreFocus;
+    let selectedTarget = null;
     const current = generation;
     request = new AbortController();
     const signal = request.signal;
@@ -67,14 +77,21 @@ export function mountSportsSchedulePanel(host, { onSelect, client = createSports
           catch (error) { if (signal.aborted) throw error; missing = true; }
         }
         if (current !== generation) return;
-        onSelect(game, venue);
+        // A callback may return a form control for a guarded focus handoff.
+        selectedTarget = onSelect(game, venue);
         status.textContent = `Loaded into the form. ${missing ? 'Venue lookup unavailable; enter coordinates manually. ' : ''}${venue?.timeZoneHint ? `Provider zone hint: ${venue.timeZoneHint}. ` : ''}Choose the venue's IANA time zone and check the time and location before saving.`;
       }
     } catch (error) {
       if (current === generation && !signal.aborted) status.textContent = error.message || 'Schedules are unavailable. Enter an event manually.';
     } finally {
-      if (current === generation) host.querySelectorAll('button').forEach((item) => { item.disabled = false; });
+      if (current === generation) {
+        host.querySelectorAll('button').forEach((item) => { item.disabled = false; });
+        request = null;
+      }
+      restoreFocus({ preferred: [selectedTarget], cancel: destroyed || current !== generation });
+      if (pendingFocus === restoreFocus) pendingFocus = null;
     }
-  });
-  return { cancel, destroy: cancel };
+  }
+  host.addEventListener('click', click);
+  return { cancel, destroy() { destroyed = true; cancel(); host.removeEventListener('click', click); } };
 }
