@@ -4,7 +4,12 @@ import puppeteer from 'puppeteer';
 import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 
 let browser, page, report;
-const watchdog = setTimeout(() => { browser?.process()?.kill(); process.exit(1); }, 60000);
+let phase = 'browser launch';
+const progress = (name) => { phase = name; process.stderr.write(`Workspace QA: ${phase}\n`); };
+const watchdog = setTimeout(() => {
+  process.stderr.write(`Workspace QA exceeded 120 seconds during: ${phase}\n`);
+  browser?.process()?.kill(); process.exit(1);
+}, 120000);
 try {
   browser = await puppeteer.launch({ headless: true, timeout: 15000, args: ['--disable-gpu', '--disable-background-networking'] });
   page = await browser.newPage(); page.setDefaultTimeout(10000);
@@ -47,6 +52,18 @@ try {
         await createResearchNotebook(store).save('Separate notebook sentinel', null);
       }
       const notes = createResearchAnnotations(store);
+      const notebook = createResearchNotebook(store);
+      // Hold only synthetic fixture writes, before the real IndexedDB service runs.
+      qa.holdWrite = false; qa.failWrite = false; qa.releaseWrite = null;
+      const write = async (action) => {
+        const fail = qa.failWrite; qa.failWrite = false;
+        if (qa.holdWrite) await new Promise(resolve => { qa.releaseWrite = resolve; });
+        if (fail) throw new Error('Synthetic workspace save failure.');
+        return action();
+      };
+      const opener = document.createElement('button');
+      opener.id = 'synthetic-workspace-opener'; opener.textContent = 'Open synthetic AstroEye';
+      document.body.append(opener);
       const markers = new Map(); let markerReads = 0;
       const viewer = { scene: { requestRender() {} }, entities: {
         add: (entity) => { if (markers.has(entity.id)) throw new Error('Duplicate ID'); markers.set(entity.id, entity); return entity; },
@@ -55,9 +72,11 @@ try {
       const noteLayer = createResearchAnnotationLayer({ viewer, eventBus, modeTarget: document.body,
         loadAnnotations: () => { markerReads++; return notes.load(); },
         canDisplay: () => !qa.directorRunning && !document.body.classList.contains('scene-playback-mode') && !controller.selectionSnapshot()?.isShared });
-      const workspace = mountAstroEyeWorkspace({ controller, researchNotebook: createResearchNotebook(store),
+      const workspace = mountAstroEyeWorkspace({ controller,
+        researchNotebook: { ...notebook, save: (...args) => write(() => notebook.save(...args)) },
         researchAnnotationLayer: noteLayer,
-        researchAnnotations: { ...notes, load: () => { qa.reads++; return notes.load(); }, sourceState: async (entry) => {
+        researchAnnotations: { ...notes, edit: (...args) => write(() => notes.edit(...args)),
+          load: () => { qa.reads++; return notes.load(); }, sourceState: async (entry) => {
           if (qa.holdSource) await new Promise((resolve) => { qa.releaseSource = resolve; });
           return notes.sourceState(entry);
         } },
@@ -65,10 +84,13 @@ try {
         downloadAnnotationDraft: (file) => qa.downloads.push(file),
       });
       Object.assign(qa, { notes, controller, workspace, markers, noteLayer, markerReads: () => markerReads }); window.qa = qa;
-      await workspace.open();
+      opener.onclick = () => void workspace.open(opener);
+      await workspace.open(opener);
     });
   }
+  progress('module loading and workspace mount');
   await page.goto(base, { waitUntil: 'domcontentloaded' }); await mount();
+  progress('keyboard entry, chart capture and playback suspension');
   const node = (name) => `[data-annotation="${name}"]`;
   const settle = () => page.waitForFunction(() => !document.querySelector('[data-annotation="reload"]').disabled);
   const click = async (name) => { await page.$eval(node(name), (element) => element.click()); await settle(); };
@@ -150,6 +172,58 @@ try {
   assert.equal(await page.evaluate(() => qa.noteLayer.state().enabled), false);
   assert.equal(await value(), 'Unsaved after save');
   await click('save'); assert.equal((await page.evaluate(() => qa.notes.load())).annotations[0].note, 'Unsaved after save');
+  // Real workspace, panels and IndexedDB; never the user's browser profile.
+  // Reopen BEFORE completion to catch focus restoration that only checks visibility.
+  await page.focus('[data-action="research-notes"]'); await page.keyboard.press('Enter');
+  await page.waitForFunction(() => !document.querySelector('[data-role="research-notebook"] textarea').disabled);
+  for (const kind of ['notebook', 'annotation']) {
+    progress(`${kind} pending-save close/reopen`);
+    const panel = kind === 'notebook' ? '[data-role="research-notebook"]' : '[data-role="event-notes"]';
+    const attr = kind === 'notebook' ? 'data-note' : 'data-annotation';
+    const save = `${panel} [${attr}="save"]`, reload = `${panel} [${attr}="reload"]`;
+    const readSaved = () => page.evaluate(async (kind) => kind === 'notebook'
+      ? (await qa.store.getWorkspace('astroeye-research-notebook-v1')).text
+      : (await qa.notes.load()).annotations[0].note, kind);
+    for (const fail of [false, true]) {
+      const baseline = await readSaved();
+      const draft = `${kind} close/reopen ${fail ? 'failed draft' : 'saved text'}`;
+      await page.$eval(`${panel} textarea`, (editor, text) => {
+        editor.value = text; editor.dispatchEvent(new Event('input', { bubbles: true }));
+      }, draft);
+      await page.evaluate(fail => { qa.holdWrite = true; qa.failWrite = fail; qa.releaseWrite = null; }, fail);
+      const selection = await page.evaluate(() => qa.controller.selectionSnapshot());
+      const navigation = await page.evaluate(() => qa.navigation);
+      await page.focus(save); await page.keyboard.press('Enter');
+      await page.waitForFunction(() => typeof qa.releaseWrite === 'function');
+      await page.focus('[data-action="close"]'); await page.keyboard.press('Enter');
+      assert.equal(await page.$eval('#astroeye-workspace', el => el.hidden), true);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'synthetic-workspace-opener');
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => !document.querySelector('#astroeye-workspace').hidden);
+      const focus = await page.evaluateHandle(() => document.activeElement);
+      await page.evaluate(() => { qa.holdWrite = false; qa.releaseWrite(); qa.releaseWrite = null; });
+      await page.waitForFunction(selector => !document.querySelector(selector).disabled, {}, reload);
+      assert.equal(await page.evaluate(el => document.activeElement === el, focus), true, `${kind} completion must not steal reopen focus`);
+      await focus.dispose();
+      assert.equal(await page.$eval(`${panel} textarea`, el => el.value), draft);
+      assert.equal(await page.$eval(save, el => el.disabled), !fail);
+      assert.equal(await readSaved(), fail ? baseline : draft);
+      assert.equal(await page.$eval(`${panel} [${attr}="status"]`, el => el.getAttribute('role')), 'status');
+      assert.match(await page.$eval(`${panel} [${attr}="status"]`, el => el.textContent), fail ? /Synthetic workspace save failure/ : /saved/i);
+      assert.deepEqual(await page.evaluate(() => qa.controller.selectionSnapshot()), selection);
+      assert.equal(await page.evaluate(() => qa.navigation), navigation);
+    }
+    // Keyboard retry succeeds after reopening, retaining the failed draft.
+    await page.focus(save); await page.keyboard.press('Enter');
+    await page.waitForFunction(selector => !document.querySelector(selector).disabled, {}, reload);
+    assert.equal(await page.$eval(`${panel} textarea`, el => document.activeElement === el), true);
+    assert.equal(await readSaved(), `${kind} close/reopen failed draft`);
+    // Restore synthetic sentinels for the existing playback/reload assertions.
+    await page.$eval(`${panel} textarea`, (el, text) => { el.value = text; el.dispatchEvent(new Event('input', { bubbles: true })); },
+      kind === 'notebook' ? 'Separate notebook sentinel' : 'Unsaved after save');
+    await page.focus(save); await page.keyboard.press('Enter');
+    await page.waitForFunction(selector => !document.querySelector(selector).disabled, {}, reload);
+  }
   // A source check started before playback may finish, but must not replace an editor during playback.
   await page.evaluate(() => qa.workspace.selectSavedEvent('two')); await settle();
   await page.evaluate(() => { qa.holdSource = true; });
@@ -160,6 +234,7 @@ try {
   await page.evaluate(() => { qa.directorRunning = false; document.body.classList.remove('scene-playback-mode'); qa.holdSource = false; qa.releaseSource(); }); await settle();
   assert.equal(await value(), 'Unsaved after save');
   // Genuine document reload, same disposable profile/database; no in-memory panel state survives.
+  progress('document reload and persistence');
   await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
   await page.reload({ waitUntil: 'domcontentloaded' }); await mount();
   assert.equal(await page.evaluate(() => qa.reads), 0);
@@ -195,6 +270,8 @@ try {
   assert.equal(await page.evaluate(() => qa.markers.size), 0);
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
   report = { passed: true, keyboardEntry: true, quickStartKeyboardAndNarrowLayout: true,
+    workspacePendingSaveReopen: { notebook: true, eventNote: true, failureDraftAndRetry: true,
+      noFocusSteal: true, statusRoleExposed: true, realIndexedDB: true, screenReaderSpeechVerified: false },
     guideDoesNotReadNotesOrWriteRecords: true, comparisonPinSurvivesChartSwitchAndNoteSave: true,
     selectionChangesPreserveCapture: true, saveDoesNotNavigate: true,
     directorSuspension: true, delayedCaptureRefusedDuringPlayback: true, realReloadPersistence: true,
@@ -202,6 +279,7 @@ try {
     optInNoteMarkers: true, markerDeleteUndoImportRefresh: true, markersStayOffAfterPlaybackAndReload: true, markerViewerMocked: true,
     mainAppBootstrapped: false, userDataAccessed: false, liveProviderRequests: 0 };
 } finally {
+  progress('owned browser cleanup');
   try { const cleanup = await closeOwnedBrowser(browser, { page }); if (report) report.cleanup = cleanup; }
   finally { clearTimeout(watchdog); }
 }

@@ -45,6 +45,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 106: [workspace save/reopen regression](architecture/astroeye-note-focus.md#checkpoint-106--workspace-savereopen-regression)
+passes in a disposable browser with real workspace/editors and IndexedDB: held
+save success/failure, close/reopen before completion, draft retry, unchanged chart
+selection/navigation and no focus stealing. Existing reload/playback/privacy
+checks also pass with graceful cleanup; 16 focused tests pass. Test-only changes;
+build/platform/full/allocation suites not rerun. Mocked viewer and no audible
+screen-reader verification; R2/U2 remain open and user research is untouched.
+
 Checkpoint 105: [background/close note lifecycle](architecture/astroeye-note-focus.md#checkpoint-105--background-and-closereopen-lifecycle)
 cancels focus restoration after leaving the document. Sixteen focused and 526
 platform tests plus build pass. Embedded memory-only synthetic-wrapper tests

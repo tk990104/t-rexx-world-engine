@@ -92,3 +92,37 @@ These close/reopen checks use a synthetic wrapper and memory-only services, not
 the main workspace or native IndexedDB. User notes and the original globe tab
 were untouched. No records were exported, no settings or permissions changed,
 and nothing was published. Five gates accepted, ten open; U2 and R2 remain open.
+
+## Checkpoint 106 — Workspace save/reopen regression
+
+September 19, 2026, from `d37d872`. The existing annotation-workspace browser
+regression now mounts both production editors with the real workspace/controller
+and real IndexedDB services in a disposable browser profile. Synthetic write
+gates delay a requested save or fail it before persistence; no user database,
+main-app bootstrap, provider or current embedded tab is used.
+
+For both notebook and event-note edits, keyboard activation starts a held save,
+closes the workspace and returns focus to its opener, then reopens before the
+write settles. Success persists the draft and disables clean Save; failure keeps
+the draft, old persisted text, enabled Save and status feedback. Completion keeps
+the new focus destination. A keyboard retry saves the retained draft and restores
+editor focus. Selection and navigation counters remain unchanged. Status roles
+are asserted, not audible screen-reader announcements.
+
+The expanded browser regression passes with graceful page/browser/process cleanup,
+zero external/provider requests and no page errors. Existing chart comparison,
+Director-signal suspension, real document-reload persistence, narrow layout and
+opt-in marker/delete/undo/import assertions also pass. The marker viewer remains
+mocked; this is not native embedded-host, terrain or full app/Director acceptance.
+All 16 focused lifecycle tests pass (3.854 seconds); syntax and diff whitespace
+checks pass. No runtime code changed, so production build, platform, full-repo
+and allocation suites were not rerun.
+
+The sandbox initially blocked browser launch. With launch permission, the existing
+5173 preview could not serve the imported module; a separate loopback-only test
+server on 5175 allowed isolation without restarting the user's preview. The first
+60-second runs timed out (the diagnostic run reached document reload after the new
+cases passed). The expanded suite now reports phases and has a 120-second overall
+cap; the final run passes. Five gates accepted, ten open; R2/U2 remain open.
+No user notes, globe view, permissions or provider settings were changed, and
+nothing was published.
