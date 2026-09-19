@@ -1,5 +1,6 @@
 import './astroeyeWorkspace.css';
 import { stickyWorkspaceInset, installWorkspaceFocusVisibility } from './workspaceLayout.js';
+import { consumeWorkspaceEscape } from './workspaceKeyboard.js';
 
 import { describeDraftTime } from './draftTimeSummary.js';
 import { renderDraftTimeFeedback } from './draftTimeFeedback.js';
@@ -870,8 +871,7 @@ export function mountAstroEyeWorkspace({
   });
 
   root.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
+    if (!consumeWorkspaceEscape(event)) return;
     resetImportReview();
     schedulePanel.cancel();
     if (onRequestClose) void onRequestClose();

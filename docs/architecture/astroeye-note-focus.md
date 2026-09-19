@@ -126,3 +126,38 @@ cases passed). The expanded suite now reports phases and has a 120-second overal
 cap; the final run passes. Five gates accepted, ten open; R2/U2 remain open.
 No user notes, globe view, permissions or provider settings were changed, and
 nothing was published.
+
+## Checkpoint 107 — Escape ownership and unsaved-draft recovery
+
+September 19, 2026, from `e3f178b`. Workspace Escape now ignores already-prevented
+events, active composition and legacy key-code 229 composition notifications.
+An ordinary Escape is prevented and stops bubbling before the existing close
+path, so ancestor bubbling shortcuts cannot also act on the same key. Other
+keys and ignored Escape events retain their existing handling. No save, schema,
+calculation, provider or camera behavior changes.
+
+Six new unit tests cover the guard, one-time consumption and workspace wiring.
+The isolated workspace browser regression verifies both editors: composition and
+prevented-event simulations keep the workspace open; ordinary keyboard Escape
+closes it and returns focus to its opener; reopening preserves the unsaved text
+and event-note capture with byte-identical stored records. Handled Escape does
+not reach a document bubbling listener. Native IME/popup behavior and screen-reader
+speech are not certified by these controlled events. No user profile is accessed.
+
+Verification: the first concurrent platform/browser attempt hit timeouts. A
+two-worker platform rerun completed 532 tests: 531 passed, one legacy-model CLI
+diagnostic hit its unchanged 15-second subprocess timeout (590.215 seconds total).
+Its two matching tests then passed in isolation (3.535 seconds), including that
+CLI check; this is not an all-green full-suite claim. All six new keyboard tests
+passed in the platform run. No calculation limits or fixture expectations changed.
+The browser rerun passed every functional assertion, including the new Escape
+checks and existing save/reopen/reload/privacy checks, but returned exit 1 because
+browser shutdown exceeded its 10-second cleanup limit and the owned test process
+was force-stopped. The initial browser run hit the 120-second overall cap before
+the new cases. No clean browser-lifecycle acceptance is claimed.
+
+Production build passed with 261 modules (1m 36s) and existing node:fs/chunk-size
+warnings after a sandbox configuration-read denial was resolved by a permitted
+retry. The separate 5175 test server was stopped; the user's preview and research
+were untouched. Full-repository/allocation suites were not rerun. Five release
+gates remain accepted and ten open; this advances U2 without closing it.

@@ -45,6 +45,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 107: [Escape ownership and unsaved drafts](architecture/astroeye-note-focus.md#checkpoint-107--escape-ownership-and-unsaved-draft-recovery)
+protects composition/child-handled keys and stops handled Escape bubbling. Both
+editor close/reopen draft checks pass; native IME and speech remain unverified.
+Six new unit tests pass. Platform: 531/532 pass, remaining CLI timeout passes in
+isolation. Browser functional assertions pass but shutdown needs forced cleanup;
+production build passes. These caveats prevent a clean full-suite/lifecycle claim;
+U2 remains open. User research untouched; full/allocation suites not rerun.
+
 Checkpoint 106: [workspace save/reopen regression](architecture/astroeye-note-focus.md#checkpoint-106--workspace-savereopen-regression)
 passes in a disposable browser with real workspace/editors and IndexedDB: held
 save success/failure, close/reopen before completion, draft retry, unchanged chart

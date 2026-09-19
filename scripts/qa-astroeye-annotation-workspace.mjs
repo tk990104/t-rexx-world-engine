@@ -184,6 +184,41 @@ try {
     const readSaved = () => page.evaluate(async (kind) => kind === 'notebook'
       ? (await qa.store.getWorkspace('astroeye-research-notebook-v1')).text
       : (await qa.notes.load()).annotations[0].note, kind);
+    const beforeEscape = await page.evaluate(() => qa.store.serializeRecords());
+    const originalText = await page.$eval(`${panel} textarea`, el => el.value);
+    const captureBeforeEscape = await page.$eval(node('capture'), el => el.textContent);
+    await page.$eval(`${panel} textarea`, el => {
+      el.value = 'Synthetic unsaved Escape draft'; el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.focus();
+    });
+    // Controlled event evidence only; this does not emulate a native IME/popup.
+    for (const mode of ['composition', 'handled']) {
+      await page.$eval(`${panel} textarea`, (el, mode) => {
+        const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true, isComposing: mode === 'composition' });
+        if (mode === 'handled') event.preventDefault();
+        el.dispatchEvent(event);
+      }, mode);
+      assert.equal(await page.$eval('#astroeye-workspace', el => el.hidden), false);
+      assert.equal(await page.$eval(`${panel} textarea`, el => document.activeElement === el), true);
+    }
+    await page.evaluate(() => {
+      qa.escapedToDocument = 0;
+      qa.observeEscape = event => { if (event.key === 'Escape') qa.escapedToDocument++; };
+      document.addEventListener('keydown', qa.observeEscape);
+    });
+    await page.keyboard.press('Escape');
+    assert.equal(await page.$eval('#astroeye-workspace', el => el.hidden), true);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'synthetic-workspace-opener');
+    assert.equal(await page.evaluate(() => qa.escapedToDocument), 0);
+    await page.evaluate(() => document.removeEventListener('keydown', qa.observeEscape));
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => !document.querySelector('#astroeye-workspace').hidden);
+    assert.equal(await page.$eval(`${panel} textarea`, el => el.value), 'Synthetic unsaved Escape draft');
+    assert.equal(await page.$eval(node('capture'), el => el.textContent), captureBeforeEscape);
+    assert.equal(await page.evaluate(() => qa.store.serializeRecords()), beforeEscape);
+    await page.$eval(`${panel} textarea`, (el, text) => {
+      el.value = text; el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, originalText);
     for (const fail of [false, true]) {
       const baseline = await readSaved();
       const draft = `${kind} close/reopen ${fail ? 'failed draft' : 'saved text'}`;
@@ -270,6 +305,8 @@ try {
   assert.equal(await page.evaluate(() => qa.markers.size), 0);
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
   report = { passed: true, keyboardEntry: true, quickStartKeyboardAndNarrowLayout: true,
+    escapeDraftRecovery: { notebook: true, eventNote: true, focusReturnsToOpener: true,
+      handledEscapeDoesNotBubble: true, compositionAndPreventedEventsIgnored: true, nativeIMEVerified: false },
     workspacePendingSaveReopen: { notebook: true, eventNote: true, failureDraftAndRetry: true,
       noFocusSteal: true, statusRoleExposed: true, realIndexedDB: true, screenReaderSpeechVerified: false },
     guideDoesNotReadNotesOrWriteRecords: true, comparisonPinSurvivesChartSwitchAndNoteSave: true,
