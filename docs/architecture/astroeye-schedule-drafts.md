@@ -42,3 +42,26 @@ published. Platform/full/allocation suites were not rerun. Five gates remain
 accepted and ten open; U2 and browser draft-conflict acceptance remain open.
 Next: rerun this bounded browser mode when the local host is responsive, using
 the new pre-cleanup validation output before drawing conclusions.
+
+## Checkpoint 113 — bounded browser verification completed
+
+September 19, 2026, runtime candidate `e0b8f61`. After the user closed the live
+preview, one fresh run of `qa-astroeye-provider-workspace.mjs --node-assets
+--draft-conflicts` passed all eight draft-edit/late-success-or-failure cases,
+read-only schedule discovery and explicit selection retry. Complete form values,
+review/provenance state, saved synthetic records and navigation counts were
+preserved across cancelled handoffs; the test reports no user-data access.
+
+Validation completed at 39.147 seconds. Cleanup was graceful in 9.433 seconds,
+with confirmed process exit, no force, and overall exit 0 within the unchanged
+60-second cap. The pre-cleanup validation output also correctly recorded success.
+The separate port-5175 server was stopped; the user's preview tab was not reopened.
+
+This closes the specific pending browser regression above, not the full U2 gate.
+The test still uses synthetic responses, disposable IndexedDB and the diagnostic
+localhost asset relay; actual embedded-host loading, speech, full map/Director
+acceptance and the broader slowdown's cause are not established. Successful
+completion after closing the preview does not by itself prove causation.
+No runtime changes this checkpoint, so unit suites/build/allocation probes were
+not rerun; their previous results remain historical. Five gates accepted, ten
+open; no user-record edits or publication.

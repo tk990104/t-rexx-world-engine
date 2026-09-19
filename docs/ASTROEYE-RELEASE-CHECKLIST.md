@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 113: [draft-conflict browser regression](architecture/astroeye-schedule-drafts.md#checkpoint-113--bounded-browser-verification-completed)
+passes all eight edit/late-result cases plus discovery/retry on unchanged runtime.
+One bounded run exits 0 with graceful cleanup and no force after the user closed
+the preview; this does not prove the slowdown's cause. Specific checkpoint-112
+browser gap resolved, broader U2/embedded-host acceptance still open. No new
+unit/build/full/allocation run or publication; preview remains closed.
+
 Checkpoint 112: [manual edits during venue lookup](architecture/astroeye-schedule-drafts.md)
 cancel stale form handoffs without cancelling discovery. All 44 focused tests and
 build pass. Full-workspace draft-conflict browser acceptance remains incomplete:
