@@ -84,3 +84,32 @@ The separate test server was stopped and the user's preview remained closed.
 No user records accessed/edited or publication. Platform/full/allocation suites,
 full-workspace browser regression and native speech were not rerun. Five gates
 accepted, ten open; the broader U2 gate and slowdown diagnosis remain open.
+
+## Checkpoint 115 — schedule date identity
+
+September 19, 2026, from `236b220`. Schedule results now retain their originating
+UTC date or Upcoming label, including empty responses. The result group has the
+same accessible name; changing the date field does not silently relabel already
+returned games or trigger a new search. The label remains visible during venue
+review, when the live status is used for review guidance.
+
+Editing the date during a dated lookup cancels and invalidates that lookup,
+keeps focus on the date field, and directs the user to Find games. Both input
+and change events are covered, with an additional date check before accepting a
+successful response. Late success/failure cannot overwrite cancellation or a
+replacement search. Upcoming discovery and venue review are independent of date
+edits. Teardown removes the additional listeners. No saved-record behavior changed.
+
+All 59 focused tests pass (1.008 seconds), including nine new date-identity and
+request-race cases. The expanded isolated browser check passes real-DOM labels,
+accessible result names, date-edit cancellation, late success/failure, retained
+labels after date edits, empty results, Upcoming/venue independence and focus
+preservation, alongside existing cancellation and disposal checks. Exit 0 with
+graceful cleanup in 0.930 seconds; no force, page errors or live-provider requests.
+Production build passes: 261 modules, 22.88 seconds, with existing node:fs
+externalization and large-chunk warnings. Diff-whitespace check passes.
+
+The dedicated test server was stopped; the user's preview stayed closed. No user
+records accessed/edited or publication. No platform/full/allocation suite,
+full-workspace browser or native speech rerun. Five gates remain accepted and ten
+open; neither broad U2 acceptance nor a slowdown diagnosis is claimed.

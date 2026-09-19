@@ -45,6 +45,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 115: [schedule date identity](architecture/astroeye-schedule-focus.md#checkpoint-115--schedule-date-identity)
+keeps UTC-date/Upcoming labels attached to returned games and cancels dated
+requests on date edits without automatic refetch or interference with venue
+review. All 59 focused tests, expanded isolated browser QA and build pass
+(261 modules, 22.88s); browser exit 0, graceful cleanup 0.930s. Preview stayed
+closed, dedicated test server stopped, no saved-user-data access or publication.
+No broader suite/full-workspace/speech rerun; five gates accepted and ten open.
+
 Checkpoint 114: [visible Cancel lookup](architecture/astroeye-schedule-focus.md#checkpoint-114--visible-cancel-lookup-control)
 supports keyboard cancellation without leaving AstroEye, truthful retry status
 and safe focus when completion hides Cancel. All 50 focused tests, isolated

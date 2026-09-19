@@ -111,6 +111,46 @@ try {
   assert.equal(await page.evaluate(() => qa.selections), selections);
   assert.equal(await page.$eval(selector('next'), el => el.disabled), true, 'stale finally must not enable the replacement request');
   await settle(); assert.equal(await active(), 'next');
+  phase = 'date query identity and stale cancellation';
+  const editDate = async (value, type = 'input') => {
+    await page.focus(selector('date'));
+    await page.$eval(selector('date'), (el, value, type) => {
+      el.value = value; el.dispatchEvent(new Event(type, { bubbles: true }));
+    }, value, type);
+  };
+  for (const [type, outcome] of [['input', 'success'], ['change', 'failure']]) {
+    await editDate('2026-09-20'); await activate(selector('day'));
+    const callsBefore = await page.evaluate(() => qa.calls.length);
+    assert.equal(await page.evaluate(() => qa.calls.at(-1).value), '2026-09-20');
+    await editDate('2026-09-21', type);
+    assert.equal(await active(), 'date');
+    assert.equal(await page.evaluate(() => qa.calls.at(-1).signal.aborted), true);
+    assert.equal(await page.evaluate(() => qa.calls.length), callsBefore, 'editing does not search');
+    const cancelled = await page.$eval(selector('status'), el => el.textContent);
+    assert.match(cancelled, /Schedule date changed/);
+    await settle(outcome);
+    assert.equal(await page.$eval(selector('status'), el => el.textContent), cancelled);
+    assert.equal(await page.$eval(selector('scope'), el => el.hidden), true);
+    assert.equal(await page.$eval(selector('results'), el => el.children.length), 0);
+    assert.equal(await active(), 'date');
+  }
+  await activate(selector('day')); await settle();
+  const datedLabel = 'NFL games for 2026-09-21 (UTC)';
+  assert.equal(await page.$eval(selector('scope'), el => el.textContent), datedLabel);
+  assert.equal(await page.$eval(selector('results'), el => el.getAttribute('aria-label')), datedLabel);
+  await editDate('2026-09-22');
+  assert.equal(await page.$eval(selector('scope'), el => el.textContent), datedLabel);
+  await activate(result); await editDate('2026-09-23');
+  assert.equal(await page.evaluate(() => qa.calls.at(-1).signal.aborted), false, 'date edits do not cancel venue review');
+  await settle(); assert.equal(await active(), 'date');
+  assert.equal(await page.$eval(selector('scope'), el => el.textContent), datedLabel);
+  await activate(selector('day')); await settle('empty');
+  assert.equal(await page.$eval(selector('scope'), el => el.textContent), 'NFL games for 2026-09-23 (UTC)');
+  await activate(selector('next')); await editDate('2026-09-24');
+  assert.equal(await page.evaluate(() => qa.calls.at(-1).signal.aborted), false, 'Upcoming is independent of the date field');
+  await settle(); assert.equal(await active(), 'date');
+  assert.equal(await page.$eval(selector('scope'), el => el.textContent), 'Upcoming NFL games');
+  assert.equal(await page.$eval(selector('results'), el => el.getAttribute('aria-label')), 'Upcoming NFL games');
   phase = 'destroy pending operation';
   await activate(result);
   const beforeDestroy = await page.evaluate(() => {
@@ -127,6 +167,7 @@ try {
   report = { passed: true, successfulEmptyAndFailedLookupFocus: true, guardedReviewHandoff: true,
     cancellationAndStaleCompletion: true, disposalRemovesInteraction: true,
     keyboardCancelLookup: true, completionWhileCancelFocused: true,
+    dateQueryIdentity: true, dateEditCancelsPendingDatedLookup: true,
     mainAppBootstrapped: false, userDataAccessed: false, liveProviderRequests: 0 };
 } finally {
   if (report) console.error(JSON.stringify({ validation: report }));
