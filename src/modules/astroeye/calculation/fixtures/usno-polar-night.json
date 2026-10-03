@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "id": "usno-rstt-oneday", "retrievedOn": "2026-10-03",
+    "documentation": "https://aa.usno.navy.mil/data/api",
+    "definitions": "https://aa.usno.navy.mil/faq/RST_defs",
+    "storage": "Selected response fields; every solar entry retained. Moon, phase and label fields omitted.",
+    "selection": "Internal searches identified northern polar-night disappearance and recovery candidates before sequential independent retrieval. Targeted examples, not random sampling.",
+    "timeConvention": "USNO UT1 at offset zero, compared with UTC at minute precision for these modern dates."
+  },
+  "toleranceSeconds": 120, "boundaryProbeSeconds": 240,
+  "cases": [
+    {"id":"north-night-last-cycle","date":"2024-11-23","expectedStatus":"rise-set","latitude":70,"longitude":0,"offsetHours":0,"timeZone":"UTC",
+      "url":"https://aa.usno.navy.mil/api/rstt/oneday?date=2024-11-23&coords=70,0&tz=0",
+      "response":{"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":23,"day_of_week":"Saturday","isdst":false,"month":11,"sundata":[{"phen":"Begin Civil Twilight","time":"08:44"},{"phen":"Rise","time":"11:02"},{"phen":"Upper Transit","time":"11:47"},{"phen":"Set","time":"12:30"},{"phen":"End Civil Twilight","time":"14:48"}],"tz":0,"year":2024}},"type":"Feature"}},
+    {"id":"north-night-last-rise","date":"2024-11-24","expectedStatus":"rise-set","latitude":70,"longitude":0,"offsetHours":0,"timeZone":"UTC",
+      "url":"https://aa.usno.navy.mil/api/rstt/oneday?date=2024-11-24&coords=70,0&tz=0",
+      "response":{"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":24,"day_of_week":"Sunday","isdst":false,"month":11,"sundata":[{"phen":"Begin Civil Twilight","time":"08:48"},{"phen":"Rise","time":"11:18"},{"phen":"Upper Transit","time":"11:47"},{"phen":"Set","time":"12:14"},{"phen":"End Civil Twilight","time":"14:45"}],"tz":0,"year":2024}},"type":"Feature"}},
+    {"id":"north-night-absent-start","date":"2024-11-25","expectedStatus":"polar-night","latitude":70,"longitude":0,"offsetHours":0,"timeZone":"UTC",
+      "url":"https://aa.usno.navy.mil/api/rstt/oneday?date=2024-11-25&coords=70,0&tz=0",
+      "response":{"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":25,"day_of_week":"Monday","isdst":false,"month":11,"sundata":[{"phen":"Object continuously below the Horizon","time":null},{"phen":"Begin Civil Twilight","time":"08:51"},{"phen":"End Civil Twilight","time":"14:42"}],"tz":0,"year":2024}},"type":"Feature"}},
+    {"id":"north-night-absent-end","date":"2025-01-15","expectedStatus":"polar-night","latitude":70,"longitude":0,"offsetHours":0,"timeZone":"UTC",
+      "url":"https://aa.usno.navy.mil/api/rstt/oneday?date=2025-01-15&coords=70,0&tz=0",
+      "response":{"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":15,"day_of_week":"Wednesday","isdst":false,"month":1,"sundata":[{"phen":"Object continuously below the Horizon","time":null},{"phen":"Begin Civil Twilight","time":"09:17"},{"phen":"End Civil Twilight","time":"15:03"}],"tz":0,"year":2025}},"type":"Feature"}},
+    {"id":"north-night-first-cycle","date":"2025-01-16","expectedStatus":"rise-set","latitude":70,"longitude":0,"offsetHours":0,"timeZone":"UTC",
+      "url":"https://aa.usno.navy.mil/api/rstt/oneday?date=2025-01-16&coords=70,0&tz=0",
+      "response":{"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":16,"day_of_week":"Thursday","isdst":false,"month":1,"sundata":[{"phen":"Begin Civil Twilight","time":"09:14"},{"phen":"Rise","time":"12:05"},{"phen":"Upper Transit","time":"12:10"},{"phen":"Set","time":"12:15"},{"phen":"End Civil Twilight","time":"15:07"}],"tz":0,"year":2025}},"type":"Feature"}},
+    {"id":"north-night-next-rise","date":"2025-01-17","expectedStatus":"rise-set","latitude":70,"longitude":0,"offsetHours":0,"timeZone":"UTC",
+      "url":"https://aa.usno.navy.mil/api/rstt/oneday?date=2025-01-17&coords=70,0&tz=0",
+      "response":{"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":17,"day_of_week":"Friday","isdst":false,"month":1,"sundata":[{"phen":"Begin Civil Twilight","time":"09:11"},{"phen":"Rise","time":"11:37"},{"phen":"Upper Transit","time":"12:10"},{"phen":"Set","time":"12:45"},{"phen":"End Civil Twilight","time":"15:10"}],"tz":0,"year":2025}},"type":"Feature"}}
+  ]
+}

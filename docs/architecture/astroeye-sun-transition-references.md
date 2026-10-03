@@ -62,11 +62,13 @@ treated as an omitted comparison.
 
 ## Remaining scope
 
-This supplies northern continuous-daylight and seasonal-onset evidence plus the
-first returning sunset. It does not yet externally verify restoration after the
-first returning sunrise: the July 27/28 references could not be retrieved. Southern
-seasonal transitions, polar-night transitions and broader geographic/date coverage
-also remain outside this pack. A2 remains open; no other release gate is closed.
+This pack supplies northern continuous-daylight and seasonal-onset evidence plus
+the first returning sunset. Checkpoint 117's separate recovery pack adds July 27/28
+returning-sunrise evidence. Checkpoint 118's
+[polar-night pack](astroeye-polar-night-references.md) adds northern winter onset
+and recovery, explicitly leaving twelve short-day hour assignments unresolved.
+Southern seasonal transitions and consolidated A2 review remain outstanding.
+A2 remains open; no other release gate is closed.
 No production calculations, saved charts, browser state, dependencies or licenses
 were changed by this validation-only checkpoint.
 

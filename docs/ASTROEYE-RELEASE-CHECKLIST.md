@@ -45,6 +45,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 118: [independent northern polar-night transitions](architecture/astroeye-polar-night-references.md)
+add six USNO dates, eight matching present boundaries and four matching absent
+boundaries. Thirty-six source-based hour samples pass; twelve brief-day samples
+are explicitly unresolved at the retained tolerance. Six focused and all 565
+platform tests pass; runtime/models/records/preview untouched. No new build,
+browser/full/allocation evidence or publication. Southern transition coverage,
+unresolved precision and consolidated A2 review remain open; five gates accepted.
+
 Checkpoint 117: [independent polar-day recovery references](architecture/astroeye-sun-recovery-references.md)
 resolve the missing July 27/28 USNO retrieval gap. Four solar comparisons, 24
 source-based hour midpoints and recovery/rollover probes pass unchanged tolerances.
