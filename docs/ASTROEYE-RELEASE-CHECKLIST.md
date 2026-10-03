@@ -45,6 +45,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 116: [full-workspace date-query regression](architecture/astroeye-schedule-focus.md#checkpoint-116--workspace-date-query-regression)
+passes four cancelled-query/late-response cases plus result labels, retry, empty
+results, Upcoming independence and visible cancellation, preserving drafts,
+private synthetic notebook records and navigation. First browser run exits 0
+(validation by 9.502s; graceful cleanup 1.342s), and 59 focused tests pass.
+Runtime unchanged; no new build/full/platform/allocation or embedded-host claim.
+User preview/data untouched; five gates accepted, ten open. U1/U2 remain open.
+
 Checkpoint 115: [schedule date identity](architecture/astroeye-schedule-focus.md#checkpoint-115--schedule-date-identity)
 keeps UTC-date/Upcoming labels attached to returned games and cancels dated
 requests on date edits without automatic refetch or interference with venue

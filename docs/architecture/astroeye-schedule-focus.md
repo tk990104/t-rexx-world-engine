@@ -113,3 +113,32 @@ The dedicated test server was stopped; the user's preview stayed closed. No user
 records accessed/edited or publication. No platform/full/allocation suite,
 full-workspace browser or native speech rerun. Five gates remain accepted and ten
 open; neither broad U2 acceptance nor a slowdown diagnosis is claimed.
+
+## Checkpoint 116 — workspace date-query regression
+
+October 3, 2026, on unchanged application runtime `55cfa70`. The provider/workspace
+harness now offers a separate `--node-assets --date-queries` mode, mutually
+exclusive with draft-conflict, collection and Director modes to keep each run
+inside the existing 60-second watchdog. It mounts the real workspace, controller,
+schedule client and IndexedDB in a disposable browser profile, using held synthetic
+provider responses which intentionally ignore aborts.
+
+The new check creates an unsaved manual draft and a private synthetic notebook
+record. Both input/change date edits with late success/failure (four cases) must
+preserve all form values, review state, serialized records, navigation and date
+focus. It also checks completed query labels after date edits, an explicit new
+search with empty results, Upcoming independence and keyboard Cancel lookup with
+a late success. No event/chart is saved or camera action requested by discovery.
+
+First run passes: validation completed by 9.502 seconds; graceful browser cleanup
+1.342 seconds, exit 0, no forced termination, page errors or live-provider requests.
+All 59 focused schedule/focus/cleanup tests also pass (0.837 seconds). The temporary
+5175 server was stopped; the user's preview and saved data were not accessed.
+Diff-whitespace check passes. Nothing published.
+
+This is regression evidence for workspace composition, not a new feature or a
+complete U1/U2 acceptance result. Normal browser asset delivery, the embedded host,
+live providers and screen-reader speech are not certified by the diagnostic
+localhost asset relay. No application build, full/platform/allocation suite or
+other browser mode rerun in this checkpoint; runtime is unchanged. Five gates
+remain accepted and ten open. The earlier slowdown cause remains unresolved.

@@ -4,13 +4,15 @@ import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 import { checkDirectorWorkflow } from './qa-astroeye-director-workflow.mjs';
 import { checkCollectionWorkflow } from './qa-astroeye-collection-workflow.mjs';
 import { uncachedBatchIds } from './qa-astroeye-uncached-cases.mjs';
-import { installScheduleDraftFixture, checkScheduleDraftConflicts } from './qa-astroeye-schedule-drafts.mjs';
+import { installScheduleDraftFixture, checkScheduleDraftConflicts, checkScheduleDateQueries } from './qa-astroeye-schedule-drafts.mjs';
 
 // Synthetic HTTP provider responses + real workspace/controller/IndexedDB.
 // Explicit diagnostic relay only; this does not certify normal host loading.
 assert.ok(process.argv.includes('--node-assets'), 'Pass --node-assets to acknowledge the diagnostic asset transport');
 const collectionsOnly = process.argv.includes('--collections');
 const draftConflicts = process.argv.includes('--draft-conflicts');
+const dateQueries = process.argv.includes('--date-queries');
+assert.ok(!dateQueries || (!draftConflicts && !collectionsOnly && !process.argv.includes('--director')), 'Run date queries separately');
 assert.ok(!draftConflicts || (!collectionsOnly && !process.argv.includes('--director')), 'Run draft conflicts separately');
 const uncached = process.argv.includes('--uncached');
 assert.ok(!uncached || collectionsOnly, 'Uncached checks require collection mode');
@@ -70,7 +72,7 @@ try {
   });
   mark('workspace-mount');
   await page.goto(base.href, { waitUntil: 'domcontentloaded' });
-  if (draftConflicts) await page.evaluate(installScheduleDraftFixture, game);
+  if (draftConflicts || dateQueries) await page.evaluate(installScheduleDraftFixture, game);
   let timer;
   try { await Promise.race([page.evaluate(async (traceCollections) => {
     const { mountAstroEyeWorkspace } = await import('/src/modules/astroeye/astroeyeWorkspace.js');
@@ -105,7 +107,7 @@ try {
     await workspace.open();
   }, collectionsOnly), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Workspace mount exceeded 20 seconds')), 20000); })]);
   } finally { clearTimeout(timer); }
-  if (draftConflicts) await page.evaluate(() => scheduleDraftQA.restore());
+  if (draftConflicts || dateQueries) await page.evaluate(() => scheduleDraftQA.restore());
   const records = () => page.evaluate(() => qa.store.serializeRecords());
   const field = (name) => page.$eval(`[name="${name}"]`, (node) => node.value);
   const setField = (name, value) => page.$eval(`[name="${name}"]`, (node, next) => {
@@ -115,7 +117,12 @@ try {
   const submit = () => page.$eval('.astroeye-form', (form) => form.requestSubmit());
   const empty = await records();
   assert.deepEqual(JSON.parse(empty), { schemaVersion: 1, events: [], charts: [], workspaces: [] });
-  if (draftConflicts) {
+  if (dateQueries) {
+    const queries = await checkScheduleDateQueries(page, mark);
+    assert.deepEqual(errors, []); assert.deepEqual(blocked, []); assert.deepEqual(relayFailures, []);
+    await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
+    report = { passed: true, queries, assetTransport: 'node-localhost', providerResponses: 'synthetic', userDataAccessed: false, embeddedHostVerified: false };
+  } else if (draftConflicts) {
     const drafts = await checkScheduleDraftConflicts(page, mark);
     assert.deepEqual(errors, []); assert.deepEqual(blocked, []); assert.deepEqual(relayFailures, []);
     await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
