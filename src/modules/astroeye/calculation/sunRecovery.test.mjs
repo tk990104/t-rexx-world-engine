@@ -3,8 +3,9 @@ import test from 'node:test';
 import { createStablePlanetaryHourCalculator } from './stablePlanetaryHours.js';
 import { renderPlanetaryHour } from '../planetaryHourPresentation.js';
 
-// INTERNAL CONSISTENCY ONLY. July 27/28 USNO retrieval failed; these are not
-// independently verified sunrise times and must not enter the external fixture pack.
+// INTERNAL CONSISTENCY ONLY: roots below come from the production calculator.
+// Separate sunRecoveryReferences tests use newly retrieved July 27/28 USNO data;
+// these computed millisecond roots must not enter the external fixture pack.
 const observer = { latitude: 70, longitude: 0, timeZone: 'UTC' };
 const iso = (ms) => new Date(ms).toISOString();
 const input = (utcInstant) => ({ ...observer, utcInstant });

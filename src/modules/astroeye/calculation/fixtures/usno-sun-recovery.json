@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "id": "usno-rstt-oneday",
+    "retrievedOn": "2026-10-03",
+    "documentation": "https://aa.usno.navy.mil/data/api",
+    "definitions": "https://aa.usno.navy.mil/faq/RST_defs",
+    "storage": "Selected API response fields; all solar entries retained as received. Moon, phase and label fields omitted.",
+    "selection": "July 27/28 dates identified by existing internal recovery tests; earlier retrievals failed. These are newly retrieved independent solar times, not production-generated fixtures.",
+    "timeConvention": "USNO UT1 with fixed offset zero, compared with UTC at minute precision for these modern dates."
+  },
+  "toleranceSeconds": 120,
+  "boundaryProbeSeconds": 240,
+  "cases": [
+    {
+      "id": "north-70-resumed-cycle", "date": "2024-07-27",
+      "latitude": 70, "longitude": 0, "offsetHours": 0, "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-07-27&coords=70,0&tz=0",
+      "response": {"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":27,"day_of_week":"Saturday","isdst":false,"month":7,"sundata":[{"phen":"Object continuously above the Twilight Limit","time":null},{"phen":"Rise","time":"00:20"},{"phen":"Upper Transit","time":"12:07"},{"phen":"Set","time":"23:29"}],"tz":0,"year":2024}},"type":"Feature"}
+    },
+    {
+      "id": "north-70-next-cycle", "date": "2024-07-28",
+      "latitude": 70, "longitude": 0, "offsetHours": 0, "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-07-28&coords=70,0&tz=0",
+      "response": {"apiversion":"4.0.1","geometry":{"coordinates":[0,70],"type":"Point"},"properties":{"data":{"day":28,"day_of_week":"Sunday","isdst":false,"month":7,"sundata":[{"phen":"Object continuously above the Twilight Limit","time":null},{"phen":"Rise","time":"00:45"},{"phen":"Upper Transit","time":"12:07"},{"phen":"Set","time":"23:14"}],"tz":0,"year":2024}},"type":"Feature"}
+    }
+  ]
+}

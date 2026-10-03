@@ -2,6 +2,12 @@
 
 ## Source and selection
 
+Update, October 3, checkpoint 117: the previously missing July 27/28 responses
+have now been retrieved and independently checked in the separate
+[polar-day recovery reference pack](astroeye-sun-recovery-references.md).
+The failed-retrieval history below is retained; it no longer describes the current
+availability of those two references. Internal millisecond tests remain internal.
+
 Four selected-field [USNO one-day API](https://aa.usno.navy.mil/data/api) responses
 at latitude 70N, longitude 0, fixed offset zero/UTC were retrieved September 13, 2026.
 API version 4.0.1, coordinates, date/weekday, offset, DST flag, request URL and all

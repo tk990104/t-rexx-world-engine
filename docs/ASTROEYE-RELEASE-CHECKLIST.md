@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 117: [independent polar-day recovery references](architecture/astroeye-sun-recovery-references.md)
+resolve the missing July 27/28 USNO retrieval gap. Four solar comparisons, 24
+source-based hour midpoints and recovery/rollover probes pass unchanged tolerances.
+All 35 focused and 559 platform tests pass; no runtime or saved-data changes.
+No build/browser/full/allocation rerun or publication. A2 remains open for remaining
+coverage and consolidated review; five gates accepted, ten open.
+
 Checkpoint 116: [full-workspace date-query regression](architecture/astroeye-schedule-focus.md#checkpoint-116--workspace-date-query-regression)
 passes four cancelled-query/late-response cases plus result labels, retry, empty
 results, Upcoming independence and visible cancellation, preserving drafts,
