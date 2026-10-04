@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
+import { checkEverydayWorkflow } from './qa-astroeye-everyday-workflow.mjs';
 
 // Real workspace/form/storage, mocked camera seam, fresh isolated sender/recipient contexts.
 let browser, sender, recipient, report, phase = 'startup';
@@ -92,14 +93,18 @@ try {
       await window.qaMountPhase('workspace-setup');
       const store = createWorldRecordStore({ databaseName: 'qa-manual-share-synthetic' });
       const eventBus = new EventBus(), worldClock = new WorldClock({ eventBus });
-      const qa = { store, navigation: 0, presentationNavigation: [] };
+      const qa = { store, navigation: 0, markerClears: 0, presentationNavigation: [], recordDownloads: [], comparisonDownloads: [] };
       const controller = createAstroEyeWorkspaceController({ recordStore: store, eventBus, worldClock,
         moduleState: new ModuleStateCoordinator({ eventBus }), presentEvent: async (_event, _chart, options = {}) => {
+          // Production clears the marker for null events and returns before navigation.
+          if (!_event) { qa.markerClears++; return; }
           qa.presentationNavigation.push(options.navigate);
           if (options.navigate !== false) qa.navigation++;
         } });
       const notes = createResearchAnnotations(store), notebook = createResearchNotebook(store);
       const workspace = mountAstroEyeWorkspace({ controller, researchAnnotations: notes, researchNotebook: notebook,
+        downloadRecords: (text, filename) => qa.recordDownloads.push({ text, filename }),
+        downloadComparison: text => qa.comparisonDownloads.push(text),
         createWorldLink: () => `${location.origin}/#v=2&lat=40&lon=-75&alt=10000&heading=12&pitch=-42&roll=0` });
       Object.assign(qa, { controller, workspace, notes, notebook, incoming: readSharedViewHash(location.hash) });
       window.qa = qa;
@@ -143,6 +148,46 @@ try {
   assert.equal(saved.events[0].utcStart, '2026-11-01T06:30:00.000Z');
   assert.equal(saved.events[0].source.kind, 'manual');
   assert.equal(await sender.evaluate(() => qa.navigation), 1);
+  if (process.argv.includes('--everyday')) {
+    const result = await checkEverydayWorkflow(sender, click, mark);
+    mark('everyday-fresh-profile-restore');
+    recipient = await open(base.href);
+    assert.notEqual(sender.browserContext(), recipient.browserContext());
+    const emptyRecipient = await records(recipient);
+    assert.deepEqual(JSON.parse(emptyRecipient), { schemaVersion: 1, events: [], charts: [], workspaces: [] });
+    await recipient.evaluate(text => {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([text], 'synthetic-private-backup.json', { type: 'application/json' }));
+      const input = document.querySelector('[data-role="import-file"]');
+      input.files = transfer.files; input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, result.backup);
+    await recipient.waitForFunction(() => !document.querySelector('#astroeye-workspace').dataset.busy);
+    assert.equal(await records(recipient), emptyRecipient);
+    assert.equal(await recipient.$eval('[data-role="import-review"]', node => node.hidden), false);
+    await click(recipient, 'confirm-import');
+    assert.equal(await records(recipient), result.backup);
+    mark('everyday-real-reload');
+    await recipient.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
+    await recipient.reload({ waitUntil: 'domcontentloaded' }); await mount(recipient);
+    assert.equal(await records(recipient), result.backup);
+    await click(recipient, 'event-notes');
+    await recipient.waitForFunction(() => !document.querySelector('[data-annotation="reload"]').disabled);
+    await recipient.select('[data-annotation="list"]', result.noteId);
+    assert.equal(await recipient.$eval('[data-role="event-notes"] textarea', node => node.value), 'PRIVATE-EVERYDAY-EVENT-NOTE <img src=x>');
+    assert.match(await recipient.$eval('[data-annotation="capture"]', node => node.textContent), /06:45:00.000Z/);
+    await click(recipient, 'research-notes');
+    await recipient.waitForFunction(() => !document.querySelector('[data-role="research-notebook"] textarea').disabled);
+    assert.equal(await recipient.$eval('[data-role="research-notebook"] textarea', node => node.value), 'PRIVATE-EVERYDAY-NOTEBOOK');
+    assert.equal(await recipient.evaluate(() => qa.navigation), 0);
+    assert.equal(await records(recipient), result.backup);
+    assert.equal(await records(sender), result.backup);
+    for (const page of [sender, recipient]) await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
+    assert.deepEqual(errors, []); assert.deepEqual(unexpected, []); assert.deepEqual(assetFailures, []);
+    report = { passed: true, scope: 'composed-manual-comparison-notes-recovery', ...result.evidence,
+      freshProfileBackupRestore: true, realReloadPersistence: true, assetTransport, assets: assetTiming(),
+      cameraSeamMocked: true, mainAppBootstrapped: false, embeddedHostVerified: false,
+      externalRequests: 0, userDataAccessed: false };
+  } else {
   mark('sender-preview-and-share');
   await click(sender, 'time-back');
   const beforePreview = await records(sender);
@@ -202,6 +247,7 @@ try {
     isolatedRecipientContext: true, sameChartAndWheel: true, privateNotesExcluded: true, viewingDoesNotSave: true,
     sharedNoteCaptureRefused: true, explicitCopyOnly: true, malformedLinkPreservesRecords: true,
     mainAppBootstrapped: false, cameraSeamMocked: true, embeddedHostVerified: false, externalRequests: 0, userDataAccessed: false };
+  }
   }
 } catch (error) {
   process.stderr.write(`${JSON.stringify({ failed: error.name, phase, assetFailures, assets: assetTiming() })}\n`);

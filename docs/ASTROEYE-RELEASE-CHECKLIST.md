@@ -52,6 +52,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 4, checkpoint 123: [composed everyday workflow](architecture/astroeye-everyday-workflow.md)
+passes manual creation, frozen comparison/note capture, notebook, private-export
+boundaries, delete/undo, reviewed backup import and full recovery in a fresh profile
+after reload. Ordinary share regression also passes; both final normal-transport
+browser runs exit 0 with graceful cleanup. Runtime unchanged; no full/build rerun.
+U1/R2 remain open for remaining provider/Director/actual-host/map criteria. Five
+accepted, ten open; next work is those handoffs, not further polar refinements.
+
 October 4, checkpoint 121: short calculated planetary hours (four minutes or less) now carry a provisional label and reference-precision notice. See [presentation policy and verification](architecture/astroeye-planetary-hour-boundaries.md). Eight focused tests, all 581 platform tests and the isolated synthetic-data browser check pass. Existing calculations/models/records and the user's preview remain untouched. This is presentation mitigation, not new astronomical evidence: A2 stays open, including 24 unresolved short-hour assignments; five gates accepted, ten open.
 
 Checkpoint 120: [midnight event-window comparison](architecture/astroeye-midnight-window-review.md)

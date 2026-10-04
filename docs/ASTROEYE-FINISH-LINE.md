@@ -1,6 +1,14 @@
 # AstroEye finish-line tracker
 
-Updated October 4, 2026, checkpoint 122. Runtime candidate: `7368c55`.
+Updated October 4, 2026, checkpoint 123. Runtime candidate: `7368c55`.
+
+Latest completed outcome: [composed everyday workflow and fresh-profile recovery](architecture/astroeye-everyday-workflow.md)
+passed, together with a current share-link regression, using normal browser asset
+transport. Manual charts, frozen comparison/note capture, private-note exclusions,
+delete/undo, reviewed import and full backup restoration after reload are verified
+in isolated synthetic profiles. No runtime changes. U1/R2 are not yet accepted:
+provider/Director and actual-host/map criteria remain. Next: those handoff checks,
+not another unchanged everyday-workflow rerun. Tally: five accepted, ten open.
 
 ## User direction and scope
 
