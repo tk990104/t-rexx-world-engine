@@ -2,6 +2,12 @@
 
 October 4, 2026 — checkpoint 119, application runtime unchanged from `b3beb68`.
 
+Checkpoint 120 update: the separate [three-day event-window comparison](astroeye-midnight-window-review.md)
+matches all five January 24–26 events without dropping the midnight sunset. This
+resolves the event-timing comparison gap, not the stricter daily classifications
+retained below. It adds 24 decisive hour midpoints, bringing combined coverage to
+240 decisive / 24 unresolved. Original reference data and daily report are unchanged.
+
 ## Sources and conventions
 
 Twelve [USNO one-day API](https://aa.usno.navy.mil/data/api) responses at 70S/0

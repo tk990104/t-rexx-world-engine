@@ -45,6 +45,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 120: [midnight event-window comparison](architecture/astroeye-midnight-window-review.md)
+matches all five southern events with unchanged timestamps/tolerance and no dropped
+sunset. The scoped window CLI exits 0; daily classification remains unaccepted and
+the strict daily CLI still exits 1. Combined hour coverage is 240 decisive / 24
+unresolved. Six focused and all 577 platform tests pass; no runtime/data/preview
+changes or publication. Five gates accepted, ten open; A2 is not waived.
+
 Checkpoint 119: [southern transitions and combined A2 review](architecture/astroeye-southern-transition-review.md)
 add twelve reference days: ten match; two midnight/multiple-set cases remain
 unresolved and the scientific CLI intentionally exits 1. Seventy-two southern
@@ -292,7 +299,10 @@ Existing standalone Chromium results do not certify the embedded preview host.
   Current checkpoint-119 [combined review](architecture/astroeye-southern-transition-review.md)
   supersedes historical missing-retrieval/coverage statements below: northern and
   southern transitions are sampled, but two southern midnight cases and 24
-  precision-limited hour assignments remain unresolved. A2 is not accepted.
+  precision-limited hour assignments remain unresolved. Checkpoint 120's
+  [window comparison](architecture/astroeye-midnight-window-review.md) resolves the
+  southern event-timing comparison only; daily classifications remain unaccepted.
+  A2 is not accepted.
 - [x] **A3 — Supported range:** document and consistently handle the supported date range;
   add station, zodiac-boundary and historical-zone samples appropriate to that range.
   Rerun deterministic internal tests and stored external position comparisons. Describe
