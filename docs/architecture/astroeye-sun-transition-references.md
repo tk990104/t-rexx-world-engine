@@ -46,8 +46,10 @@ treated as an omitted comparison.
 ## Planetary-hour behavior
 
 - The May 15 sunrise, sunset and May 16 sunrise define the last complete cycle.
-  All 24 source-derived segment midpoints pass hour, period, traditional ruler and
-  interval containment checks. The rounded night is just twelve minutes long.
+  Checkpoint 119 precision review accepts twelve source-derived daytime midpoints;
+  twelve nighttime assignments are unresolved because their midpoint-to-edge
+  distance is smaller than the retained 120-second screen. The rounded night is
+  just twelve minutes long. Earlier claims of 24 decisive assignments are superseded.
   Ruler assertions are internal traditional-rule checks, not USNO-provided data.
 - Four minutes before the rounded last sunrise, the preceding Wednesday planetary
   day still applies. Four minutes after it, the result is unavailable. The following
@@ -67,7 +69,9 @@ the first returning sunset. Checkpoint 117's separate recovery pack adds July 27
 returning-sunrise evidence. Checkpoint 118's
 [polar-night pack](astroeye-polar-night-references.md) adds northern winter onset
 and recovery, explicitly leaving twelve short-day hour assignments unresolved.
-Southern seasonal transitions and consolidated A2 review remain outstanding.
+Checkpoint 119's [southern and combined review](astroeye-southern-transition-review.md)
+adds southern seasonal coverage and identifies two unresolved midnight/multiple-set
+cases plus 24 precision-limited hour assignments across the northern packs.
 A2 remains open; no other release gate is closed.
 No production calculations, saved charts, browser state, dependencies or licenses
 were changed by this validation-only checkpoint.

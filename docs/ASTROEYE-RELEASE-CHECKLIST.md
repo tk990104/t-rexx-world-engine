@@ -45,6 +45,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+Checkpoint 119: [southern transitions and combined A2 review](architecture/astroeye-southern-transition-review.md)
+add twelve reference days: ten match; two midnight/multiple-set cases remain
+unresolved and the scientific CLI intentionally exits 1. Seventy-two southern
+midpoints pass. Corrected northern short-night precision claims bring combined
+coverage to 216 decisive midpoints and 24 unresolved assignments. Twelve changed-area
+tests and all 571 platform tests pass; no runtime/saved-data/preview changes or
+publication. A2 remains open; five gates accepted, ten open.
+
 Checkpoint 118: [independent northern polar-night transitions](architecture/astroeye-polar-night-references.md)
 add six USNO dates, eight matching present boundaries and four matching absent
 boundaries. Thirty-six source-based hour samples pass; twelve brief-day samples
@@ -281,6 +289,10 @@ Existing standalone Chromium results do not certify the embedded preview host.
 - [ ] **A2 — Planetary hours:** independently check sunrise/sunset and before/at/after
   hour/day boundaries, including venue-local date changes and locations without a normal
   sunrise/sunset cycle. Unavailable results must remain explicit rather than guessed.
+  Current checkpoint-119 [combined review](architecture/astroeye-southern-transition-review.md)
+  supersedes historical missing-retrieval/coverage statements below: northern and
+  southern transitions are sampled, but two southern midnight cases and 24
+  precision-limited hour assignments remain unresolved. A2 is not accepted.
 - [x] **A3 — Supported range:** document and consistently handle the supported date range;
   add station, zodiac-boundary and historical-zone samples appropriate to that range.
   Rerun deterministic internal tests and stored external position comparisons. Describe

@@ -1,0 +1,616 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "id": "usno-rstt-oneday",
+    "retrievedOn": "2026-10-04",
+    "documentation": "https://aa.usno.navy.mil/data/api",
+    "definitions": "https://aa.usno.navy.mil/faq/RST_defs",
+    "storage": "Selected response fields; all solar entries preserved. Moon, phase and label fields omitted.",
+    "selection": "Targeted internal candidate search followed by sequential independent retrieval, not random sampling. January 24/25 retained despite midnight disagreement and multiple-set shape.",
+    "timeConvention": "Minute-rounded USNO UT1 at fixed offset zero compared with UTC for these modern dates."
+  },
+  "toleranceSeconds": 120,
+  "boundaryProbeSeconds": 240,
+  "cases": [
+    {
+      "id": "south-2024-01-24",
+      "date": "2024-01-24",
+      "expectedStatus": "polar-day",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-01-24&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 24,
+            "day_of_week": "Wednesday",
+            "isdst": false,
+            "month": 1,
+            "sundata": [
+              {
+                "phen": "Object continuously above the Horizon",
+                "time": null
+              },
+              {
+                "phen": "Object continuously above the Twilight Limit",
+                "time": null
+              },
+              {
+                "phen": "Lower Transit",
+                "time": "00:12"
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "12:12"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-01-25",
+      "date": "2024-01-25",
+      "expectedStatus": "multiple-boundaries",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-01-25&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 25,
+            "day_of_week": "Thursday",
+            "isdst": false,
+            "month": 1,
+            "sundata": [
+              {
+                "phen": "Object continuously above the Twilight Limit",
+                "time": null
+              },
+              {
+                "phen": "Set",
+                "time": "00:00"
+              },
+              {
+                "phen": "Rise",
+                "time": "00:25"
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "12:12"
+              },
+              {
+                "phen": "Set",
+                "time": "23:33"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-01-26",
+      "date": "2024-01-26",
+      "expectedStatus": "rise-set",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-01-26&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 26,
+            "day_of_week": "Friday",
+            "isdst": false,
+            "month": 1,
+            "sundata": [
+              {
+                "phen": "Object continuously above the Twilight Limit",
+                "time": null
+              },
+              {
+                "phen": "Rise",
+                "time": "00:52"
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "12:12"
+              },
+              {
+                "phen": "Set",
+                "time": "23:18"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-05-22",
+      "date": "2024-05-22",
+      "expectedStatus": "rise-set",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-05-22&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 22,
+            "day_of_week": "Wednesday",
+            "isdst": false,
+            "month": 5,
+            "sundata": [
+              {
+                "phen": "Begin Civil Twilight",
+                "time": "08:55"
+              },
+              {
+                "phen": "Rise",
+                "time": "11:16"
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "11:57"
+              },
+              {
+                "phen": "Set",
+                "time": "12:37"
+              },
+              {
+                "phen": "End Civil Twilight",
+                "time": "14:58"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-05-23",
+      "date": "2024-05-23",
+      "expectedStatus": "rise-set",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-05-23&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 23,
+            "day_of_week": "Thursday",
+            "isdst": false,
+            "month": 5,
+            "sundata": [
+              {
+                "phen": "Begin Civil Twilight",
+                "time": "08:58"
+              },
+              {
+                "phen": "Rise",
+                "time": "11:32"
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "11:57"
+              },
+              {
+                "phen": "Set",
+                "time": "12:20"
+              },
+              {
+                "phen": "End Civil Twilight",
+                "time": "14:54"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-05-24",
+      "date": "2024-05-24",
+      "expectedStatus": "polar-night",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-05-24&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 24,
+            "day_of_week": "Friday",
+            "isdst": false,
+            "month": 5,
+            "sundata": [
+              {
+                "phen": "Object continuously below the Horizon",
+                "time": null
+              },
+              {
+                "phen": "Begin Civil Twilight",
+                "time": "09:02"
+              },
+              {
+                "phen": "End Civil Twilight",
+                "time": "14:51"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-07-18",
+      "date": "2024-07-18",
+      "expectedStatus": "polar-night",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-07-18&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 18,
+            "day_of_week": "Thursday",
+            "isdst": false,
+            "month": 7,
+            "sundata": [
+              {
+                "phen": "Object continuously below the Horizon",
+                "time": null
+              },
+              {
+                "phen": "Begin Civil Twilight",
+                "time": "09:11"
+              },
+              {
+                "phen": "End Civil Twilight",
+                "time": "15:02"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-07-19",
+      "date": "2024-07-19",
+      "expectedStatus": "rise-set",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-07-19&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 19,
+            "day_of_week": "Friday",
+            "isdst": false,
+            "month": 7,
+            "sundata": [
+              {
+                "phen": "Begin Civil Twilight",
+                "time": "09:08"
+              },
+              {
+                "phen": "Rise",
+                "time": "11:39"
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "12:06"
+              },
+              {
+                "phen": "Set",
+                "time": "12:34"
+              },
+              {
+                "phen": "End Civil Twilight",
+                "time": "15:05"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-07-20",
+      "date": "2024-07-20",
+      "expectedStatus": "rise-set",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-07-20&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 20,
+            "day_of_week": "Saturday",
+            "isdst": false,
+            "month": 7,
+            "sundata": [
+              {
+                "phen": "Begin Civil Twilight",
+                "time": "09:05"
+              },
+              {
+                "phen": "Rise",
+                "time": "11:24"
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "12:06"
+              },
+              {
+                "phen": "Set",
+                "time": "12:50"
+              },
+              {
+                "phen": "End Civil Twilight",
+                "time": "15:09"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-11-16",
+      "date": "2024-11-16",
+      "expectedStatus": "rise-set",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-11-16&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 16,
+            "day_of_week": "Saturday",
+            "isdst": false,
+            "month": 11,
+            "sundata": [
+              {
+                "phen": "Object continuously above the Twilight Limit",
+                "time": null
+              },
+              {
+                "phen": "Rise",
+                "time": "00:30"
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "11:45"
+              },
+              {
+                "phen": "Set",
+                "time": "23:18"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-11-17",
+      "date": "2024-11-17",
+      "expectedStatus": "rise-only",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-11-17&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 17,
+            "day_of_week": "Sunday",
+            "isdst": false,
+            "month": 11,
+            "sundata": [
+              {
+                "phen": "Object continuously above the Twilight Limit",
+                "time": null
+              },
+              {
+                "phen": "Rise",
+                "time": "00:11"
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "11:45"
+              },
+              {
+                "phen": "Lower Transit",
+                "time": "23:45"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    },
+    {
+      "id": "south-2024-11-18",
+      "date": "2024-11-18",
+      "expectedStatus": "polar-day",
+      "latitude": -70,
+      "longitude": 0,
+      "offsetHours": 0,
+      "timeZone": "UTC",
+      "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-11-18&coords=-70,0&tz=0",
+      "response": {
+        "apiversion": "4.0.1",
+        "geometry": {
+          "coordinates": [
+            0,
+            -70
+          ],
+          "type": "Point"
+        },
+        "properties": {
+          "data": {
+            "day": 18,
+            "day_of_week": "Monday",
+            "isdst": false,
+            "month": 11,
+            "sundata": [
+              {
+                "phen": "Object continuously above the Horizon",
+                "time": null
+              },
+              {
+                "phen": "Object continuously above the Twilight Limit",
+                "time": null
+              },
+              {
+                "phen": "Upper Transit",
+                "time": "11:45"
+              },
+              {
+                "phen": "Lower Transit",
+                "time": "23:45"
+              }
+            ],
+            "tz": 0,
+            "year": 2024
+          }
+        },
+        "type": "Feature"
+      }
+    }
+  ]
+}

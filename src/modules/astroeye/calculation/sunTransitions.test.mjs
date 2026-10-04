@@ -21,13 +21,16 @@ test('four independent transition days match both present and absent solar bound
   assert.equal(JSON.stringify(pack), before);
 });
 
-test('the last complete cycle has 24 source-based midpoints including a twelve-minute night', () => {
+test('the last complete cycle resolves twelve day midpoints but not its twelve short-night hours', () => {
   const pack = readSunTransitions(), [first, last] = pack.cases.map(parse);
   const edges = [first.rise, first.set, last.rise].map(Date.parse);
   assert.equal(edges[2] - edges[1], 12 * 60000);
   const rulers = 'Mercury Moon Saturn Jupiter Mars Sun Venus'.split(' ');
+  let decisive = 0, unresolved = 0;
   for (let i = 0; i < 24; i++) {
     const night = i >= 12, start = edges[night ? 1 : 0], end = edges[night ? 2 : 1], length = (end - start) / 12;
+    if (length / 2 <= pack.toleranceSeconds * 1000) { unresolved++; continue; }
+    decisive++;
     const instant = start + (i % 12 + 0.5) * length, hour = at(new Date(instant).toISOString());
     assert.equal(hour.status, 'exact');
     assert.equal(hour.hourNumber, i + 1);
@@ -38,6 +41,7 @@ test('the last complete cycle has 24 source-based midpoints including a twelve-m
     assert.ok(Math.abs(Date.parse(hour.start) - (start + i % 12 * length)) <= pack.toleranceSeconds * 1000);
     assert.ok(Math.abs(Date.parse(hour.end) - (start + (i % 12 + 1) * length)) <= pack.toleranceSeconds * 1000);
   }
+  assert.equal(decisive, 12); assert.equal(unresolved, 12);
 });
 
 test('last sunrise switches from a complete cycle to unavailable without assigning a new ruler', () => {
