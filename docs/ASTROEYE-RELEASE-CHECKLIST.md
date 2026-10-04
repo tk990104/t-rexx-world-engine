@@ -45,6 +45,8 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 4, checkpoint 121: short calculated planetary hours (four minutes or less) now carry a provisional label and reference-precision notice. See [presentation policy and verification](architecture/astroeye-planetary-hour-boundaries.md). Eight focused tests, all 581 platform tests and the isolated synthetic-data browser check pass. Existing calculations/models/records and the user's preview remain untouched. This is presentation mitigation, not new astronomical evidence: A2 stays open, including 24 unresolved short-hour assignments; five gates accepted, ten open.
+
 Checkpoint 120: [midnight event-window comparison](architecture/astroeye-midnight-window-review.md)
 matches all five southern events with unchanged timestamps/tolerance and no dropped
 sunset. The scoped window CLI exits 0; daily classification remains unaccepted and

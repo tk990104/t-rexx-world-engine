@@ -1,5 +1,43 @@
 # Planetary-hour edge investigation and display safeguard
 
+## Short-interval presentation — October 4, 2026 (checkpoint 121)
+
+The workspace now marks calculated intervals of **four minutes or less** as
+**provisional**, retaining the calculated ruler, period and number for inspection.
+The accompanying notice explains that the minute-rounded reference checks do not
+resolve every short hour. The [combined reference review](astroeye-southern-transition-review.md)
+and [midnight-window review](astroeye-midnight-window-review.md) retain 24 unresolved
+short-hour assignments alongside 240 decisive source-derived midpoint checks.
+This UI change does not resolve those scientific gaps or accept A2.
+
+The four-minute cutoff is an inclusive **display policy**, not a measured error
+bound: an interval this short cannot have a midpoint more than the existing
+120-second reference-comparison screen from both ends. That comparison screen is
+not a universal astronomical accuracy limit. Longer intervals remain estimates;
+the absence of the short-hour warning does not certify them. The policy uses the
+stored calculated duration, not a latitude heuristic or a replacement calculation.
+
+Invalid/non-containing timing and the existing inclusive one-second edge warning
+take precedence: they still suppress the ruler with **Boundary uncertain**.
+Unavailable results retain their reason. Provisional text clears on selection,
+time preview/reset and reopening. All supported model versions receive the same
+display policy; no saved values, calculation versions, IDs, source fixtures or
+backup/share/tour payloads change. The raw `exact` status continues to describe
+the calculator's interval assignment, not independently verified timing precision.
+
+Verification: eight focused presentation tests passed (0.508s), including the exact
+cutoff and one millisecond above it, immutable model-tagged records, precedence,
+notice clearing and real short-day/short-night calculations. All 581 platform tests
+passed (44.836s). `scripts/qa-astroeye-short-hours.mjs` passed in an isolated browser
+with synthetic records: real workspace day/night labels, selection, preview/reset,
+reopening, 390/1280px layouts and byte-unchanged serialized records. The browser
+closed gracefully without force; the temporary port-5175 server was stopped.
+The user's existing preview and data were not accessed.
+Production build passed (261 modules, 18.13s), with the existing `node:fs`
+externalization and large-chunk warnings. No full-repository/allocation suite was
+rerun and nothing was published. Next: consolidate the A2 acceptance scope while
+explicitly retaining unresolved short-interval and daily-classification limits.
+
 ## Update — corrected for new charts
 
 [Calculation model 3](astroeye-planetary-hour-model-3.md) now uses fixed solar-search
@@ -37,7 +75,8 @@ legacy-only coverage when the versioned correction is introduced.
 The workspace no longer shows a definite ruler when the displayed instant is within
 one second (inclusive) of either stored hour edge, outside the interval, or lacks
 valid timing metadata. It shows **Boundary uncertain**, with a contextual explanation.
-Interior results retain their ruler, period and number with an estimate notice.
+Interior results retain their ruler, period and number with an estimate notice
+(or the provisional short-interval notice added in checkpoint 121 above).
 Unavailable results show their existing reason as literal text.
 
 The one-second margin is a conservative presentation choice, not a measured global
