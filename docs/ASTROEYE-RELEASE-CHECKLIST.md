@@ -1,5 +1,12 @@
 # AstroEye v0.1 release checklist
 
+Current short status and execution order: [AstroEye finish-line tracker](ASTROEYE-FINISH-LINE.md).
+October 4 user direction: continue AstroEye and report completed/open/next at each
+checkpoint. Checkpoint 122 consolidates A2 evidence without accepting it; the next
+active package is U1's composed user workflow, with related R2 evidence reused.
+All existing release criteria remain required. No additional features or support
+scope reduction are authorized by this ordering change.
+
 Scope baseline: 2026-09-12, implementation checkpoint 34 (`92edee7`).
 
 **Status: pre-release; A3, V1, V2, R1 and R3 accepted for their reviewed candidates; 10 acceptance gates remain open across five work packages.**
