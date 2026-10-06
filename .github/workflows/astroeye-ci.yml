@@ -1,0 +1,57 @@
+name: AstroEye candidate checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astroeye-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Node 24 / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    env:
+      # Browser acceptance is separate; do not download Chromium for unit/build CI.
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+      # Never silently skip the Node-24-calibrated allocation tests.
+      GEV_REQUIRE_ALLOCATION_GATE: '1'
+    steps:
+      - name: Check out candidate
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Use the reviewed Node runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+      - name: Record candidate and toolchain
+        run: |
+          git rev-parse HEAD
+          node --version
+          npm --version
+      - name: Clean locked install
+        timeout-minutes: 5
+        run: npm ci --no-audit --no-fund
+      - name: Verify CI safety and runner contract
+        timeout-minutes: 1
+        run: node --test scripts/qa-astroeye-ci.test.mjs src/unitTestRunner.test.mjs
+      - name: Complete unit suite and serialized allocation gates
+        timeout-minutes: 8
+        run: npm test
+      - name: Production build
+        timeout-minutes: 5
+        run: npm run build

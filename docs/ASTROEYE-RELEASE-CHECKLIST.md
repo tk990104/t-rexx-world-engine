@@ -52,6 +52,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 126: [release CI foundation](architecture/astroeye-release-ci.md)
+adds the previously missing Windows/Linux workflow with pinned Node/actions,
+read-only permissions, clean locked install, complete unit/allocation tests and
+production build. Seven local YAML/runner checks pass; no remote execution, fresh
+install, push or publication occurred. L1 stays open. Browser access still fails
+before tab access; user has not yet performed the manual note-marker check.
+Five accepted, ten open; runtime and user records unchanged.
+
 October 5, checkpoint 125: [composed note editor and real marker renderer](architecture/astroeye-map-workspace-validation.md)
 passes opt-in save/edit/confirmed delete/Undo, private-label exclusions, unchanged
 chart/camera and owned-entity cleanup in an isolated native-storage profile.
@@ -646,7 +654,7 @@ pending. U3 is still open and this observer is not a GPU/FPS acceptance benchmar
 
 - [ ] **L1 — Reproducible candidate:** clean install on the declared Node version, production
   build, complete unit results and relevant browser checks tied to the candidate commit.
-  Add a CI workflow (none exists under `.github/workflows` at this baseline). Record failures,
+  CI workflow added in checkpoint 126; successful remote execution remains pending. Record failures,
   skips and known limitations; an old upstream status report is not fresh release evidence.
 - [ ] **L2 — Security and rights:** audit actual new routes, input/response limits, secrets,
   provenance and visible credits. Record a current license/terms disposition for retained

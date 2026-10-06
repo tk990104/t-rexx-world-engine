@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 5, 2026, checkpoint 125. Runtime candidate: `7368c55`.
+Updated October 5, 2026, checkpoint 126. Runtime candidate: `7368c55`.
 
-Latest completed outcome: [composed event-note editor and real marker renderer](architecture/astroeye-map-workspace-validation.md)
+Latest completed outcome: [release CI foundation](architecture/astroeye-release-ci.md)
+adds pinned-Node Windows/Linux clean-install, complete unit/allocation and build
+jobs, with read-only permissions and execution limits. All seven local YAML/runner
+contract tests pass. No GitHub run, clean install, push or deployment occurred;
+L1 remains open. Browser initialization is still blocked and the user has not yet
+performed the manual marker check. Do not repeat already-passing fixture work.
+
+Checkpoint 125 outcome: [composed event-note editor and real marker renderer](architecture/astroeye-map-workspace-validation.md)
 passes save/edit/confirmed delete/Undo, opt-in privacy, unchanged chart/camera and
 owned-entity cleanup. Existing three-marker render regression also passes; both
 final runs exit 0 with graceful cleanup. QA-only, isolated synthetic records and
@@ -59,7 +66,7 @@ must be rechecked when affected by changes.
 | U1: complete user workflow | Manual/provider entry through charts, comparison, notes, backup/recovery, sharing and Director handoff | **Next active work package.** Consolidate existing scenario evidence and verify the missing composed paths using synthetic data. |
 | U2: usability/accessibility | Keyboard, focus, status, reduced motion and narrow/wide behavior | Reuse valid evidence; distinguish DOM checks from actual screen-reader and host behavior. Record manual-only checks explicitly. |
 | U3: performance | Reviewed collection limits and timing budgets with shared-state safety | Baselines exist; finish actual-host/representative measurements and explicitly accept supported limits. Do not claim that 1,000-event test runs establish a device guarantee. |
-| L1: reproducible release candidate | Clean install, CI, build and applicable tests on one candidate | Run at release consolidation, carrying forward relevant evidence instead of repeating full suites on every documentation change. |
+| L1: reproducible release candidate | Clean install, CI, build and applicable tests on one candidate | CI workflow now implemented and locally contract-tested; actual clean-install/remote execution and candidate consolidation remain. Push/dispatch not performed. |
 | L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Resolve actual deployment-specific rights and configuration; no license purchase or redistribution is implied. |
 | L3: deployment and handoff | Approved target smoke test, backup/restore, rollback and release notes | Target and publication require explicit approval. No deployment or tag is preauthorized. |
 
@@ -115,7 +122,8 @@ gaps, not enlarge the date/location matrix without a stated acceptance purpose.
    actions only when tools cannot supply the required evidence.
 3. Return to the precise A1/A2 evidence/rights decisions and authorized V3 check.
    They remain release requirements, not reasons to repeat unrelated edge tests.
-4. Consolidate L1/L2, then seek target/publication approval for L3.
+4. Consolidate L1/L2, then seek target/publication approval for L3. The L1 workflow
+   foundation is now implemented; seek authorization before pushing/running it.
 
 Do not add feature scope or silently waive gates. Reuse unchanged evidence;
 rerun checks affected by an implementation change. No browser/build rerun is
