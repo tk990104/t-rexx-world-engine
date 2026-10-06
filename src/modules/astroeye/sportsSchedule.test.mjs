@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { normalizeSportsSchedule, normalizeSportsVenue, parseVenueCoordinates, scheduleLocalTime } from './sportsSchedule.js';
-import { createSportsScheduleHandler, sportsScheduleProxy } from '../../../server/sportsScheduleProxy.js';
+import { createSportsScheduleHandler, sportsScheduleProxy, MAX_SPORTS_RESPONSE_BYTES } from '../../../server/sportsScheduleProxy.js';
 import { eventFromDraft } from './workspaceController.js';
 
 // Synthetic provider-shaped test records, not actual game schedule assertions.
@@ -84,7 +84,7 @@ test('schedule proxy deduplicates concurrent reads and expires cached results', 
   let count = 0, time = Date.parse(fetched), release;
   const gate = new Promise((resolve) => { release = resolve; });
   const handler = createSportsScheduleHandler({ now: () => time, fetchImpl: async () => {
-    count += 1; await gate; return { ok: true, json: async () => payload };
+    count += 1; await gate; return new Response(JSON.stringify(payload));
   }});
   const first = request(handler), second = request(handler);
   release();
@@ -117,5 +117,101 @@ test('provider failures hide keys and honor rate-limit cooldown without serving 
   assert.equal(calls, 1);
   time += 61000;
   assert.ok(!JSON.stringify(await request(handler)).includes('test-private-key'));
+  assert.equal(calls, 2);
+});
+
+function streamingReply(chunks, headers = {}) {
+  let reads = 0, cancelled = false;
+  const body = new ReadableStream({
+    pull(controller) {
+      if (reads === chunks.length) controller.close();
+      else controller.enqueue(chunks[reads++]);
+    },
+    cancel() { cancelled = true; },
+  }, { highWaterMark: 0 });
+  return { response: new Response(body, { headers }), reads: () => reads, cancelled: () => cancelled };
+}
+
+test('provider byte limit rejects declared oversize before reading and keeps errors key-free', async () => {
+  const reply = streamingReply([new TextEncoder().encode(JSON.stringify(payload))],
+    { 'Content-Length': String(MAX_SPORTS_RESPONSE_BYTES + 1) });
+  const handler = createSportsScheduleHandler({ apiKey: () => 'private-test-key', fetchImpl: async () => reply.response });
+  const result = await request(handler);
+  assert.equal(result.status, 503);
+  assert.match(result.result.error, /enter the event manually/);
+  assert.doesNotMatch(JSON.stringify(result), /private-test-key|Provider response too large/);
+  assert.equal(reply.reads(), 0);
+  assert.equal(reply.cancelled(), true);
+});
+
+test('chunked or understated responses stop at the byte cap and are not cached', async () => {
+  for (const headers of [{}, { 'Content-Length': '1' }]) {
+    const reply = streamingReply([new Uint8Array(MAX_SPORTS_RESPONSE_BYTES), new Uint8Array(1), new Uint8Array(1)], headers);
+    let calls = 0;
+    const handler = createSportsScheduleHandler({ fetchImpl: async () => ++calls === 1 ? reply.response : new Response(JSON.stringify(payload)) });
+    assert.equal((await request(handler)).status, 503);
+    assert.equal(reply.reads(), 2);
+    assert.equal(reply.cancelled(), true);
+    assert.equal((await request(handler)).status, 200);
+    assert.equal((await request(handler)).result.cached, true);
+    assert.equal(calls, 2);
+  }
+});
+
+test('exact byte boundary succeeds and UTF-8 is decoded across chunk boundaries', async () => {
+  const json = JSON.stringify({ events: [{ ...RAW, strHomeTeam: 'Hôme 🦖' }] });
+  const bytes = new TextEncoder().encode(json);
+  const padded = new Uint8Array(MAX_SPORTS_RESPONSE_BYTES).fill(32);
+  padded.set(bytes);
+  const split = bytes.indexOf(0xc3) + 1; // Split inside the UTF-8 encoding of ô.
+  const reply = streamingReply([padded.slice(0, split), padded.slice(split)]);
+  const handler = createSportsScheduleHandler({ fetchImpl: async () => reply.response });
+  const result = await request(handler);
+  assert.equal(result.status, 200);
+  assert.equal(result.result.events[0].home, 'Hôme 🦖');
+  assert.equal(reply.cancelled(), false);
+});
+
+test('venue replies use the same limit and count UTF-8 bytes rather than characters', async () => {
+  const json = JSON.stringify({ venues: [], unused: '🦖'.repeat(MAX_SPORTS_RESPONSE_BYTES / 4) });
+  assert.ok(json.length < MAX_SPORTS_RESPONSE_BYTES);
+  assert.ok(new TextEncoder().encode(json).byteLength > MAX_SPORTS_RESPONSE_BYTES);
+  const handler = createSportsScheduleHandler({ fetchImpl: async () => new Response(json) });
+  assert.equal((await request(handler, '/api/astroeye/sports?venue=25720')).status, 503);
+});
+
+test('malformed JSON and failed streams remain private and retryable', async () => {
+  for (const response of [new Response('{invalid private-test-key'), new Response(new ReadableStream({
+    start(controller) { controller.error(new Error('private-test-key')); },
+  }))]) {
+    let calls = 0;
+    const handler = createSportsScheduleHandler({ fetchImpl: async () => ++calls === 1 ? response : new Response(JSON.stringify(payload)) });
+    const result = await request(handler);
+    assert.equal(result.status, 503);
+    assert.doesNotMatch(JSON.stringify(result), /private-test-key/);
+    assert.equal((await request(handler)).status, 200);
+    assert.equal(calls, 2);
+  }
+});
+
+test('concurrent oversized reads share one failure without awaiting cancellation acknowledgement', { timeout: 2000 }, async () => {
+  let calls = 0, cancelled = false, release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const response = new Response(new ReadableStream({
+    pull(controller) { controller.enqueue(new Uint8Array(MAX_SPORTS_RESPONSE_BYTES + 1)); },
+    cancel() { cancelled = true; return new Promise(() => {}); },
+  }, { highWaterMark: 0 }));
+  const handler = createSportsScheduleHandler({ fetchImpl: async () => {
+    calls++;
+    if (calls === 1) { await gate; return response; }
+    return new Response(JSON.stringify(payload));
+  } });
+  const first = request(handler), second = request(handler);
+  release();
+  const results = await Promise.all([first, second]);
+  assert.deepEqual(results.map(result => result.status), [503, 503]);
+  assert.equal(calls, 1);
+  assert.equal(cancelled, true);
+  assert.equal((await request(handler)).status, 200);
   assert.equal(calls, 2);
 });

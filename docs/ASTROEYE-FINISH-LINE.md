@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 5, 2026, checkpoint 128. Runtime candidate: `7368c55`; hosted CI candidate: `eb1a716`.
+Updated October 5, 2026, checkpoint 129. Latest server hardening is local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [reproducible candidate acceptance](architecture/astroeye-ci-acceptance.md).
+Latest completed outcome: [bounded sports-provider response fix](architecture/astroeye-provider-response-security.md).
+The server now caps schedule/venue streams at 2 MiB before parsing, cancels oversized
+responses and preserves safe retry/manual fallback. All 59 focused tests and the
+production build pass. L2 is still open for the remaining review and rights work;
+no new gate closed. Six accepted, nine open. This local change is not covered by
+the earlier eb1a716 hosted CI result and has not been pushed.
+
+Checkpoint 128 outcome: [reproducible candidate acceptance](architecture/astroeye-ci-acceptance.md).
 Hosted Windows and Linux CI both pass for eb1a716. Local complete test/build and
 composed browser evidence are tied to this candidate by unchanged-code checks.
 **L1 is accepted: six accepted, nine open.** Actual-host workflow, accuracy, voice,
@@ -81,7 +88,7 @@ must be rechecked when affected by changes.
 | U1: complete user workflow | Manual/provider entry through charts, comparison, notes, backup/recovery, sharing and Director handoff | **Next active work package.** Consolidate existing scenario evidence and verify the missing composed paths using synthetic data. |
 | U2: usability/accessibility | Keyboard, focus, status, reduced motion and narrow/wide behavior | Reuse valid evidence; distinguish DOM checks from actual screen-reader and host behavior. Record manual-only checks explicitly. |
 | U3: performance | Reviewed collection limits and timing budgets with shared-state safety | Baselines exist; finish actual-host/representative measurements and explicitly accept supported limits. Do not claim that 1,000-event test runs establish a device guarantee. |
-| L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Resolve actual deployment-specific rights and configuration; no license purchase or redistribution is implied. |
+| L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Provider response byte-limit gap fixed and focused privacy tests pass (checkpoint 129). Remaining routes/recording and deployment-specific rights review still required. |
 | L3: deployment and handoff | Approved target smoke test, backup/restore, rollback and release notes | Target and publication require explicit approval. No deployment or tag is preauthorized. |
 
 Accepted checks: A3 supported-range/reference candidate; V1 bounded commands;

@@ -1,4 +1,33 @@
 import { normalizeSportsSchedule, normalizeSportsVenue, validScheduleDate } from '../src/modules/astroeye/sportsSchedule.js';
+import { Buffer } from 'node:buffer';
+
+export const MAX_SPORTS_RESPONSE_BYTES = 2 * 1024 * 1024;
+
+/** Bound decoded response bytes before JSON parsing, including chunked/compressed replies. */
+async function readProviderJson(response) {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Missing provider response body');
+  let complete = false;
+  try {
+    const declaredSize = Number(response.headers.get('content-length'));
+    if (declaredSize > MAX_SPORTS_RESPONSE_BYTES) throw new Error('Provider response too large');
+    // Fixed storage also prevents many tiny chunks from growing an unbounded chunk list.
+    const buffer = Buffer.alloc(MAX_SPORTS_RESPONSE_BYTES);
+    let bytes = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) { complete = true; break; }
+      if (bytes + value.byteLength > MAX_SPORTS_RESPONSE_BYTES) throw new Error('Provider response too large');
+      buffer.set(value, bytes);
+      bytes += value.byteLength;
+    }
+    return JSON.parse(buffer.toString('utf8', 0, bytes));
+  } finally {
+    // Do not wait for upstream cancellation acknowledgement to return the safe error.
+    if (!complete) void reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
 
 /** Bounded same-origin proxy shared by Vite development and preview servers. */
 export function createSportsScheduleHandler({ fetchImpl = globalThis.fetch, now = Date.now, apiKey = () => process.env.THESPORTSDB_API_KEY || '123' } = {}) {
@@ -32,7 +61,7 @@ export function createSportsScheduleHandler({ fetchImpl = globalThis.fetch, now 
           const endpoint = venue ? `lookupvenue.php?id=${venue}` : date ? `eventsday.php?d=${date}&l=4391` : 'eventsnextleague.php?id=4391';
           const upstream = await fetchImpl(`https://www.thesportsdb.com/api/v1/json/${configuredKey}/${endpoint}`, { signal: AbortSignal.timeout(12000), redirect: 'error' });
           if (!upstream.ok) { if (upstream.status === 429) blockedUntil = now() + 60000; throw new Error('Provider unavailable'); }
-          const payload = await upstream.json();
+          const payload = await readProviderJson(upstream);
           const retrievedAt = new Date(now()).toISOString();
           const data = venue ? { venue: normalizeSportsVenue(payload, venue), retrievedAt, source: 'thesportsdb' }
             : { ...normalizeSportsSchedule(payload, retrievedAt), access: configuredKey === '123' ? 'free' : 'configured' };

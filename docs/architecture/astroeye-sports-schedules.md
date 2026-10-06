@@ -20,6 +20,12 @@ AstroEye now offers NFL discovery through TheSportsDB: upcoming games or a selec
 
 The service caches successful results for 15 minutes, coalesces concurrent identical requests, bounds cache size to 128 entries, and limits upstream calls to 20/minute per process. It times out after 12 seconds and pauses new upstream work for a minute after HTTP 429. It never returns expired schedules as fresh data or forwards upstream errors containing key-bearing URLs. Ordinary app startup does not fetch schedules; users request them from AstroEye.
 
+As of checkpoint 129, schedule and venue responses are also capped at 2 MiB before
+JSON parsing, using actual streamed bytes even without a reliable length header.
+Oversized replies are cancelled, not cached, and return the existing manual-entry
+fallback rather than a truncated schedule. This is an application safety limit,
+not a statement of provider limits; see the [response-boundary review](astroeye-provider-response-security.md).
+
 Optional `THESPORTSDB_API_KEY` stays on the server. With no key configured, the provider's documented development key `123` is used. The existing deployment runs Vite preview, which installs the same endpoint; static-only hosting needs an equivalent server endpoint.
 
 ## Provider terms

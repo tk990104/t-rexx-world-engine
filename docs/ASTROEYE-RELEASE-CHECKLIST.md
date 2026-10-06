@@ -52,6 +52,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 129: [provider response-size hardening](architecture/astroeye-provider-response-security.md)
+closes an unbounded pre-normalization JSON-read gap in the sports proxy. Actual
+stream bytes are capped at 2 MiB, including absent/understated length headers;
+failures cancel, stay uncached and retain the key-free manual-entry fallback.
+All 59 focused tests and production build pass. L2 remains open; six accepted,
+nine open. Local-only server change, no new hosted CI/rights/embedded-host claim.
+L1 acceptance remains tied to its earlier eb1a716 candidate, not this pending fix.
+
 October 5, checkpoint 128: [L1 reproducible candidate accepted](architecture/astroeye-ci-acceptance.md)
 for eb1a716. Authorized fast-forward push completed; first hosted Windows/Linux
 run succeeded. Local clean install, complete results and scoped browser evidence
