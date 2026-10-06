@@ -6210,24 +6210,6 @@ function toFiveWordHudSummary(value) {
     .join(' ');
 }
 
-function readRequestBody(req, maxBytes = 1024 * 1024) {
-  return new Promise((resolve, reject) => {
-    let total = 0;
-    const chunks = [];
-    req.on('data', (chunk) => {
-      total += chunk.length;
-      if (total > maxBytes) {
-        reject(new Error(`Request body exceeds ${maxBytes} bytes`));
-        req.destroy();
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    req.on('error', reject);
-  });
-}
-
 /**
  * Vite plugin: nearby Google place labels for Realtime scene context.
  *
@@ -9141,7 +9123,11 @@ function temperatureData() {
  *
  * @returns {import('vite').Plugin}
  */
-function openRouterProxy() {
+export const OPENROUTER_OPERATION_TIMEOUT_MS = 30_000;
+
+export function openRouterProxy({ fetchImpl = globalThis.fetch, env = process.env,
+  requestTimeoutMs = VOICE_REQUEST_TIMEOUT_MS, upstreamTimeoutMs = VOICE_PROVIDER_TIMEOUT_MS,
+  operationTimeoutMs = OPENROUTER_OPERATION_TIMEOUT_MS } = {}) {
   const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
   /**
    * Tried in order. minimax first because it is the one that actually answered
@@ -9183,13 +9169,15 @@ function openRouterProxy() {
    * @returns {Promise<{text: string, model: string}>}
    */
   async function complete(messages, maxTokens) {
-    const key = process.env.OPENROUTER_API_KEY;
-    if (!key) throw new Error('OPENROUTER_API_KEY is not set');
-    let lastError = 'no model answered';
+    const key = env.OPENROUTER_API_KEY;
+    if (!key) throw new Error('OpenRouter is unavailable');
+    const deadline = performance.now() + operationTimeoutMs;
 
     for (const model of FREE_MODELS) {
+      const remaining = deadline - performance.now();
+      if (remaining <= 0) break;
       try {
-        const response = await fetch(ENDPOINT, {
+        const { response, text: reply } = await fetchVoiceProviderText(ENDPOINT, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${key}`,
@@ -9199,25 +9187,25 @@ function openRouterProxy() {
             'X-Title': "God's Eye View",
           },
           body: JSON.stringify({ model, messages, max_tokens: maxTokens }),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || data?.error) {
-          lastError = data?.error?.message || `HTTP ${response.status}`;
-          continue;
-        }
-        const text = String(data?.choices?.[0]?.message?.content || '').trim();
+        }, { fetchImpl, timeoutMs: Math.min(upstreamTimeoutMs, remaining) });
+        if (performance.now() >= deadline) break;
+        if (!response.ok) continue;
+        const data = JSON.parse(reply);
+        if (data?.error) continue;
+        const content = data?.choices?.[0]?.message?.content;
+        const text = typeof content === 'string' ? content.trim() : '';
         // An empty answer is a failed answer — dots-studio returned one.
-        if (!text) { lastError = `${model} returned empty content`; continue; }
+        if (!text) continue;
         return { text, model };
-      } catch (error) {
-        lastError = String(error?.message || error);
+      } catch {
+        // Never retain or return provider/transport exception text.
       }
     }
-    throw new Error(lastError);
+    throw new Error('OpenRouter request failed');
   }
 
   function install(middlewares) {
-    middlewares.use('/api/openrouter', async (req, res) => {
+    middlewares.use('/api/openrouter', withLocalVoiceAccess(async (req, res) => {
       const sendJson = (status, obj) => {
         if (res.headersSent) return;
         res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -9226,8 +9214,9 @@ function openRouterProxy() {
       const subPath = String(req.url || '/').split('?')[0];
 
       if (subPath === '/status') {
+        if (req.method !== 'GET') { sendJson(405, { error: 'Use GET for status' }); return; }
         // Whether a key exists, never the key itself.
-        sendJson(200, { configured: Boolean(process.env.OPENROUTER_API_KEY), realtimeConfigured: Boolean(process.env.OPENAI_API_KEY), models: FREE_MODELS });
+        sendJson(200, { configured: Boolean(env.OPENROUTER_API_KEY), realtimeConfigured: Boolean(env.OPENAI_API_KEY), models: FREE_MODELS });
         return;
       }
 
@@ -9236,24 +9225,32 @@ function openRouterProxy() {
         return;
       }
 
+      let body;
       try {
-        const raw = await readRequestBody(req, 64 * 1024);
-        const body = JSON.parse(raw || '{}');
-        const messages = Array.isArray(body.messages) ? body.messages : [];
+        const raw = await readVoiceRequestBody(req, 64 * 1024, { timeoutMs: requestTimeoutMs });
+        body = JSON.parse(raw || '{}');
+        if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body');
+      } catch {
+        sendJson(400, { error: 'Invalid or incomplete chat request' });
+        return;
+      }
+      try {
+        const messages = Array.isArray(body.messages) ? [...body.messages] : [];
         if (!messages.length) { sendJson(400, { error: 'messages is required' }); return; }
         if (body.system) messages.unshift({ role: 'system', content: String(body.system) });
         const maxTokens = Math.min(Math.max(Number(body.maxTokens) || 300, 1), 2000);
         const result = await complete(messages, maxTokens);
         sendJson(200, result);
-      } catch (error) {
-        sendJson(502, { error: String(error?.message || error) });
+      } catch {
+        sendJson(502, { error: 'OpenRouter request failed' });
       }
-    });
+    }));
   }
 
   return {
     name: 'openrouter-proxy',
     configureServer(server) { install(server.middlewares); },
+    configurePreviewServer(server) { install(server.middlewares); },
   };
 }
 

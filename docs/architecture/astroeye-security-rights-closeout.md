@@ -5,6 +5,12 @@ documentation corrections; no runtime or release-scope change. **L2 remains open
 The release still has six accepted gates and nine open. The seven rows below
 divide one existing gate; they are not seven new features or a time estimate.
 
+Checkpoint 138 update: [S1 implemented and tested](astroeye-openrouter-security.md).
+OpenRouter now has local access checks, bounded upload/response readers, a shared
+fallback deadline and generic errors. All 67 focused tests pass; final build
+result is in the finish-line tracker. The S1 row below preserves the initial
+finding, not the current code. S2 is next; S2/S3 and R1–R4 remain open.
+
 ## What is already verified
 
 Reuse the scoped evidence in checkpoints 129–136: sports upstream size bounds,

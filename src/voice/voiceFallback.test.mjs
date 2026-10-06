@@ -47,5 +47,6 @@ test('main uses the tested binding without a startup token probe; server exposes
   const config = readFileSync(new URL('../../vite.config.js', import.meta.url), 'utf8');
   assert.match(main, /installVoiceFallback\(\{ realtime:/);
   assert.doesNotMatch(main, /fetch\(['"]\/api\/realtime\/token/);
-  assert.match(config, /realtimeConfigured: Boolean\(process\.env\.OPENAI_API_KEY\)/);
+  assert.equal(/realtimeConfigured: Boolean\(env\.OPENAI_API_KEY\)/.test(config), true,
+    'status exposes only the injected environment presence boolean');
 });

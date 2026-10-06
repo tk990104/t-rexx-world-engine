@@ -52,6 +52,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 6, checkpoint 138: [OpenRouter safeguards](architecture/astroeye-openrouter-security.md)
+complete L2/S1's implementation slice: local status/chat guard, bounded uploads and
+provider responses, a shared fallback deadline and generic failures. All 67 focused
+tests pass (29.659s), after updating one environment-injection source assertion.
+Production build passes (263 modules, 17.81s). Six accepted, nine open; S2 route/key
+inventory is next. No real-key/data changes, live provider/microphone, push or deployment.
+
 October 6, checkpoint 137: [security/rights closeout ledger](architecture/astroeye-security-rights-closeout.md)
 separates completed safeguards from seven bounded L2 outcomes, their evidence and
 approval requirements. OpenRouter bounds/raw errors are the next coding slice;

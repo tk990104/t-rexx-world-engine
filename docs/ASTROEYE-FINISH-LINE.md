@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 6, 2026, checkpoint 137. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
+Updated October 6, 2026, checkpoint 138. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [bounded security/rights closeout ledger](architecture/astroeye-security-rights-closeout.md).
+Latest completed outcome: [OpenRouter fallback safeguards](architecture/astroeye-openrouter-security.md).
+Local access checks, upload/response caps, shared fallback deadline and safe errors
+complete the S1 implementation slice. All 67 focused tests pass (29.659s).
+Production build passes (263 modules, 17.81s). Six accepted, nine open; S1 is not all of L2.
+Next: S2's one-pass remaining route/key inventory, then exact findings only.
+No real credentials/data changed, live API/microphone tests, push or deployment.
+
+Checkpoint 137 outcome: [bounded security/rights closeout ledger](architecture/astroeye-security-rights-closeout.md).
 Existing evidence is separated from seven concrete L2 closeout outcomes and
 approval-dependent decisions. Current sports/map policy spot-checks recorded;
 unreviewed sources remain unknown. Stale security guidance corrected.
