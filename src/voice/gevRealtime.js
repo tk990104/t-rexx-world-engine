@@ -1,5 +1,6 @@
 import { createGevActionRunner, readLayerLifecycleSummary } from './gevActions.js';
 import { voiceDiagnosticRecord } from './voiceDiagnosticRecord.js';
+import { createVoiceErrorRecord } from './voiceErrorRecord.js';
 import { createAstroEyeVoiceRunner, ASTROEYE_VOICE_DISCLOSURE, parseAstroEyeVoiceArguments } from './astroeyeVoice.js';
 import {
   DEFAULT_VOICE_TIER,
@@ -33,10 +34,8 @@ const DISCONNECT_GRACE_MS = 6000;
 const VIEWPORT_MAX_PIXELS = 1200 * 900; // ~1.08 MP, matches the old 1200px-wide landscape budget
 const VIEWPORT_MAX_ENCODED_BYTES = 200 * 1024; // ~200 KB encoded ceiling
 const ERROR_LOG_LIMIT = 30;
-const ERROR_STORAGE_KEY = 'gev-realtime-errors';
 const DEBUG_LOG_URL = '/api/realtime/debug-log';
-// Voice cost control (repo-wide `godsEyeView.<feature>.<field>` convention;
-// the neighbouring ERROR_STORAGE_KEY predates it).
+// Voice cost control (repo-wide `godsEyeView.<feature>.<field>` convention).
 const VOICE_TIER_STORAGE_KEY = 'godsEyeView.voiceCost.tier';
 const VOICE_LIMITS_STORAGE_KEY = 'godsEyeView.voiceCost.limits';
 // The input meter is intentionally stricter than the assistant-output meter:
@@ -328,7 +327,8 @@ export class GevRealtimeController {
     // which case it replies with an item_not_found error echoing this id — a
     // benign race we must NOT treat as fatal (M14).
     this.pendingViewportDeletes = new Set();
-    this.errors = loadStoredErrors();
+    // Session-only safe metadata. Leave legacy browser error storage untouched.
+    this.errors = [];
     this.sessionId = createDebugSessionId();
     this.debugLog('controller.created', { status: this.status });
   }
@@ -1698,10 +1698,9 @@ export class GevRealtimeController {
   }
 
   reportError(source, error = null, extra = {}) {
-    const record = createErrorRecord(source, error, extra);
+    const record = createVoiceErrorRecord(source, error, extra);
     this.errors.unshift(record);
     this.errors.length = Math.min(this.errors.length, ERROR_LOG_LIMIT);
-    storeErrors(this.errors);
     console.error('[GEV Realtime]', record);
     this.debugLog('error', record);
     this.setStatus('error', formatErrorForDisplay(record));
@@ -1723,7 +1722,7 @@ export class GevRealtimeController {
     return {
       status: this.status,
       connection: this.connectionDiagnostics(),
-      recentErrors: this.errors.slice(),
+      recentErrors: this.errors.map(record => ({ ...record })),
       debugLog: {
         enabled: import.meta.env?.GEV_VOICE_DIAGNOSTICS === true,
         endpoint: DEBUG_LOG_URL,
@@ -2358,21 +2357,6 @@ function parseArguments(value) {
   }
 }
 
-function createErrorRecord(source, error, extra = {}) {
-  const rtcError = error?.error || error;
-  return {
-    timestamp: new Date().toISOString(),
-    source,
-    name: rtcError?.name || null,
-    message: rtcError?.message || extra.errorText || String(error?.message || '').trim() || 'No browser error message supplied',
-    errorDetail: rtcError?.errorDetail || null,
-    sctpCauseCode: rtcError?.sctpCauseCode ?? null,
-    receivedAlert: rtcError?.receivedAlert ?? null,
-    sentAlert: rtcError?.sentAlert ?? null,
-    ...removeEmptyValues(extra),
-  };
-}
-
 function formatErrorForDisplay(record) {
   const primary = [record.source, record.message].filter(Boolean).join(': ');
   const state = [
@@ -2386,32 +2370,9 @@ function formatErrorForDisplay(record) {
   return state ? `${primary}\n${state}` : primary;
 }
 
-function removeEmptyValues(value) {
-  return Object.fromEntries(Object.entries(value || {}).filter(([, item]) => (
-    item !== null && item !== undefined && item !== ''
-  )));
-}
-
 function compactText(value, maxLength) {
   const text = String(value || '').replace(/\s+/g, ' ').trim();
   return text.length <= maxLength ? text : `${text.slice(0, maxLength - 1)}…`;
-}
-
-function loadStoredErrors() {
-  try {
-    const value = JSON.parse(localStorage.getItem(ERROR_STORAGE_KEY) || '[]');
-    return Array.isArray(value) ? value.slice(0, ERROR_LOG_LIMIT) : [];
-  } catch {
-    return [];
-  }
-}
-
-function storeErrors(errors) {
-  try {
-    localStorage.setItem(ERROR_STORAGE_KEY, JSON.stringify(errors.slice(0, ERROR_LOG_LIMIT)));
-  } catch {
-    // Diagnostics still remain available in memory and the console.
-  }
 }
 
 /**

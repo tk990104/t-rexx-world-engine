@@ -3,6 +3,11 @@
 October 5, 2026, checkpoint 132, based on `33597f0`. Partial L2 security review,
 not live-voice acceptance or authorization for public deployment.
 
+Follow-up: [checkpoint 133](astroeye-voice-error-privacy.md) removes persistent
+browser error-history reads/writes and uses memory-only allowlisted error records.
+The browser-error follow-up below describes the open work as of checkpoint 132;
+its implementation and remaining limits are documented separately.
+
 ## Finding and changed behavior
 
 The old controller automatically posted diagnostic payloads, and the server

@@ -52,6 +52,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 133: [browser error-history privacy](architecture/astroeye-voice-error-privacy.md)
+replaces persistent raw-error records with a 30-entry memory-only history of fixed
+categories/guidance and connection states. Report copies are isolated; console/UI
+use the same safe record. Legacy storage is untouched and not read. All 159 focused
+tests and production build pass (263 modules, 25.15s). Six accepted, nine open;
+voice response/access controls and rights still remain in L2. No live calls,
+microphone, real user-data access, publication or fresh hosted CI acceptance.
+
 October 5, checkpoint 132: [diagnostic-file privacy](architecture/astroeye-voice-diagnostic-privacy.md)
 disables client transmission and server writes by default; explicit local opt-in
 keeps only server-validated event/status metadata in a new 256 KiB-capped file.
