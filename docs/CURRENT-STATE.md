@@ -4,6 +4,16 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+October 6, checkpoint 145: U3 remains open. The production app's isolated 100-event
+benchmark passes with a provisional 500 ms median/2,000 ms maximum action budget,
+25-row/100-marker caps, varied cache-miss charts, and exact records/camera/layer/
+viewer-clock/unrelated-state preservation. Offline CPU and 50 render/shared-state/
+storage/policy tests pass. A 1,000-event production run and actual idle/active
+ten-second host observations remain unverified because Chromium launch is blocked
+in the restricted session and elevated runner approval is unavailable at the usage
+limit. No browser/device support guarantee, push, deployment, live call or user-data
+change is claimed; next session should resume the bounded production runs.
+
 October 6, checkpoint 144: [U2 usability/accessibility accepted](architecture/astroeye-usability-acceptance.md) for personal-local standalone Chromium. Fixed global voice Space interception on native/widget controls and missing native date-segment focus rings. All 172 focused tests and final production build pass (263 modules, 26.42s). Five final full-app phases pass workflow regression, wide/narrow keyboard navigation, browser accessibility names/live status, native draft download/leave warning and real reduced-motion navigation/Director Escape; all exit 0 with graceful cleanup. Nine accepted, six open; next U3 performance/regression. Embedded preview, OS screen-reader speech and native OS file-picker interaction remain unverified. Existing-key presence checked without displaying/changing it; no personal data changes, live provider/microphone, push or deployment. Hosted CI remains scoped to eb1a716.
 
 October 6, checkpoint 143: [U1 complete workflow accepted](architecture/astroeye-full-workflow-acceptance.md) for personal-local standalone Chromium. Four final production-app runs pass manual entry, synthetic provider review/fallback, frozen comparison and notes, actual downloads, delete/Undo, reviewed import, fresh-profile sharing and backup reload, and real Director/Cesium Stop/Escape/completion with privacy and record preservation. Reuses accepted same-build R2 terrain evidence. All final browsers exit 0 and close gracefully. QA/docs only; runtime/build unchanged from 06f1ccd, no full suite/build rerun or new CI claim. Eight accepted, seven open; next remaining U2 usability/accessibility checks. Embedded preview remains unverified. No user records/keys accessed, live provider/microphone use, push or deployment.

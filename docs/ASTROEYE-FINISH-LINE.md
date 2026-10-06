@@ -1,6 +1,6 @@
 # AstroEye finish-line tracker
 
-Updated October 6, 2026, checkpoint 144. Latest changes are local; last hosted CI candidate: `eb1a716`.
+Updated October 6, 2026, checkpoint 145. Latest changes are local; last hosted CI candidate: `eb1a716`.
 
 Latest completed outcome: [U2 usability/accessibility accepted](architecture/astroeye-usability-acceptance.md).
 Wide/narrow keyboard, visible focus, browser accessibility labels/live status,
@@ -10,6 +10,15 @@ focus styling. All 172 focused tests, production build and five final full-app
 phases pass; final browsers close gracefully. **Nine accepted, six open.**
 Next: U3 performance/regression. Embedded preview and OS screen-reader speech
 remain unverified. Existing key/data unchanged; no live calls, push or deployment.
+
+Checkpoint 145 outcome: [U3 performance/regression evidence](architecture/astroeye-performance-acceptance.md).
+The real production app passes the bounded 100-event measurement with a provisional
+500 ms median/2,000 ms maximum action budget, 25-row and 100-marker caps, varied
+chart-cache misses, and exact record/camera/shared-state preservation. Offline
+CPU/render/shared-state tests also pass. The 1,000-event production run and
+ten-second idle/active host observations could not start because Chromium launch
+requires an elevation currently blocked by the account usage limit. **U3 remains
+open; no support limit or device guarantee is accepted.**
 
 Checkpoint 143 outcome: [U1 complete workflow accepted](architecture/astroeye-full-workflow-acceptance.md).
 Four production-app Chromium phases pass manual/provider entry, frozen comparison

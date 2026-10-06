@@ -7,16 +7,19 @@ import { resolve, extname, sep } from 'node:path';
 import puppeteer from 'puppeteer';
 import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
 import { checkFullAppAccessibility } from './qa-astroeye-full-app-accessibility.mjs';
+import { checkFullAppPerformance } from './qa-astroeye-full-app-performance.mjs';
 
 // Full production app, isolated records, no real provider requests or user profile.
 const mode = process.argv.find(x => x.startsWith('--phase='))?.slice(8) || 'workflow';
 const accessibilityMode = ['keyboard-wide', 'keyboard-narrow', 'leave-warning', 'reduced-motion'].includes(mode);
-assert.ok(['workflow', 'recipient', 'provider', 'director'].includes(mode) || accessibilityMode);
+const performanceMode = ['performance-100', 'performance-1000', 'performance-idle', 'performance-active'].includes(mode);
+assert.ok(['workflow', 'recipient', 'provider', 'director'].includes(mode) || accessibilityMode || performanceMode);
 const name = process.argv.find(x => x.startsWith('--session='))?.slice(10);
 assert.ok(mode === 'workflow' ? !name : /^session-[A-Za-z0-9]+$/.test(name || ''));
 const root = resolve('dist'), output = resolve('qa-shots/astroeye-full-app-workflow');
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.wasm': 'application/wasm' };
 let browser, page, report, session, manifest, phase = 'startup', confirmDelete = false, venueUnavailable = false;
+let publicMapRequests = 0, publicMapResponses = 0;
 const errors = [], calls = [], downloadEvents = [], blocked = { external: 0, api: 0 }, started = Date.now();
 const mark = value => { phase = value; console.error(JSON.stringify({ phase, elapsedMs: Date.now() - started })); };
 const game = { sourceEventId: '90001', title: 'Synthetic Away at Synthetic Home', home: 'Synthetic Home', away: 'Synthetic Away',
@@ -42,11 +45,13 @@ try {
   manifest = mode === 'workflow' ? { indexHash, profile: await mkdtemp(resolve(tmpdir(), 'trexx-flow-')) }
     : JSON.parse(await readFile(resolve(session, 'manifest.json'), 'utf8'));
   assert.equal(manifest.indexHash, indexHash, 'Production bundle changed between phases');
-  assert.ok(manifest.profile.startsWith(resolve(tmpdir()) + sep + 'trexx-flow-'));
+  // Performance runs use their own fresh profile and may consume a baseline
+  // manifest created under a different sandbox temp root.
+  assert.ok(performanceMode || manifest.profile.startsWith(resolve(tmpdir()) + sep + 'trexx-flow-'));
   await new Promise((done, reject) => { server.once('error', reject); server.listen(manifest.port || 0, '127.0.0.1', done); });
   manifest.port = server.address().port;
   const origin = `http://127.0.0.1:${manifest.port}`;
-  const profile = mode === 'recipient' || mode === 'provider' || accessibilityMode ? await mkdtemp(resolve(tmpdir(), 'trexx-flow-')) : manifest.profile;
+  const profile = mode === 'recipient' || mode === 'provider' || accessibilityMode || performanceMode ? await mkdtemp(resolve(tmpdir(), 'trexx-flow-')) : manifest.profile;
   browser = await puppeteer.launch({ headless: true, timeout: 15000, userDataDir: profile, args: ['--disable-background-networking'] });
   page = await browser.newPage(); page.setDefaultTimeout(7000);
   await page.setViewport({ width: 1280, height: 900 });
@@ -57,6 +62,10 @@ try {
   client.on('Browser.downloadWillBegin', e => downloadEvents.push({ filename: e.suggestedFilename }));
   client.on('Browser.downloadProgress', e => { if (e.state !== 'inProgress') downloadEvents.push({ state: e.state }); });
   page.on('pageerror', e => errors.push(e.message));
+  page.on('response', response => {
+    const url = new URL(response.url());
+    if (response.ok() && ['tile.openstreetmap.org', 'terrain.reearth.land'].includes(url.hostname)) publicMapResponses++;
+  });
   page.on('dialog', async dialog => {
     if (accessibilityMode && dialog.type() === 'beforeunload') return;
     if (confirmDelete && dialog.type() === 'confirm' && dialog.message().startsWith('Delete “QA U1')) {
@@ -67,7 +76,13 @@ try {
   page.on('request', request => {
     const url = new URL(request.url());
     if (['data:', 'blob:'].includes(url.protocol)) return void request.continue();
-    if (url.origin !== origin) { blocked.external++; return void request.abort(); }
+    if (url.origin !== origin) {
+      const publicMap = ['performance-idle', 'performance-active'].includes(mode) && url.protocol === 'https:' && !url.username && !url.password && !url.port
+        && ((url.hostname === 'tile.openstreetmap.org' && /^\/\d+\/\d+\/\d+\.png$/.test(url.pathname))
+          || (url.hostname === 'terrain.reearth.land' && url.pathname.startsWith('/cesium-mesh/ellipsoid/')));
+      if (publicMap && publicMapRequests < 256) { publicMapRequests++; return void request.continue(); }
+      blocked.external++; return void request.abort();
+    }
     if (mode === 'provider' && url.pathname === '/api/astroeye/sports') {
       const venue = url.searchParams.has('venue'); calls.push(venue ? 'venue' : 'schedule');
       const body = venue ? (venueUnavailable ? { error: 'Synthetic venue lookup unavailable' } :
@@ -121,7 +136,9 @@ try {
     await page.waitForFunction(() => document.querySelector('#astroeye-entry-layers').checkVisibility());
     await page.focus('#astroeye-entry-layers'); await page.keyboard.press('Enter'); await idle();
   } else await click('#astroeye-entry-layers');
-  if (accessibilityMode) {
+  if (performanceMode) {
+    report = await checkFullAppPerformance({ page, mode, manifest, mark });
+  } else if (accessibilityMode) {
     await importReview(manifest.backup); await action('confirm-import');
     report = await checkFullAppAccessibility({ page, client, mode, session, manifest, mark, action, idle, records, readDownload });
   } else if (mode === 'workflow') {
@@ -240,7 +257,7 @@ try {
   }
   assert.equal(await page.evaluate(() => window.__qaMedia), 0); assert.deepEqual(errors, []);
   Object.assign(report, { mode, indexHash, browser: await browser.version(), fullProductionApp: true, embeddedPreviewVerified: false,
-    syntheticOnly: true, liveProviders: false, blocked, session });
+    syntheticOnly: true, liveProviders: false, publicMapRequests, publicMapResponses, blocked, session });
 } catch (error) {
   report = { passed: false, mode, phase, error: error.message, errors, blocked, downloadEvents };
   if (page && !page.isClosed()) try { report.ui = await page.evaluate(() => ({
