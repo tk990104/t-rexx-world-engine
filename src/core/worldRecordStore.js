@@ -2,6 +2,7 @@ import { normalizeEvent } from '../domain/events/eventSchema.js';
 
 export const WORLD_RECORD_SCHEMA_VERSION = 1;
 export const WORLD_RECORD_DATABASE_VERSION = 1;
+export const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
 
 const STORE_EVENTS = 'events';
 const STORE_CHARTS = 'charts';
@@ -48,7 +49,27 @@ function normalizeChart(chart) {
   return normalized;
 }
 
+function requireBoundedImportText(text) {
+  const tooLarge = () => { throw new RangeError('Import files must be 10 MiB or smaller. Nothing was imported.'); };
+  // UTF-8 uses at least one byte per UTF-16 code unit. Reject huge strings
+  // immediately, then count without allocating an additional encoded buffer.
+  if (text.length > MAX_IMPORT_FILE_BYTES) tooLarge();
+  let bytes = 0;
+  for (let index = 0; index < text.length; index++) {
+    const code = text.charCodeAt(index);
+    if (code < 0x80) bytes++;
+    else if (code < 0x800) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff
+      && text.charCodeAt(index + 1) >= 0xdc00 && text.charCodeAt(index + 1) <= 0xdfff) {
+      bytes += 4;
+      index++;
+    } else bytes += 3; // Includes unpaired surrogates, encoded as replacement characters.
+    if (bytes > MAX_IMPORT_FILE_BYTES) tooLarge();
+  }
+}
+
 function normalizeWorkspace(workspace) {
+  if (typeof workspace === 'string') requireBoundedImportText(workspace);
   const parsed = typeof workspace === 'string' ? JSON.parse(workspace) : workspace;
   if (!parsed || typeof parsed !== 'object') throw new TypeError('Workspace input is required');
   if (parsed.schemaVersion !== WORLD_RECORD_SCHEMA_VERSION) {

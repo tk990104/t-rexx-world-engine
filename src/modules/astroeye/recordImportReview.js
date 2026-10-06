@@ -1,4 +1,4 @@
-export const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
+export { MAX_IMPORT_FILE_BYTES } from '../../core/worldRecordStore.js';
 
 /** Keep validated import contents private until an explicit, single-use confirmation. */
 export function createRecordImportReview({ recordStore, onImported = () => {} }) {

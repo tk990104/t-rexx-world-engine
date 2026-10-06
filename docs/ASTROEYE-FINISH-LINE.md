@@ -1,8 +1,14 @@
 # AstroEye finish-line tracker
 
-Updated October 5, 2026, checkpoint 129. Latest server hardening is local; last hosted CI candidate: `eb1a716`.
+Updated October 5, 2026, checkpoint 130. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [bounded sports-provider response fix](architecture/astroeye-provider-response-security.md).
+Latest completed outcome: [backup text-size boundary](architecture/astroeye-import-size-security.md).
+The shared record API now enforces the UI's 10 MiB limit before parsing JSON text,
+including Unicode byte sizes. Rejected imports preserve records and clear stale
+approval. All 31 focused tests and production build pass. Six accepted, nine open;
+L2 remains incomplete. Local only, no push/deployment or new hosted CI.
+
+Checkpoint 129 outcome: [bounded sports-provider response fix](architecture/astroeye-provider-response-security.md).
 The server now caps schedule/venue streams at 2 MiB before parsing, cancels oversized
 responses and preserves safe retry/manual fallback. All 59 focused tests and the
 production build pass. L2 is still open for the remaining review and rights work;
@@ -88,7 +94,7 @@ must be rechecked when affected by changes.
 | U1: complete user workflow | Manual/provider entry through charts, comparison, notes, backup/recovery, sharing and Director handoff | **Next active work package.** Consolidate existing scenario evidence and verify the missing composed paths using synthetic data. |
 | U2: usability/accessibility | Keyboard, focus, status, reduced motion and narrow/wide behavior | Reuse valid evidence; distinguish DOM checks from actual screen-reader and host behavior. Record manual-only checks explicitly. |
 | U3: performance | Reviewed collection limits and timing budgets with shared-state safety | Baselines exist; finish actual-host/representative measurements and explicitly accept supported limits. Do not claim that 1,000-event test runs establish a device guarantee. |
-| L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Provider response byte-limit gap fixed and focused privacy tests pass (checkpoint 129). Remaining routes/recording and deployment-specific rights review still required. |
+| L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Provider response and backup JSON byte limits enforced (checkpoints 129–130); focused privacy/import tests pass. Remaining routes/recording and deployment-specific rights review still required. |
 | L3: deployment and handoff | Approved target smoke test, backup/restore, rollback and release notes | Target and publication require explicit approval. No deployment or tag is preauthorized. |
 
 Accepted checks: A3 supported-range/reference candidate; V1 bounded commands;

@@ -52,6 +52,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 130: [backup text-size boundary](architecture/astroeye-import-size-security.md)
+enforces the existing UI 10 MiB policy at the shared JSON import API before parsing
+or storage access. Unicode/exact-limit/rejection/retry checks pass; saved records
+and stale approval are protected. All 31 focused tests and production build pass.
+L2 remains open; six accepted, nine open. Local only, no new hosted CI or publication;
+L1 acceptance remains tied to eb1a716 rather than these pending security changes.
+
 October 5, checkpoint 129: [provider response-size hardening](architecture/astroeye-provider-response-security.md)
 closes an unbounded pre-normalization JSON-read gap in the sports proxy. Actual
 stream bytes are capped at 2 MiB, including absent/understated length headers;
