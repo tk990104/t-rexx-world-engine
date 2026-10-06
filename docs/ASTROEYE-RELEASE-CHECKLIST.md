@@ -9,7 +9,7 @@ scope reduction are authorized by this ordering change.
 
 Scope baseline: 2026-09-12, implementation checkpoint 34 (`92edee7`).
 
-**Status: pre-release; A3, V1, V2, R1 and R3 accepted for their reviewed candidates; 10 acceptance gates remain open across five work packages.**
+**Status: pre-release; A3, V1, V2, R1, R3 and L1 accepted for their reviewed candidates; 9 acceptance gates remain open across five work packages.**
 These are grouped outcomes, not an estimate of commits or development days. Existing
 features and earlier passing tests are useful evidence, but do not close a release
 gate until the complete criterion has been verified on the release candidate.
@@ -51,6 +51,14 @@ annotation contract supplies a manual preview procedure; it has not been complet
 This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 acceptance.
 
 ## Finish line
+
+October 5, checkpoint 128: [L1 reproducible candidate accepted](architecture/astroeye-ci-acceptance.md)
+for eb1a716. Authorized fast-forward push completed; first hosted Windows/Linux
+run succeeded. Local clean install, complete results and scoped browser evidence
+are tied to the candidate by unchanged-code comparisons. Hosted log download was
+403; job/step statuses, not remote per-test totals, are the hosted evidence.
+Actual-host, accuracy, voice, usability, rights and deployment requirements remain
+in their own open gates; six accepted, nine open. No deployment, tag or further push.
 
 October 5, checkpoint 127: [isolated clean Windows candidate](architecture/astroeye-clean-candidate.md)
 passes npm ci, all 3,413 unit/allocation tests, seven CI/runner checks and production
@@ -660,10 +668,12 @@ pending. U3 is still open and this observer is not a GPU/FPS acceptance benchmar
 
 ## 5. Release engineering
 
-- [ ] **L1 — Reproducible candidate:** clean install on the declared Node version, production
+- [x] **L1 — Reproducible candidate:** clean install on the declared Node version, production
   build, complete unit results and relevant browser checks tied to the candidate commit.
-  CI workflow added in checkpoint 126; successful remote execution remains pending. Record failures,
-  skips and known limitations; an old upstream status report is not fresh release evidence.
+  Accepted for eb1a716 in checkpoint 128: hosted Windows/Linux CI succeeds; local
+  complete results and relevant browser evidence are tied to unchanged candidate
+  code. [Evidence, retained failures/warnings and limits](architecture/astroeye-ci-acceptance.md).
+  Actual-host acceptance is still required by the separate workflow/usability gates.
 - [ ] **L2 — Security and rights:** audit actual new routes, input/response limits, secrets,
   provenance and visible credits. Record a current license/terms disposition for retained
   providers/data/assets and the intended deployment profile. Verify map-provider recording

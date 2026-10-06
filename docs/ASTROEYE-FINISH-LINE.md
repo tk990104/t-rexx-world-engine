@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 5, 2026, checkpoint 127. Runtime candidate: `7368c55`.
+Updated October 5, 2026, checkpoint 128. Runtime candidate: `7368c55`; hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [clean Windows candidate verification](architecture/astroeye-clean-candidate.md)
+Latest completed outcome: [reproducible candidate acceptance](architecture/astroeye-ci-acceptance.md).
+Hosted Windows and Linux CI both pass for eb1a716. Local complete test/build and
+composed browser evidence are tied to this candidate by unchanged-code checks.
+**L1 is accepted: six accepted, nine open.** Actual-host workflow, accuracy, voice,
+accessibility/performance, security/rights and deployment criteria are not waived.
+No deployment or tag; the authorized 77-commit push completed.
+
+Checkpoint 127 outcome: [clean Windows candidate verification](architecture/astroeye-clean-candidate.md)
 passes locked installation, all 3,413 unit/allocation tests, seven CI/runner checks
 and production build from an isolated archive of `89468fc`. The initial overlay
 run hit the helper's too-short limit; only that step/build were resumed with a
@@ -38,7 +45,7 @@ cleanup. Synthetic responses and simulated camera/style; user data untouched.
 | Composed note editor, storage and real 3D marker layer | Checkpoint 125 passes, including delete/Undo and pixel/picking assertions | Reference mesh only, no terrain/full app/embedded host |
 | Full app / actual-host map and annotation behavior | **Next: bounded manual host check or restored browser tooling** | Not accepted by the fixture passes above |
 
-Tally remains five accepted, ten open. U1/R2 are not closed by this matrix; it
+Tally is now six accepted, nine open. U1/R2 are not closed by this matrix; it
 separates completed composed checks from the specific integration evidence still
 missing. Reuse these results unless relevant code changes.
 
@@ -57,7 +64,7 @@ open / next** update at every checkpoint. The user has limited credits and wants
 visible path to completion, not an expanding feature list. Keep the existing v0.1
 scope and 1900–2100 UTC date range; additional features remain deferred.
 
-**Five release checks accepted; ten open.** This is an acceptance tally, not a
+**Six release checks accepted; nine open.** This is an acceptance tally, not a
 percentage of implementation complete. Many open checks concern verification of
 already implemented functionality. The detailed [release checklist](ASTROEYE-RELEASE-CHECKLIST.md)
 remains authoritative; earlier evidence is tied to its reviewed candidate and
@@ -74,13 +81,13 @@ must be rechecked when affected by changes.
 | U1: complete user workflow | Manual/provider entry through charts, comparison, notes, backup/recovery, sharing and Director handoff | **Next active work package.** Consolidate existing scenario evidence and verify the missing composed paths using synthetic data. |
 | U2: usability/accessibility | Keyboard, focus, status, reduced motion and narrow/wide behavior | Reuse valid evidence; distinguish DOM checks from actual screen-reader and host behavior. Record manual-only checks explicitly. |
 | U3: performance | Reviewed collection limits and timing budgets with shared-state safety | Baselines exist; finish actual-host/representative measurements and explicitly accept supported limits. Do not claim that 1,000-event test runs establish a device guarantee. |
-| L1: reproducible release candidate | Clean install, CI, build and applicable tests on one candidate | CI implemented; isolated Windows install, 3,413 tests and build pass for 89468fc. Hosted Windows/Linux execution and final candidate consolidation remain. Push/dispatch not performed. |
 | L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Resolve actual deployment-specific rights and configuration; no license purchase or redistribution is implied. |
 | L3: deployment and handoff | Approved target smoke test, backup/restore, rollback and release notes | Target and publication require explicit approval. No deployment or tag is preauthorized. |
 
 Accepted checks: A3 supported-range/reference candidate; V1 bounded commands;
 V2 voice transport integration; R1 annotation record contract; R3 annotation
-recovery/privacy. These are scoped decisions, not whole-release certification.
+recovery/privacy; L1 reproducible candidate (eb1a716, checkpoint 128). These are
+scoped decisions, not whole-release certification.
 
 ## Consolidated A2 decision
 
@@ -130,9 +137,9 @@ gaps, not enlarge the date/location matrix without a stated acceptance purpose.
    actions only when tools cannot supply the required evidence.
 3. Return to the precise A1/A2 evidence/rights decisions and authorized V3 check.
    They remain release requirements, not reasons to repeat unrelated edge tests.
-4. Consolidate L1/L2, then seek target/publication approval for L3. L1's workflow
-   and local clean-install/full-test/build check are complete; seek authorization
-   before pushing/running hosted CI. Reuse the candidate results unless affected.
+4. Finish L2 and seek target/publication approval for L3. L1 is accepted for
+   eb1a716 after successful hosted Windows/Linux CI and evidence consolidation.
+   Reuse these results unless affected; no further push/deployment is implied.
 
 Do not add feature scope or silently waive gates. Reuse unchanged evidence;
 rerun checks affected by an implementation change. No browser/build rerun is
