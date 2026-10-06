@@ -34,8 +34,8 @@ test('note markers are explicit opt-in, read-only snapshots with no private text
     assert.equal(marker.properties, undefined); assert.equal(marker.description, undefined);
     assert.equal(marker.point.disableDepthTestDistance.getValue(), 200000);
     assert.equal(marker.label.disableDepthTestDistance.getValue(), 200000);
-    assert.equal(marker.label.verticalOrigin.getValue(), Cesium.VerticalOrigin.BOTTOM);
-    assert.equal(marker.label.pixelOffset.getValue().y, -12);
+    assert.equal(marker.label.verticalOrigin.getValue(), Cesium.VerticalOrigin.TOP);
+    assert.equal(marker.label.pixelOffset.getValue().y, 12);
     assert.equal(isOwnedByOtherLayer('flights', marker.id), true);
     await h.layer.setEnabled(false);
     assert.deepEqual(h.entities.values, [h.unrelated]);

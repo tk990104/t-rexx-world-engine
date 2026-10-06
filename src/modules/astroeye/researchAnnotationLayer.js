@@ -58,8 +58,9 @@ export function createResearchAnnotationLayer({ viewer, loadAnnotations, eventBu
           label: { text: group.leader === point.id ? label : '', show: group.leader === point.id,
             font: '12px sans-serif', fillColor: Cesium.Color.WHITE,
             outlineColor: Cesium.Color.fromCssColorString('#33230c'), outlineWidth: 3,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE, verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            pixelOffset: new Cesium.Cartesian2(0, -12),
+            // Event/venue labels sit above this same location; keep note times below.
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE, verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, 12),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 200000),
             disableDepthTestDistance: NOTE_MARKER_DEPTH_OVERRIDE_METERS },
         });

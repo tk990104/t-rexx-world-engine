@@ -35,7 +35,7 @@ export const MAP_STACKS = [
   },
 ];
 
-const DEFAULT_OSM_CREDIT = '© OpenStreetMap contributors';
+const DEFAULT_OSM_CREDIT = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 // Keyless global ellipsoidal terrain (Re:Earth Terrain / Mapterhorn, CC BY 4.0,
 // EGM2008 geoid via NGA) — quantized-mesh 1.0, `ellipsoid` data-type. Fixes
@@ -268,7 +268,8 @@ export class MapStackController {
     } else if (stack.kind === 'osm') {
       provider = new Cesium.OpenStreetMapImageryProvider({
         url: 'https://tile.openstreetmap.org/',
-        credit: DEFAULT_OSM_CREDIT,
+        // Active raster-map attribution must be visible, not popover-only.
+        credit: new Cesium.Credit(DEFAULT_OSM_CREDIT, true),
       });
     } else {
       throw new Error(`Unsupported map stack: ${stack.id}`);

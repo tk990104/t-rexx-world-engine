@@ -52,6 +52,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 6, checkpoint 142: [R2 event-note workflow accepted](architecture/astroeye-note-workflow-acceptance.md)
+for the user-approved personal-local standalone Chromium target. Four production-app
+phases pass save/edit/delete/Undo, native reload, keyboard opt-in and actual OSM/Re:Earth
+rendering. Note/event label overlap and hidden OSM credit fixed. All 49 focused tests
+and production build pass; final browsers close gracefully. Seven accepted, eight
+open; embedded preview explicitly unverified, broader U1/U2/U3 and L2/L3 remain open.
+No personal records/key changes, push or deployment. Next: missing U1 full-app paths.
+
 October 6, checkpoint 141: [GBFS transport safeguards](architecture/astroeye-gbfs-security.md)
 implement F2 with actual-byte streaming limits, whole-response deadlines, redirect
 rejection, cleanup and fixed no-store errors in dev/preview. All 52 focused tests
@@ -632,7 +640,7 @@ remain open. This non-voice work does not waive the pending live V3 check.
   source event reference, captured UTC chart time, coordinates and bounded plain-text note.
   Specify edit/delete behavior, stale-write protection and what happens when its source
   event is deleted/restored. Existing notebook data and session callouts must remain intact.
-- [ ] **R2 — Explicit workflow:** add deliberate save/reopen/edit/delete controls and opt-in
+- [x] **R2 — Explicit workflow:** add deliberate save/reopen/edit/delete controls and opt-in
   map display. Verify reload restoration, frozen captured time, owner-only cleanup and
   no implicit camera move or chart mutation. Keep rendering bounded and accessible.
 - [x] **R3 — Recovery and privacy:** round-trip durable annotations through full backup
@@ -642,7 +650,9 @@ remain open. This non-voice work does not waive the pending live V3 check.
 
 This is one event-linked annotation slice, not a complete Research Mode case/project system.
 Current R1/R3 decision: [checkpoint 78 candidate review](architecture/astroeye-research-acceptance.md).
-Earlier open-status descriptions are historical; R2 remains unaccepted.
+R2 decision: [checkpoint 142 full-app workflow review](architecture/astroeye-note-workflow-acceptance.md),
+personal-local standalone Chromium; embedded preview remains unverified by explicit
+user target decision. Earlier R2-open descriptions are historical, not current status.
 See [current session-callout behavior](architecture/astroeye-event-callouts.md).
 
 ## 4. Complete workflow and usability

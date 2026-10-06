@@ -18,6 +18,14 @@ then GBFS. S2/S3 and rights outcomes stay open; no runtime or deployment change.
 
 ## What is already verified
 
+Checkpoint 142 scope update: the user selected **personal use on their computer**
+and explicitly approved standalone Chromium for first-release browser acceptance,
+with embedded preview unverified. [R2 note workflow](astroeye-note-workflow-acceptance.md)
+is now accepted (seven accepted, eight open overall); L2 is not. The actual-map
+test found and fixed popover-only OSM attribution by making it linked/on-screen.
+This does not clear all provider/export/recording paths. F1/F2 have since passed
+scoped fixes; the remaining F3–F5/S3 and rights work stays open.
+
 Reuse the scoped evidence in checkpoints 129–136: sports upstream size bounds,
 backup text limits, OpenAI error/cache boundaries, metadata-only default-off
 diagnostics, memory-only safe error history, upstream response deadlines/caps,
@@ -59,9 +67,9 @@ This is an engineering evidence ledger, not a legal opinion about the user's use
 
 ## Decisions, and what can proceed now
 
-- User decision requested: personal-local first, private group, or public/commercial
-  first release. No answer has been assumed. Existing local development continues;
-  feature scope and 1900–2100 support stay unchanged.
+- User decision received October 6: personal-local first, standalone Chromium
+  acceptance target, embedded preview explicitly unverified. This does not authorize
+  publication or LAN exposure. Feature scope and 1900–2100 support stay unchanged.
 - Public/LAN deployment, authentication design for a chosen host, purchases, rights
   requests and publishing remain separately authorized actions. A usage preference
   alone does not authorize any of them.

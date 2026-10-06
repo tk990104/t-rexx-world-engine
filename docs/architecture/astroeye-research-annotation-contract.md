@@ -6,7 +6,9 @@ read-only note markers are available and off by default. Browser verification us
 isolated synthetic profiles, not user data.
 R1 record-contract and R3 recovery/privacy acceptance are recorded in the
 [checkpoint 78 review](astroeye-research-acceptance.md) for runtime `8bb14d9`.
-R2 workflow acceptance remains open. Live V3 testing remains separately approval-gated; it is not waived while
+R2 is now accepted in the [checkpoint 142 full-app review](astroeye-note-workflow-acceptance.md)
+for user-approved personal-local standalone Chromium; embedded preview remains
+unverified. Earlier R2-open statements below are historical. Live V3 testing remains separately approval-gated; it is not waived while
 this independent, non-voice work proceeds.
 
 ## Record and ownership
@@ -315,8 +317,11 @@ Individual records, captured positions and the existing shown-note count remain
 unchanged. No fuzzy clustering, location jitter, source details or private note
 text is added. Nearby distinct coordinates can still have overlapping labels.
 
-Labels are bottom-anchored 12 pixels above their points so the three-line summary
-does not collide with its dot. Event notes help explains the grouping and directs
+Checkpoint 142 supersedes the original label placement: labels are top-anchored
+12 pixels below their points, separating note times from selected-event labels
+above the same location. Exact-coordinate grouping is unchanged. Originally,
+labels were bottom-anchored 12 pixels above their points to separate the three-line
+summary from its dot. Event notes help explains the grouping and directs
 users to saved notes for individual details. Existing opt-in, playback, import,
 privacy and cleanup behavior is preserved.
 

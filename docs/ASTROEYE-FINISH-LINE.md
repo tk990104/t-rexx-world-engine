@@ -1,8 +1,17 @@
 # AstroEye finish-line tracker
 
-Updated October 6, 2026, checkpoint 141. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
+Updated October 6, 2026, checkpoint 142. Latest changes are local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [GBFS bike-share safeguards](architecture/astroeye-gbfs-security.md).
+Latest completed outcome: [R2 event-note workflow accepted](architecture/astroeye-note-workflow-acceptance.md).
+The user selected personal-local use and standalone Chromium as the first-release
+browser target; embedded preview remains explicitly unverified. Full production-app
+save/edit/delete/Undo, fresh-process persistence, keyboard opt-in and real OSM/Re:Earth
+map rendering pass. Fixed overlapping event/note labels and hidden OSM attribution.
+49 focused tests and production build pass; all four final browser phases exit 0
+and clean up gracefully. **Seven accepted, eight open.** Next: missing U1 full-app
+workflow evidence, reusing these note results. No user data/key changes, push or deployment.
+
+Checkpoint 141 outcome: [GBFS bike-share safeguards](architecture/astroeye-gbfs-security.md).
 F2 implemented: 5 MiB streamed byte cap, 12-second fetch/body deadline, redirect
 rejection, cancellation and fixed no-store errors; valid feed/cache contracts retained.
 All 52 focused tests pass (10.603s); production build passes (263 modules, 8.20s), with existing browser-externalization and large-chunk warnings.
@@ -135,11 +144,11 @@ cleanup. Synthetic responses and simulated camera/style; user data untouched.
 | Provider-to-reviewed-form and manual fallback | Checkpoint 124 passes | Live-provider availability or rights |
 | Director handoff/cancel/completion and private-data exclusion | Checkpoint 124 passes with real engine/adapter | Real camera, terrain, full style or embedded-host behavior |
 | Composed note editor, storage and real 3D marker layer | Checkpoint 125 passes, including delete/Undo and pixel/picking assertions | Reference mesh only, no terrain/full app/embedded host |
-| Full app / actual-host map and annotation behavior | **Next: bounded manual host check or restored browser tooling** | Not accepted by the fixture passes above |
+| Full production-app map and annotation behavior | **Checkpoint 142 passes; R2 accepted on approved standalone Chromium** | Embedded preview, full Director playback and broader U1/U2/U3 remain unverified |
 
-Tally is now six accepted, nine open. U1/R2 are not closed by this matrix; it
-separates completed composed checks from the specific integration evidence still
-missing. Reuse these results unless relevant code changes.
+Matrix updated at checkpoint 142: seven accepted, eight open. R2 is accepted by
+the linked full-app review; U1 remains open. This separates passing composed
+checks from missing integration evidence. Reuse results unless relevant code changes.
 
 Checkpoint 123 outcome: [composed everyday workflow and fresh-profile recovery](architecture/astroeye-everyday-workflow.md)
 passed, together with a current share-link regression, using normal browser asset
@@ -156,7 +165,12 @@ open / next** update at every checkpoint. The user has limited credits and wants
 visible path to completion, not an expanding feature list. Keep the existing v0.1
 scope and 1900–2100 UTC date range; additional features remain deferred.
 
-**Six release checks accepted; nine open.** This is an acceptance tally, not a
+The first release targets personal use on the user's computer in standalone Chromium.
+The embedded preview is explicitly unverified; no public/LAN deployment is approved.
+Work through a complete acceptance outcome when safely possible instead of asking
+the user to continue after each small slice; pause for genuine missing authority.
+
+**Seven release checks accepted; eight open.** This is an acceptance tally, not a
 percentage of implementation complete. Many open checks concern verification of
 already implemented functionality. The detailed [release checklist](ASTROEYE-RELEASE-CHECKLIST.md)
 remains authoritative; earlier evidence is tied to its reviewed candidate and
@@ -169,16 +183,16 @@ must be rechecked when affected by changes.
 | A1: chart angles and houses | Accepted independent reference coverage, including polar/boundary cases | Numerical candidate exists, but its reference redistribution disposition and remaining coverage are not accepted. Do not publish that local pack. |
 | A2: planetary hours | Final independent accuracy decision | Consolidated below. Short-hour precision and daily classification remain unresolved; more passing internal tests do not close them. |
 | V3: live voice | Authorized live smoke test and complete failure/interaction review | Offline implementation evidence exists. Obtain specific consent before microphone/provider transmissions or metered usage. Manual operation must remain usable. |
-| R2: event-note workflow | Accept save/reopen/edit/delete and opt-in map behavior together | Implemented and partially tested; finish actual-host/map workflow and bounded/accessibility review. |
 | U1: complete user workflow | Manual/provider entry through charts, comparison, notes, backup/recovery, sharing and Director handoff | **Next active work package.** Consolidate existing scenario evidence and verify the missing composed paths using synthetic data. |
 | U2: usability/accessibility | Keyboard, focus, status, reduced motion and narrow/wide behavior | Reuse valid evidence; distinguish DOM checks from actual screen-reader and host behavior. Record manual-only checks explicitly. |
 | U3: performance | Reviewed collection limits and timing budgets with shared-state safety | Baselines exist; finish actual-host/representative measurements and explicitly accept supported limits. Do not claim that 1,000-event test runs establish a device guarantee. |
 | L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Provider/backup limits, OpenAI error/cache boundaries, metadata/error privacy, token/HUD response bounds, HUD/diagnostic inbound reads and local voice origin access addressed (129–136). Global connection limits, remaining routes, public authentication and deployment-specific rights remain open. |
-| L3: deployment and handoff | Approved target smoke test, backup/restore, rollback and release notes | Target and publication require explicit approval. No deployment or tag is preauthorized. |
+| L3: deployment and handoff | Approved target smoke test, backup/restore, rollback and release notes | Personal-local/standalone Chromium target selected; handoff checks remain. No deployment, publication or tag is preauthorized. |
 
 Accepted checks: A3 supported-range/reference candidate; V1 bounded commands;
 V2 voice transport integration; R1 annotation record contract; R3 annotation
-recovery/privacy; L1 reproducible candidate (eb1a716, checkpoint 128). These are
+recovery/privacy; L1 reproducible candidate (eb1a716, checkpoint 128); R2 event-note
+workflow (personal-local standalone Chromium, checkpoint 142). These are
 scoped decisions, not whole-release certification.
 
 ## Consolidated A2 decision
@@ -218,13 +232,11 @@ gaps, not enlarge the date/location matrix without a stated acceptance purpose.
 
 ## Execution and reporting
 
-1. Next, verify missing actual-host/map integration for U1/R2 using the short host
-   check in the checkpoint 125 evidence. Browser tooling is currently blocked
-   before tab access; do not replace host evidence with repeated fixture runs.
-   The composed manual,
-   recovery, share, provider and Director fixture checks passed in checkpoints
-   123–125; do not rerun them by default. Include R2 where the same workflow can
-   supply valid evidence for both.
+1. Next, consolidate the missing full-app U1 paths on the user-approved standalone
+   Chromium target. R2's full production-app/native-storage/real-terrain result
+   is accepted; reuse it and unchanged manual, recovery, share, provider and
+   Director fixture checks from checkpoints 123–125. Embedded browser tooling
+   remains blocked before tab access and that preview remains unverified.
 2. Resolve outstanding U2/U3 checks in bounded runs. Ask for specific manual host
    actions only when tools cannot supply the required evidence.
 3. Return to the precise A1/A2 evidence/rights decisions and authorized V3 check.
