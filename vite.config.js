@@ -48,6 +48,7 @@ import cesium from 'vite-plugin-cesium';
 import { sportsScheduleProxy } from './server/sportsScheduleProxy.js';
 import { createVoiceDiagnosticHandler, createVoiceDiagnosticSink } from './server/voiceDiagnostics.js';
 import { fetchVoiceProviderText, VOICE_PROVIDER_TIMEOUT_MS } from './server/voiceProviderResponse.js';
+import { readVoiceRequestBody, VOICE_REQUEST_TIMEOUT_MS } from './server/voiceRequestBody.js';
 import { normalizeRadioCountryInput } from './src/data/radioCountry.js';
 import {
   normalizeRegionalArticles,
@@ -5903,7 +5904,7 @@ function trackBackfillProxies() {
  * Keeps OPENAI_API_KEY server-side while the browser connects to the
  * Realtime API over WebRTC with a short-lived secret.
  */
-export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = process.env, rateLimiter = openAiRateLimiter, upstreamTimeoutMs = VOICE_PROVIDER_TIMEOUT_MS } = {}) {
+export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = process.env, rateLimiter = openAiRateLimiter, upstreamTimeoutMs = VOICE_PROVIDER_TIMEOUT_MS, requestTimeoutMs = VOICE_REQUEST_TIMEOUT_MS } = {}) {
   function install(middlewares) {
     middlewares.use('/api/openai/hud-summary', async (req, res) => {
       res.setHeader('Cache-Control', 'no-store');
@@ -5935,7 +5936,7 @@ export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = proces
       }
 
       try {
-        const body = await readRequestBody(req, 64 * 1024);
+        const body = await readVoiceRequestBody(req, 64 * 1024, { timeoutMs: requestTimeoutMs });
         const context = JSON.parse(body || '{}');
         const { response, text } = await fetchVoiceProviderText('https://api.openai.com/v1/responses', {
           method: 'POST',
@@ -5982,7 +5983,7 @@ export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = proces
 
     middlewares.use('/api/realtime/debug-log', createVoiceDiagnosticHandler({
       enabled: () => env.GEV_VOICE_DIAGNOSTICS === '1',
-      readBody: readRequestBody,
+      readBody: (req, limit) => readVoiceRequestBody(req, limit, { timeoutMs: requestTimeoutMs }),
       append: createVoiceDiagnosticSink(REALTIME_DEBUG_LOG_DIR),
     }));
 

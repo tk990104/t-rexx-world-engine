@@ -3,6 +3,10 @@
 October 5, 2026, checkpoint 134, based on `8f7d672`. Partial L2 security review;
 not a live-provider or public-deployment acceptance.
 
+Follow-up: [checkpoint 135](astroeye-voice-request-limits.md) separately bounds
+HUD/diagnostic inbound body reads. The inbound-read limitation below describes
+checkpoint 134; global connection/access controls still remain separate.
+
 ## Finding and correction
 
 The OpenAI token and HUD-summary routes read successful provider responses without

@@ -52,6 +52,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 6, checkpoint 135: [incoming voice body limits](architecture/astroeye-voice-request-limits.md)
+add one 10-second deadline, fixed buffers at existing byte caps and abort/close/error
+cleanup for HUD/diagnostic uploads. Failed reads destroy incomplete requests before
+provider calls or diagnostic writes; valid retries pass. All 44 focused tests and
+production build pass (263 modules, 36.47s). Six accepted, nine open; L2 still needs
+access/origin, global connection/remaining-route review and rights. No real data/key
+changes, live calls, microphone, publication or fresh hosted CI acceptance.
+
 October 5, checkpoint 134: [voice response limits](architecture/astroeye-voice-response-limits.md)
 bound token/HUD upstream replies to 256 KiB and one 15-second fetch/body deadline,
 reject redirects, cancel failures/late responses and preserve generic no-store
