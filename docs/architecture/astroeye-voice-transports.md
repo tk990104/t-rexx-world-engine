@@ -2,6 +2,11 @@
 
 September 14, 2026. Local implementation, not live-provider or release certification.
 
+Later privacy change: [checkpoint 132](astroeye-voice-diagnostic-privacy.md) disables
+diagnostic POSTs/file writes by default and limits opt-in server logs to bounded
+event/status metadata. The historical logging description below refers to the
+earlier implementation; existing old files are preserved, not migrated or deleted.
+
 ## What is connected
 
 Both the existing Realtime runner and browser-speech/free-model runner now dispatch

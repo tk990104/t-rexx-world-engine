@@ -52,6 +52,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 132: [diagnostic-file privacy](architecture/astroeye-voice-diagnostic-privacy.md)
+disables client transmission and server writes by default; explicit local opt-in
+keeps only server-validated event/status metadata in a new 256 KiB-capped file.
+No automatic expiry; legacy conversation logs are untouched. All 172 focused tests
+and production build pass (262 modules, 37.42s). No live provider/microphone,
+user-data access, push or deployment. Six accepted, nine open; L2 still needs the
+separate browser error-history/access/resource/rights review. No full release claim.
+
 October 5, checkpoint 131: [OpenAI proxy error/cache boundaries](architecture/astroeye-openai-proxy-security.md)
 replace raw provider/exception errors with fixed messages and set no-store on all
 voice-token/HUD branches. Temporary credentials and tier fallback remain usable.

@@ -46,6 +46,7 @@ import { createRequire } from 'node:module';
 import { defineConfig, loadEnv } from 'vite';
 import cesium from 'vite-plugin-cesium';
 import { sportsScheduleProxy } from './server/sportsScheduleProxy.js';
+import { createVoiceDiagnosticHandler, createVoiceDiagnosticSink } from './server/voiceDiagnostics.js';
 import { normalizeRadioCountryInput } from './src/data/radioCountry.js';
 import {
   normalizeRegionalArticles,
@@ -1327,8 +1328,6 @@ const OPENAI_REALTIME_CONTEXT_TOKENS_DEFAULT = 3000;
 const OPENAI_REALTIME_CONTEXT_RETENTION_DEFAULT = 0.5;
 const OPENAI_HUD_SUMMARY_MODEL_DEFAULT = 'gpt-5-nano';
 const REALTIME_DEBUG_LOG_DIR = path.join(__dirname, '.gev-logs');
-const REALTIME_DEBUG_LOG_FILE = path.join(REALTIME_DEBUG_LOG_DIR, 'realtime-conversations.jsonl');
-const REALTIME_DEBUG_LOG_MAX_BYTES = 8 * 1024 * 1024;
 
 /**
  * @type {ReturnType<typeof createAisStreamAdapter>|null}
@@ -5981,30 +5980,11 @@ export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = proces
       }
     });
 
-    middlewares.use('/api/realtime/debug-log', async (req, res) => {
-      if (req.method !== 'POST') {
-        res.statusCode = 405;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Method not allowed' }));
-        return;
-      }
-
-      try {
-        const body = await readRequestBody(req, REALTIME_DEBUG_LOG_MAX_BYTES);
-        const record = JSON.parse(body || '{}');
-        fs.mkdirSync(REALTIME_DEBUG_LOG_DIR, { recursive: true });
-        fs.appendFileSync(REALTIME_DEBUG_LOG_FILE, `${JSON.stringify({
-          loggedAt: new Date().toISOString(),
-          ...record,
-        })}\n`);
-        res.statusCode = 204;
-        res.end();
-      } catch (error) {
-        res.statusCode = 400;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: error?.message || 'Failed to write Realtime debug log' }));
-      }
-    });
+    middlewares.use('/api/realtime/debug-log', createVoiceDiagnosticHandler({
+      enabled: () => env.GEV_VOICE_DIAGNOSTICS === '1',
+      readBody: readRequestBody,
+      append: createVoiceDiagnosticSink(REALTIME_DEBUG_LOG_DIR),
+    }));
 
     middlewares.use('/api/realtime/token', async (req, res) => {
       // Ephemeral credentials must never be retained by HTTP caches, on any branch.
@@ -9357,6 +9337,7 @@ export default defineConfig(({ mode }) => {
     },
     // Expose selected API keys to the browser via import.meta.env.*
     define: {
+      'import.meta.env.GEV_VOICE_DIAGNOSTICS': JSON.stringify(env.GEV_VOICE_DIAGNOSTICS === '1'),
       'import.meta.env.GOOGLE_MAPS_API_KEY': JSON.stringify(env.GOOGLE_MAPS_API_KEY),
       'import.meta.env.CESIUM_ION_TOKEN': JSON.stringify(env.CESIUM_ION_TOKEN),
     },

@@ -1,4 +1,5 @@
 import { createGevActionRunner, readLayerLifecycleSummary } from './gevActions.js';
+import { voiceDiagnosticRecord } from './voiceDiagnosticRecord.js';
 import { createAstroEyeVoiceRunner, ASTROEYE_VOICE_DISCLOSURE, parseAstroEyeVoiceArguments } from './astroeyeVoice.js';
 import {
   DEFAULT_VOICE_TIER,
@@ -1724,9 +1725,10 @@ export class GevRealtimeController {
       connection: this.connectionDiagnostics(),
       recentErrors: this.errors.slice(),
       debugLog: {
+        enabled: import.meta.env?.GEV_VOICE_DIAGNOSTICS === true,
         endpoint: DEBUG_LOG_URL,
-        file: '.gev-logs/realtime-conversations.jsonl',
-        sessionId: this.sessionId,
+        file: '.gev-logs/voice-diagnostics-v1.jsonl',
+        contents: 'Event/status metadata only; no transcript or tool payload',
       },
       cost: this.costTracker.state(),
     };
@@ -1881,8 +1883,7 @@ export class GevRealtimeController {
         )} warning threshold (model ${state.modelId}); hard cap ${formatCostUsd(state.capUsd)}.`
       );
     }
-    // NOTE: field names avoid /token|secret|key/ — the debug-log sanitizer
-    // redacts values under any such key, which would blank the usage numbers.
+    // Diagnostic persistence retains the event/status only, not usage payloads.
     this.debugLog('voice.cost', {
       costUsd: Number(state.totalUsd.toFixed(6)),
       tier: state.tier,
@@ -2007,14 +2008,10 @@ export class GevRealtimeController {
     if (!sent) this.responseCreatePending = false;
   }
 
-  debugLog(event, payload = {}) {
-    postDebugLog({
-      timestamp: new Date().toISOString(),
-      sessionId: this.sessionId,
-      event,
-      status: this.status,
-      payload: sanitizeDebugValue(payload),
-    });
+  debugLog(event) {
+    if (import.meta.env?.GEV_VOICE_DIAGNOSTICS !== true) return;
+    const record = voiceDiagnosticRecord({ event, status: this.status });
+    if (record) postDebugLog(record);
   }
 }
 
@@ -2147,43 +2144,6 @@ function postDebugLog(record) {
   } catch {
     // Debug logging must never affect voice control.
   }
-}
-
-function sanitizeDebugValue(value, depth = 0) {
-  if (depth > 10) return '[MaxDepth]';
-  if (value == null || typeof value === 'number' || typeof value === 'boolean') return value;
-  if (typeof value === 'string') return sanitizeDebugString(value);
-  if (Array.isArray(value)) return value.map((item) => sanitizeDebugValue(item, depth + 1));
-  if (typeof value !== 'object') return String(value);
-
-  const output = {};
-  for (const [key, item] of Object.entries(value)) {
-    if (isSecretLikeKey(key)) {
-      output[key] = '[Redacted]';
-      continue;
-    }
-    output[key] = sanitizeDebugValue(item, depth + 1);
-  }
-  return output;
-}
-
-function sanitizeDebugString(value) {
-  if (value.startsWith('data:image/')) {
-    return `[Redacted image data URL, ${value.length} chars]`;
-  }
-  const redacted = value
-    .replace(/sk-(?:proj-)?[A-Za-z0-9_-]{20,}/g, '[Redacted OpenAI API key]')
-    .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer [Redacted]')
-    .replace(/"client_secret"\s*:\s*"[^"]+"/gi, '"client_secret":"[Redacted]"')
-    .replace(/"value"\s*:\s*"ek_[^"]+"/gi, '"value":"[Redacted ephemeral key]"');
-  const maxLength = 50000;
-  return redacted.length > maxLength
-    ? `${redacted.slice(0, maxLength)}...[Truncated ${redacted.length - maxLength} chars]`
-    : redacted;
-}
-
-function isSecretLikeKey(key) {
-  return /(?:api[_-]?key|authorization|bearer|client[_-]?secret|token|secret|password)/i.test(key);
 }
 
 async function captureViewportImage() {
