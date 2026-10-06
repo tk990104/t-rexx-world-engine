@@ -1,14 +1,31 @@
 # AstroEye finish-line tracker
 
-Updated October 4, 2026, checkpoint 123. Runtime candidate: `7368c55`.
+Updated October 5, 2026, checkpoint 124. Runtime candidate: `7368c55`.
 
-Latest completed outcome: [composed everyday workflow and fresh-profile recovery](architecture/astroeye-everyday-workflow.md)
+Latest completed outcome: [provider-to-form review](architecture/astroeye-provider-workspace-validation.md)
+and [Director handoff/Stop/Escape/completion](architecture/astroeye-director-workspace-validation.md)
+passed together on normal browser asset transport, first run, exit 0 and graceful
+cleanup. Synthetic responses and simulated camera/style; user data untouched.
+
+| U1 workflow slice | Current evidence | What this does not certify |
+| --- | --- | --- |
+| Manual charts, comparison, both notes, delete/undo and full backup recovery | Checkpoint 123 passes, including fresh-profile restoration and reload | Native file-save behavior, full app or globe |
+| Share restoration/privacy | Checkpoint 123 passes with a separate recipient context | Embedded-host behavior |
+| Provider-to-reviewed-form and manual fallback | Checkpoint 124 passes | Live-provider availability or rights |
+| Director handoff/cancel/completion and private-data exclusion | Checkpoint 124 passes with real engine/adapter | Real camera, terrain, full style or embedded-host behavior |
+| Full app / actual-host map and annotation behavior | **Next active integration check** | Not accepted by the fixture passes above |
+
+Tally remains five accepted, ten open. U1/R2 are not closed by this matrix; it
+separates completed composed checks from the specific integration evidence still
+missing. Reuse these results unless relevant code changes.
+
+Checkpoint 123 outcome: [composed everyday workflow and fresh-profile recovery](architecture/astroeye-everyday-workflow.md)
 passed, together with a current share-link regression, using normal browser asset
 transport. Manual charts, frozen comparison/note capture, private-note exclusions,
 delete/undo, reviewed import and full backup restoration after reload are verified
 in isolated synthetic profiles. No runtime changes. U1/R2 are not yet accepted:
-provider/Director and actual-host/map criteria remain. Next: those handoff checks,
-not another unchanged everyday-workflow rerun. Tally: five accepted, ten open.
+actual-host/map criteria remain. Provider/Director fixture handoffs have since
+passed in checkpoint 124 above. No unchanged everyday-workflow rerun is needed.
 
 ## User direction and scope
 
@@ -79,8 +96,10 @@ gaps, not enlarge the date/location matrix without a stated acceptance purpose.
 
 ## Execution and reporting
 
-1. Next, complete the U1 evidence inventory and missing integrated workflow checks;
-   include R2 where the same workflow can supply valid evidence for both.
+1. Next, verify missing actual-host/map integration for U1/R2. The composed manual,
+   recovery, share, provider and Director fixture checks passed in checkpoints
+   123–124; do not rerun them by default. Include R2 where the same workflow can
+   supply valid evidence for both.
 2. Resolve outstanding U2/U3 checks in bounded runs. Ask for specific manual host
    actions only when tools cannot supply the required evidence.
 3. Return to the precise A1/A2 evidence/rights decisions and authorized V3 check.

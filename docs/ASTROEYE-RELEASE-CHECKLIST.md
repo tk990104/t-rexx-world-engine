@@ -52,6 +52,15 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 124: [provider review](architecture/astroeye-provider-workspace-validation.md)
+and [Director handoff](architecture/astroeye-director-workspace-validation.md) pass
+together on normal browser asset transport, first attempt, exit 0. Validation by
+19.394s; graceful cleanup 0.590s. Provider review/time/provenance/fallback and
+Director Stop/Escape/completion/privacy assertions pass. QA-only transport change;
+synthetic provider responses and simulated camera/style are still explicit.
+Runtime/preview/user records unchanged; no build/full-suite rerun or publication.
+Five accepted, ten open. Next: actual-host/map integration for U1/R2.
+
 October 4, checkpoint 123: [composed everyday workflow](architecture/astroeye-everyday-workflow.md)
 passes manual creation, frozen comparison/note capture, notebook, private-export
 boundaries, delete/undo, reviewed backup import and full recovery in a fresh profile

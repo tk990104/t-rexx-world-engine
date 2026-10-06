@@ -1,5 +1,22 @@
 # AstroEye / Director workspace validation
 
+## Checkpoint 124 — October 5, 2026
+
+The combined provider/Director check passes on **normal browser asset transport**
+without `--node-assets`. See the [current provider run](astroeye-provider-workspace-validation.md)
+for its command and environment. Functional validation completed by 19.394s;
+browser cleanup was graceful (0.590s), exit 0, first attempt. The main application
+runtime remains unchanged from `7368c55`.
+
+Three-shot creation preserves existing scenes, private research is excluded from
+project/telemetry, and Stop, Escape and full completion all restore the saved
+05:30 UTC chart and keyboard focus without changing record/project bytes. No
+unrelated live-layer changes occur. The real Director, module adapter and extracted
+production visibility rules are exercised, but camera flights and visual application
+are still simulated. This is not actual Cesium/terrain, full-app CSS/bootstrap or
+embedded-host acceptance. The earlier browser-loading gap is resolved only for
+this fixture. U1/U2 remain open; no release gate is closed by this result.
+
 ## Checkpoint 84 — September 15, 2026
 
 The real AstroEye tour controls now have a bounded browser regression check for

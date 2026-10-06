@@ -1,5 +1,39 @@
 # Provider-to-form validation
 
+## Checkpoint 124 — October 5, 2026
+
+The existing provider-to-form and Director checks both pass together against the
+unchanged application runtime `7368c55` (work started at `d360f3b`). The harness now
+uses normal browser asset transport by default; `--node-assets` remains an explicit
+diagnostic fallback. Historical collection/performance mode still requires that
+flag so its measurements are not silently moved to another transport. Reports
+identify the actual mode, including on failure.
+
+With a dedicated local server and `QA_BASE_URL` set to its port-5175 address:
+
+```text
+node scripts/qa-astroeye-provider-workspace.mjs --director
+```
+
+The first run passed: validation completed by 19.394s, exit 0, graceful owned-browser
+cleanup in 0.590s, no forced exit. No page errors, unexpected requests or relay
+failures. The normal browser mode made no asset-relay calls. Schedule/venue requests
+were intercepted with synthetic data; no live provider or user collection was used.
+The unchanged 60-second whole-run cap and 20-second mount cap remain in place.
+
+All provider assertions listed below passed again: explicit time-zone choice,
+preserved second repeated-hour instant, required review, edits invalidating approval,
+provenance on save, missing-coordinate refusal, manual fallback and preservation of
+private research. The [Director handoff](astroeye-director-workspace-validation.md)
+passed in the same owned browser. This supersedes the earlier normal-transport
+evidence gap **for this isolated fixture**, not the embedded app or live provider.
+
+No application changes, build/full-unit/allocation rerun, deployment or publication.
+The temporary server was stopped; user preview and records were untouched. U1/R2
+remain open for actual-host/map and other criteria not covered by this simulated
+camera test. The next work is that missing integration evidence, not another
+unchanged provider-form or polar-edge rerun. Five release checks accepted, ten open.
+
 ## Checkpoint 83 — September 15, 2026
 
 The real workspace, controller, time conversion and IndexedDB services pass a

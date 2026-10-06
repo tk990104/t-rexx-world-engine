@@ -7,9 +7,12 @@ import { uncachedBatchIds } from './qa-astroeye-uncached-cases.mjs';
 import { installScheduleDraftFixture, checkScheduleDraftConflicts, checkScheduleDateQueries } from './qa-astroeye-schedule-drafts.mjs';
 
 // Synthetic HTTP provider responses + real workspace/controller/IndexedDB.
-// Explicit diagnostic relay only; this does not certify normal host loading.
-assert.ok(process.argv.includes('--node-assets'), 'Pass --node-assets to acknowledge the diagnostic asset transport');
+// Normal browser asset transport by default; --node-assets remains an explicit
+// diagnostic fallback, never evidence of normal browser/embedded-host loading.
+const assetTransport = process.argv.includes('--node-assets') ? 'node-localhost' : 'browser';
 const collectionsOnly = process.argv.includes('--collections');
+// Keep historical performance measurements on their original transport.
+assert.ok(!collectionsOnly || assetTransport === 'node-localhost', 'Collection timing requires --node-assets');
 const draftConflicts = process.argv.includes('--draft-conflicts');
 const dateQueries = process.argv.includes('--date-queries');
 assert.ok(!dateQueries || (!draftConflicts && !collectionsOnly && !process.argv.includes('--director')), 'Run date queries separately');
@@ -63,6 +66,7 @@ try {
     }
     if (request.resourceType() === 'document') return void request.respond({ contentType: 'text/html',
       body: '<!doctype html><html><head><link rel="icon" href="data:,"><title>Synthetic provider review</title></head><body></body></html>' });
+    if (assetTransport === 'browser') return void request.continue();
     try {
       const response = await fetch(address.href, { redirect: 'manual', signal: AbortSignal.timeout(5000) });
       if (!response.ok) throw new Error('Asset response refused');
@@ -121,12 +125,12 @@ try {
     const queries = await checkScheduleDateQueries(page, mark);
     assert.deepEqual(errors, []); assert.deepEqual(blocked, []); assert.deepEqual(relayFailures, []);
     await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
-    report = { passed: true, queries, assetTransport: 'node-localhost', providerResponses: 'synthetic', userDataAccessed: false, embeddedHostVerified: false };
+    report = { passed: true, queries, assetTransport, providerResponses: 'synthetic', userDataAccessed: false, embeddedHostVerified: false };
   } else if (draftConflicts) {
     const drafts = await checkScheduleDraftConflicts(page, mark);
     assert.deepEqual(errors, []); assert.deepEqual(blocked, []); assert.deepEqual(relayFailures, []);
     await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
-    report = { passed: true, drafts, assetTransport: 'node-localhost', providerResponses: 'synthetic', userDataAccessed: false, embeddedHostVerified: false };
+    report = { passed: true, drafts, assetTransport, providerResponses: 'synthetic', userDataAccessed: false, embeddedHostVerified: false };
   } else if (collectionsOnly) {
     const collections = await checkCollectionWorkflow(page, mark, collectionSize, { uncached, uncachedBatch });
     assert.deepEqual(calls, []); assert.deepEqual(errors, []); assert.deepEqual(blocked, []); assert.deepEqual(relayFailures, []);
@@ -191,12 +195,12 @@ try {
   const director = process.argv.includes('--director') ? await checkDirectorWorkflow(page, mark) : undefined;
   assert.deepEqual(errors, []); assert.deepEqual(blocked, []); assert.deepEqual(relayFailures, []);
   await page.evaluate(() => { qa.workspace.destroy(); return qa.store.close(); });
-  report = { passed: true, assetTransport: 'node-localhost', reviewRequired: true, editsInvalidateReview: true,
+  report = { passed: true, assetTransport, reviewRequired: true, editsInvalidateReview: true,
     repeatedHourPreserved: true, missingCoordinatesBlocked: true, manualFallback: true, privateResearchPreserved: true,
     providerResponses: 'synthetic', cameraSeamMocked: true, embeddedHostVerified: false, userDataAccessed: false, director };
   }
 } catch (error) {
-  report = { passed: false, phase, error: error.message, calls, errors, blocked, relayFailures };
+  report = { passed: false, assetTransport, phase, error: error.message, calls, errors, blocked, relayFailures };
 } finally {
   // Preserve assertion results even if the bounded browser cleanup later stalls.
   process.stderr.write(`${JSON.stringify({ validation: report ?? { passed: false, phase } })}\n`);
