@@ -52,6 +52,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 6, checkpoint 137: [security/rights closeout ledger](architecture/astroeye-security-rights-closeout.md)
+separates completed safeguards from seven bounded L2 outcomes, their evidence and
+approval requirements. OpenRouter bounds/raw errors are the next coding slice;
+current provider spot-checks do not clear unreviewed sources or deployment.
+Corrected outdated security guidance. Six accepted, nine open; documentation-only
+diff/link checks, no runtime/test/build/provider/push/deployment activity.
+
 October 6, checkpoint 136: [local voice request access](architecture/astroeye-voice-request-access.md)
 guards all three voice routes in dev/preview before downstream work. Requires a
 loopback peer/Host/port and matching browser-origin context; rejects foreign,

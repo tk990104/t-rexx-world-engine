@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 6, 2026, checkpoint 136. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
+Updated October 6, 2026, checkpoint 137. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [local voice request access](architecture/astroeye-voice-request-access.md).
+Latest completed outcome: [bounded security/rights closeout ledger](architecture/astroeye-security-rights-closeout.md).
+Existing evidence is separated from seven concrete L2 closeout outcomes and
+approval-dependent decisions. Current sports/map policy spot-checks recorded;
+unreviewed sources remain unknown. Stale security guidance corrected.
+Six accepted, nine open. Next coding slice: bounded, sanitized OpenRouter fallback.
+Documentation only; no tests/build rerun, runtime/data/key changes, push or deployment.
+
+Checkpoint 136 outcome: [local voice request access](architecture/astroeye-voice-request-access.md).
 All three voice routes now require a loopback peer/Host/port and same-origin
 browser evidence before keys, reads, provider calls or logging. Remote/custom-host
 voice access intentionally fails closed; this is not public authentication.
