@@ -54,6 +54,20 @@ test('mic clicks are ignored while Space is physically held', () => {
   assert.equal(shouldIgnoreVoiceButtonClick(false), false);
 });
 
+test('push-to-talk leaves native/widget Space activation alone except the dedicated mic', () => {
+  const tags = ['button', 'summary', 'a[href]', '[role="button"]', '[role="checkbox"]', '[role="radio"]',
+    '[role="switch"]', '[role="slider"]', '[role="tab"]', '[role="menuitem"]', '[role="option"]'];
+  for (const tag of tags) {
+    // closest also covers an icon/text descendant of the actual focused control.
+    const target = { closest: selector => selector.split(', ').includes(tag) ? { id: 'ordinary-control' } : null };
+    assert.equal(shouldHandlePushToTalkKeyDown({ code: 'Space', target }), false, tag);
+  }
+  const mic = { closest: selector => selector.split(', ').includes('button') ? { id: 'gev-voice-button' } : null };
+  assert.equal(shouldHandlePushToTalkKeyDown({ code: 'Space', target: mic }), true);
+  assert.equal(shouldHandlePushToTalkKeyDown({ code: 'Space', target: mic, defaultPrevented: true }), false);
+  assert.equal(shouldHandlePushToTalkKeyDown({ code: 'Space', target: mic, shiftKey: true }), false);
+});
+
 test('voice control help tray reflects the push-to-talk key state', () => {
   assert.equal(
     resolveVoiceControlHint(false, false),

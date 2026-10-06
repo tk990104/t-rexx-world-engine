@@ -2,14 +2,14 @@
 
 Current short status and execution order: [AstroEye finish-line tracker](ASTROEYE-FINISH-LINE.md).
 October 4 user direction: continue AstroEye and report completed/open/next at each
-checkpoint. Checkpoint 122 consolidates A2 evidence without accepting it; the next
-active package is U1's composed user workflow, with related R2 evidence reused.
+checkpoint. Checkpoint 144 accepts U2 for standalone Chromium after U1/R2;
+the next active package is U3 performance/regression. A1/A2 remain open.
 All existing release criteria remain required. No additional features or support
 scope reduction are authorized by this ordering change.
 
 Scope baseline: 2026-09-12, implementation checkpoint 34 (`92edee7`).
 
-**Status: pre-release; A3, V1, V2, R1, R3 and L1 accepted for their reviewed candidates; 9 acceptance gates remain open across five work packages.**
+**Status: pre-release; A3, V1, V2, R1, R2, R3, U1, U2 and L1 accepted for their reviewed candidates; 6 acceptance gates remain open.**
 These are grouped outcomes, not an estimate of commits or development days. Existing
 features and earlier passing tests are useful evidence, but do not close a release
 gate until the complete criterion has been verified on the release candidate.
@@ -714,11 +714,16 @@ manual/provider/share/Director/embedded-host acceptance.
   Accepted in [checkpoint 143](architecture/astroeye-full-workflow-acceptance.md)
   for standalone Chromium; earlier U1-open statements are historical. U2/U3 and
   embedded-preview limitations are not waived by this workflow acceptance.
-- [ ] **U2 — Accessible and discoverable:** verify keyboard-only navigation, focus/escape
+- [x] **U2 — Accessible and discoverable:** verify keyboard-only navigation, focus/escape
   behavior, labels/status announcements, reduced motion and narrow/wide layouts. Provide
   a short first-use guide that makes Compare charts, Saved events and Research notes easy
   to find. Check host-specific downloads/leave warnings in a disposable embedded session
   when available; record unsupported behavior without promising crash recovery.
+  Accepted in [checkpoint 144](architecture/astroeye-usability-acceptance.md) for
+  personal-local standalone Chromium: keyboard wide/narrow, browser accessibility
+  names/live status, real reduced-motion navigation and native download/leave warning
+  pass. Embedded preview, OS screen-reader speech and native OS file picker remain
+  explicitly unverified; this is not a general accessibility certification.
 - [ ] **U3 — Performance and regression:** establish a measured baseline and acceptance
   budget for supported collection sizes, map caps and chart/time changes. Verify no
   per-frame ephemeris work, stale-response safety and unchanged shared layer/camera behavior.

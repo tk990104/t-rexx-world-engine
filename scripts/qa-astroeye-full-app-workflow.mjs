@@ -6,10 +6,12 @@ import { tmpdir } from 'node:os';
 import { resolve, extname, sep } from 'node:path';
 import puppeteer from 'puppeteer';
 import { closeOwnedBrowser } from './qa-owned-browser-cleanup.mjs';
+import { checkFullAppAccessibility } from './qa-astroeye-full-app-accessibility.mjs';
 
 // Full production app, isolated records, no real provider requests or user profile.
 const mode = process.argv.find(x => x.startsWith('--phase='))?.slice(8) || 'workflow';
-assert.ok(['workflow', 'recipient', 'provider', 'director'].includes(mode));
+const accessibilityMode = ['keyboard-wide', 'keyboard-narrow', 'leave-warning', 'reduced-motion'].includes(mode);
+assert.ok(['workflow', 'recipient', 'provider', 'director'].includes(mode) || accessibilityMode);
 const name = process.argv.find(x => x.startsWith('--session='))?.slice(10);
 assert.ok(mode === 'workflow' ? !name : /^session-[A-Za-z0-9]+$/.test(name || ''));
 const root = resolve('dist'), output = resolve('qa-shots/astroeye-full-app-workflow');
@@ -44,7 +46,7 @@ try {
   await new Promise((done, reject) => { server.once('error', reject); server.listen(manifest.port || 0, '127.0.0.1', done); });
   manifest.port = server.address().port;
   const origin = `http://127.0.0.1:${manifest.port}`;
-  const profile = mode === 'recipient' || mode === 'provider' ? await mkdtemp(resolve(tmpdir(), 'trexx-flow-')) : manifest.profile;
+  const profile = mode === 'recipient' || mode === 'provider' || accessibilityMode ? await mkdtemp(resolve(tmpdir(), 'trexx-flow-')) : manifest.profile;
   browser = await puppeteer.launch({ headless: true, timeout: 15000, userDataDir: profile, args: ['--disable-background-networking'] });
   page = await browser.newPage(); page.setDefaultTimeout(7000);
   await page.setViewport({ width: 1280, height: 900 });
@@ -56,6 +58,7 @@ try {
   client.on('Browser.downloadProgress', e => { if (e.state !== 'inProgress') downloadEvents.push({ state: e.state }); });
   page.on('pageerror', e => errors.push(e.message));
   page.on('dialog', async dialog => {
+    if (accessibilityMode && dialog.type() === 'beforeunload') return;
     if (confirmDelete && dialog.type() === 'confirm' && dialog.message().startsWith('Delete “QA U1')) {
       confirmDelete = false; await dialog.accept();
     } else { errors.push(`Unexpected ${dialog.type()}`); await dialog.dismiss(); }
@@ -74,7 +77,8 @@ try {
     }
     if (url.pathname.startsWith('/api/')) {
       blocked.api++; return void request.respond({ status: url.pathname === '/api/openrouter/status' ? 200 : 503, contentType: 'application/json',
-        body: url.pathname === '/api/openrouter/status' ? '{"configured":false,"realtimeConfigured":false}' : '{"error":"Offline QA"}' });
+        // Exercise the installed global shortcut without enabling token/audio traffic.
+        body: url.pathname === '/api/openrouter/status' ? JSON.stringify({ configured: false, realtimeConfigured: accessibilityMode }) : '{"error":"Offline QA"}' });
     }
     void request.continue();
   });
@@ -111,8 +115,16 @@ try {
       const input = document.querySelector('[data-role="import-file"]'); input.files = dt.files; input.dispatchEvent(new Event('change', { bubbles: true })); }, backup);
     await page.waitForSelector('[data-role="import-review"]:not([hidden])'); await idle();
   };
-  await click('#astroeye-entry-layers');
-  if (mode === 'workflow') {
+  if (accessibilityMode) {
+    // Open through the visible keyboard path, so Escape has a real focus origin.
+    await page.focus('[data-collapse-target="data-panel"]'); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('#astroeye-entry-layers').checkVisibility());
+    await page.focus('#astroeye-entry-layers'); await page.keyboard.press('Enter'); await idle();
+  } else await click('#astroeye-entry-layers');
+  if (accessibilityMode) {
+    await importReview(manifest.backup); await action('confirm-import');
+    report = await checkFullAppAccessibility({ page, client, mode, session, manifest, mark, action, idle, records, readDownload });
+  } else if (mode === 'workflow') {
     mark('manual-comparison-and-notes');
     const empty = await records();
     for (const [n, v] of Object.entries({ title: 'QA U1 Manual', sport: 'QA', competition: 'QA', home: 'Home', away: 'Away', venueName: 'Synthetic',
@@ -234,6 +246,7 @@ try {
   if (page && !page.isClosed()) try { report.ui = await page.evaluate(() => ({
     comparison: document.querySelector('[data-comparison="export-status"]')?.textContent,
     status: document.querySelector('.astroeye-status')?.textContent,
+    keys: window.__qaKeys,
   })); } catch { /* Browser shutdown evidence is recorded below. */ }
 }
 finally {

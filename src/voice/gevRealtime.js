@@ -2385,7 +2385,7 @@ export function isPushToTalkKey(event) {
 }
 
 /**
- * Protects text entry and modified shortcuts from the global push-to-talk key.
+ * Protects native/widget activation and text entry from global push-to-talk.
  * @param {KeyboardEvent|object|null} event
  * @returns {boolean}
  */
@@ -2395,7 +2395,11 @@ export function shouldHandlePushToTalkKeyDown(event) {
   const target = event.target;
   if (target?.isContentEditable) return false;
   const editingControl = target?.closest?.('input, textarea, select, [contenteditable], [role="textbox"]');
-  return !editingControl;
+  if (editingControl) return false;
+  // Space belongs to the focused control (including native details/summary),
+  // not voice. The dedicated mic retains its documented hold-Space behavior.
+  const interactive = target?.closest?.('button, summary, a[href], [role="button"], [role="checkbox"], [role="radio"], [role="switch"], [role="slider"], [role="tab"], [role="menuitem"], [role="option"]');
+  return !interactive || interactive.id === 'gev-voice-button';
 }
 
 /**

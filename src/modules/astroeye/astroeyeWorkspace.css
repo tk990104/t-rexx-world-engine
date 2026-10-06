@@ -94,6 +94,9 @@
   outline: none; background: rgba(255,255,255,.055); padding: 9px 10px; font-size: 12px; text-transform: none;
 }
 .astroeye-form input:focus, .astroeye-form select:focus { border-color: var(--astro-violet); box-shadow: 0 0 0 2px rgba(214,166,255,.1); }
+/* Native date/time segments focus inside the host's browser shadow tree. */
+#astroeye-workspace :focus-visible,
+#astroeye-workspace input:focus-within { outline: 2px solid var(--astro-cyan); outline-offset: 2px; }
 .astroeye-form select option { color: #140b20; }
 .astroeye-span-2 { grid-column: 1 / -1; }
 .astroeye-primary { padding: 11px 14px; color: #15091f; border: 0; border-radius: 8px; background: linear-gradient(110deg, var(--astro-violet), var(--astro-cyan)); font-weight: 700; cursor: pointer; }
