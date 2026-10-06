@@ -12,6 +12,12 @@ with local access/input checks, bounded provider reads and safe no-store errors;
 
 ## Scope and counting
 
+Checkpoint 141 update: [F2 GBFS implemented](astroeye-gbfs-security.md) with a
+5 MiB actual-byte cap, 12-second whole-response deadline, redirect rejection,
+cleanup and fixed no-store failures. All 52 focused tests pass. F1/F2 are now
+implemented; F3–F5 remain open. Rows/findings below preserve the original source
+inventory, not the current implementation of those two repaired routes.
+
 The active Vite plugin list installs 30 literal application API mounts in
 `vite.config.js`, plus `/api/astroeye/sports` dispatched by
 `server/sportsScheduleProxy.js`: **31 mounts**, not 31 distinct methods/subroutes.

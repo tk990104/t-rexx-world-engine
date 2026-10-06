@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 6, 2026, checkpoint 140. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
+Updated October 6, 2026, checkpoint 141. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [Google Places safeguards](architecture/astroeye-google-places-security.md).
+Latest completed outcome: [GBFS bike-share safeguards](architecture/astroeye-gbfs-security.md).
+F2 implemented: 5 MiB streamed byte cap, 12-second fetch/body deadline, redirect
+rejection, cancellation and fixed no-store errors; valid feed/cache contracts retained.
+All 52 focused tests pass (10.603s); production build passes (263 modules, 8.20s), with existing browser-externalization and large-chunk warnings.
+Six accepted, nine open. Next: F3 remaining raw failures; F4/F5 and rights remain open.
+No live provider calls, user data/key changes, push or deployment.
+
+Checkpoint 140 outcome: [Google Places safeguards](architecture/astroeye-google-places-security.md).
 F1 implemented: local access/input validation, response caps/deadline, redirect
 rejection and fixed no-store failures for both routes; valid result contracts retained.
 All 63 focused tests pass (12.836s); production build passes (263 modules, 13.95s), with existing browser-externalization and large-chunk warnings.

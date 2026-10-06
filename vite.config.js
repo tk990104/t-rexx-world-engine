@@ -51,6 +51,7 @@ import { fetchVoiceProviderText, VOICE_PROVIDER_TIMEOUT_MS } from './server/voic
 import { readVoiceRequestBody, VOICE_REQUEST_TIMEOUT_MS } from './server/voiceRequestBody.js';
 import { withLocalVoiceAccess, isLocalVoiceRequest } from './server/voiceRequestAccess.js';
 import { parseGooglePlacesQuery } from './server/googlePlacesRequest.js';
+import { fetchGbfsText, GbfsResponseError, GBFS_PROXY_TIMEOUT_MS } from './server/gbfsResponse.js';
 import { normalizeRadioCountryInput } from './src/data/radioCountry.js';
 import {
   normalizeRegionalArticles,
@@ -1269,8 +1270,6 @@ function radioBrowserProxy() {
 // ---------------------------------------------------------------------------
 // GBFS (General Bikeshare Feed Specification) proxy constants
 // ---------------------------------------------------------------------------
-/** Upstream fetch timeout for GBFS requests (ms). */
-const GBFS_PROXY_TIMEOUT_MS = 12000;
 /** Allowlisted GBFS hostnames; wildcard *.publicbikesystem.net also accepted. */
 const GBFS_ALLOWED_HOSTS = new Set([
   'gbfs.lyft.com',
@@ -3466,10 +3465,8 @@ function gbfsCacheControl(pathname) {
  *
  * @returns {import('vite').Plugin}
  */
-function gbfsProxy() {
-  return {
-    name: 'gbfs-proxy',
-    configureServer(server) {
+export function gbfsProxy({ fetchImpl = globalThis.fetch, upstreamTimeoutMs = GBFS_PROXY_TIMEOUT_MS } = {}) {
+    const install = (server) => {
       server.middlewares.use('/api/gbfs', async (req, res) => {
         try {
           if (req.method !== 'GET') {
@@ -3504,9 +3501,9 @@ function gbfsProxy() {
             return;
           }
 
-          if (upstreamUrl.protocol !== 'https:') {
+          if (upstreamUrl.protocol !== 'https:' || upstreamUrl.username || upstreamUrl.password || upstreamUrl.port) {
             res.writeHead(400, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-            res.end(JSON.stringify({ error: 'Only https GBFS targets are allowed' }));
+            res.end(JSON.stringify({ error: 'Only credential-free https GBFS targets on port 443 are allowed' }));
             return;
           }
 
@@ -3522,57 +3519,35 @@ function gbfsProxy() {
             return;
           }
 
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), GBFS_PROXY_TIMEOUT_MS);
-          let upstream;
-          try {
-            upstream = await fetch(upstreamUrl.toString(), {
-              method: 'GET',
-              headers: {
-                Accept: 'application/json',
-                'User-Agent': 'gods-eye-view-gbfs-proxy/1.0',
-              },
-              signal: controller.signal,
-            });
-          } finally {
-            clearTimeout(timeoutId);
-          }
-
-          // Limit response size to prevent memory exhaustion from malicious upstream
-          const GBFS_MAX_BODY_BYTES = 5 * 1024 * 1024; // 5 MB
-          const contentLength = Number(upstream.headers.get('content-length'));
-          if (Number.isFinite(contentLength) && contentLength > GBFS_MAX_BODY_BYTES) {
-            res.writeHead(502, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-            res.end(JSON.stringify({ error: 'GBFS upstream response too large' }));
+          const { response: upstream, text: body } = await fetchGbfsText(upstreamUrl.toString(), {
+            fetchImpl, timeoutMs: upstreamTimeoutMs,
+          });
+          if (!upstream.ok) {
+            const status = upstream.status >= 400 && upstream.status <= 599 ? upstream.status : 502;
+            res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+            res.end(JSON.stringify({ error: 'GBFS upstream request failed' }));
             return;
           }
-          const body = await upstream.text();
-          if (body.length > GBFS_MAX_BODY_BYTES) {
-            res.writeHead(502, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-            res.end(JSON.stringify({ error: 'GBFS upstream response too large' }));
-            return;
-          }
-          const contentType = upstream.headers.get('content-type') || 'application/json';
           res.writeHead(upstream.status, {
-            'Content-Type': contentType,
+            'Content-Type': 'application/json; charset=utf-8',
             'Cache-Control': gbfsCacheControl(upstreamUrl.pathname),
             'X-GBFS-Upstream': upstreamUrl.hostname,
             'X-GBFS-Cache': 'MISS',
           });
           res.end(body);
         } catch (error) {
-          if (error?.name === 'AbortError') {
+          if (error instanceof GbfsResponseError && error.code === 'timeout') {
             res.writeHead(504, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
             res.end(JSON.stringify({ error: 'GBFS upstream timeout' }));
             return;
           }
-          console.error('[GBFS Proxy]', error?.message || String(error));
           res.writeHead(502, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-          res.end(JSON.stringify({ error: 'GBFS proxy error' }));
+          res.end(JSON.stringify({ error: error instanceof GbfsResponseError && error.code === 'size'
+            ? 'GBFS upstream response too large' : 'GBFS proxy error' }));
         }
       });
-    },
-  };
+    };
+    return { name: 'gbfs-proxy', configureServer: install, configurePreviewServer: install };
 }
 
 /**

@@ -52,6 +52,12 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 6, checkpoint 141: [GBFS transport safeguards](architecture/astroeye-gbfs-security.md)
+implement F2 with actual-byte streaming limits, whole-response deadlines, redirect
+rejection, cleanup and fixed no-store errors in dev/preview. All 52 focused tests
+pass (10.603s); production build passes (263 modules, 8.20s), with existing browser-externalization and large-chunk warnings. Six accepted, nine open;
+F3 raw failures is next, then F4/F5. No live calls, data/key changes, push or deployment.
+
 October 6, checkpoint 140: [Google Places safeguards](architecture/astroeye-google-places-security.md)
 implement inventory F1: both routes validate local access and inputs before key/
 provider work, enforce response bounds/deadlines and reject redirects, return safe

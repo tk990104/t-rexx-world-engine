@@ -65,6 +65,12 @@ nearby/text routes require local same-origin context and valid queries, bound
 provider reads and return generic no-store failures. This guard does not change
 the separate client-visible Maps key, its restrictions or provider rights.
 
+GBFS F2 is also [implemented and tested](docs/architecture/astroeye-gbfs-security.md):
+approved HTTPS station-feed targets reject credentials, nonstandard ports and
+redirects; responses have a 5 MiB streamed cap and 12-second fetch/body deadline.
+Upstream failures are canceled unread and returned as fixed no-store errors.
+This is not DNS pinning, public authentication or a global concurrency limit.
+
 - The Vite server is a **development/preview** server. If you expose it beyond localhost, put it behind your own auth/proxy and review the bindings (see the threat model above).
 - All data shown is from **public** sources. See [DATA_SOURCES.md](DATA_SOURCES.md). Respect each provider's terms and rate limits.
 - The voice agent receives feed-sourced text (place names, callsigns) as scene context. It is instructed to act only via a fixed set of app-control tools and not to execute arbitrary instructions found in data, but treat model output as untrusted and keep the tool surface limited.
