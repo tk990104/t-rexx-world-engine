@@ -52,6 +52,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 6, checkpoint 140: [Google Places safeguards](architecture/astroeye-google-places-security.md)
+implement inventory F1: both routes validate local access and inputs before key/
+provider work, enforce response bounds/deadlines and reject redirects, return safe
+no-store failures, and preserve normalized results. All 63 focused tests pass
+(12.836s); production build passes (263 modules, 13.95s), with existing browser-externalization and large-chunk warnings. Six accepted, nine open; GBFS
+F2 is next. No actual key/data changes, live API/microphone tests, push or deployment.
+
 October 6, checkpoint 139: [route/key inventory](architecture/astroeye-route-inventory.md)
 covers 31 application API mounts (not every subroute/Vite internal). S2 inventory
 is complete; five bounded finding groups remain, starting with the Google Places

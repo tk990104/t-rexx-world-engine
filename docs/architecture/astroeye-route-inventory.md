@@ -5,6 +5,11 @@ October 6, 2026, checkpoint 139; source candidate `dba552c`.
 Six release gates accepted, nine open. This is a static inventory and triage,
 not a penetration test or certification of every inherited helper.
 
+Checkpoint 140 update: [F1 Google Places implemented](astroeye-google-places-security.md)
+with local access/input checks, bounded provider reads and safe no-store errors;
+63 focused tests pass. The table and F1 description below retain the original
+`dba552c` finding. F2 GBFS is next; F2–F5 remain open, not a new gate count.
+
 ## Scope and counting
 
 The active Vite plugin list installs 30 literal application API mounts in

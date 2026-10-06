@@ -49,7 +49,8 @@ import { sportsScheduleProxy } from './server/sportsScheduleProxy.js';
 import { createVoiceDiagnosticHandler, createVoiceDiagnosticSink } from './server/voiceDiagnostics.js';
 import { fetchVoiceProviderText, VOICE_PROVIDER_TIMEOUT_MS } from './server/voiceProviderResponse.js';
 import { readVoiceRequestBody, VOICE_REQUEST_TIMEOUT_MS } from './server/voiceRequestBody.js';
-import { withLocalVoiceAccess } from './server/voiceRequestAccess.js';
+import { withLocalVoiceAccess, isLocalVoiceRequest } from './server/voiceRequestAccess.js';
+import { parseGooglePlacesQuery } from './server/googlePlacesRequest.js';
 import { normalizeRadioCountryInput } from './src/data/radioCountry.js';
 import {
   normalizeRegionalArticles,
@@ -6217,49 +6218,37 @@ function toFiveWordHudSummary(value) {
  * Cesium feature metadata. Nearby Search supplies the names around the actual
  * screen-space target without exposing the Google API key in the request.
  */
-function googlePlacesContextProxy() {
+export function googlePlacesContextProxy({ fetchImpl = globalThis.fetch, env = process.env,
+  rateLimiter = googleRateLimiter, upstreamTimeoutMs = VOICE_PROVIDER_TIMEOUT_MS } = {}) {
+  const fail = (res, status, error) => {
+    res.statusCode = status;
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify({ error, places: [] }));
+  };
   function install(middlewares) {
-    middlewares.use('/api/google/nearby-places', async (req, res) => {
-      if (req.method !== 'GET') {
-        res.statusCode = 405;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Method not allowed', places: [] }));
-        return;
+    const use = (route, textSearch, handler) => middlewares.use(route, (req, res) => {
+      res.setHeader('Cache-Control', 'no-store');
+      if (!isLocalVoiceRequest(req)) {
+        res.setHeader('Connection', 'close');
+        return fail(res, 403, 'Places routes require a same-origin local browser request');
       }
-
-      // Opt-in per-IP throttle (GEV_RATELIMIT_GOOGLE_PER_MIN). No-op when unset.
-      // Inlined (not the shared helper) so the 429 body keeps this endpoint's
-      // `places: []` contract that the client expects on every error response.
-      const _grl = googleRateLimiter();
+      if (req.method !== 'GET') return fail(res, 405, 'Method not allowed');
+      const query = parseGooglePlacesQuery(req.url, textSearch);
+      if (!query) return fail(res, 400, 'Invalid Places query');
+      // Preserve the opt-in throttle; this is not a billing cap.
+      const _grl = rateLimiter();
       if (_grl && !_grl(clientKey(req))) {
-        res.statusCode = 429;
-        res.setHeader('Content-Type', 'application/json');
         res.setHeader('Retry-After', '5');
-        res.end(JSON.stringify({ error: 'Rate limit exceeded', places: [] }));
-        return;
+        return fail(res, 429, 'Rate limit exceeded');
       }
-
-      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-      if (!apiKey) {
-        res.statusCode = 503;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'GOOGLE_MAPS_API_KEY is not set', places: [] }));
-        return;
-      }
-
-      const requestUrl = new URL(req.url || '', 'http://localhost');
-      const latitude = Number(requestUrl.searchParams.get('lat'));
-      const longitude = Number(requestUrl.searchParams.get('lon'));
-      const radiusM = Math.max(25, Math.min(5000, Number(requestUrl.searchParams.get('radiusM')) || 250));
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        res.statusCode = 400;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Valid lat and lon are required', places: [] }));
-        return;
-      }
-
+      const apiKey = env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) return fail(res, 503, 'Google Places is not configured');
+      return handler(req, res, query, apiKey);
+    });
+    use('/api/google/nearby-places', false, async (req, res, { latitude, longitude, radiusM }, apiKey) => {
       try {
-        const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+        const { response, text } = await fetchVoiceProviderText('https://places.googleapis.com/v1/places:searchNearby', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -6285,8 +6274,11 @@ function googlePlacesContextProxy() {
               },
             },
           }),
-        });
-        const data = await response.json().catch(() => ({}));
+        }, { fetchImpl, timeoutMs: upstreamTimeoutMs });
+        if (!response.ok) return fail(res, response.status >= 400 && response.status <= 599 ? response.status : 502, 'Google Places request failed');
+        const data = JSON.parse(text);
+        if (!data || typeof data !== 'object' || Array.isArray(data) || data.error
+          || (data.places !== undefined && !Array.isArray(data.places))) throw new Error('Invalid Places response');
         const seenPlaces = new Set();
         const places = Array.isArray(data.places) ? data.places
           .map((place) => {
@@ -6315,17 +6307,12 @@ function googlePlacesContextProxy() {
           .map(({ contextPriority, ...place }) => place)
           .slice(0, 20) : [];
 
-        res.statusCode = response.ok ? 200 : response.status;
+        res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.setHeader('Cache-Control', 'private, max-age=300');
-        res.end(JSON.stringify({
-          places,
-          error: response.ok ? null : data.error?.message || 'Google Places request failed',
-        }));
-      } catch (error) {
-        res.statusCode = 502;
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.end(JSON.stringify({ error: error?.message || 'Google Places request failed', places: [] }));
+        res.end(JSON.stringify({ places, error: null }));
+      } catch {
+        fail(res, 502, 'Google Places request failed');
       }
     });
 
@@ -6333,48 +6320,9 @@ function googlePlacesContextProxy() {
     // the view. Geocoding scatters obscure monument/POI names across the city;
     // a view-biased Text Search lands on the actual feature. Same key, field
     // mask, throttle, and `places: []` error contract as nearby-places above.
-    middlewares.use('/api/google/text-search', async (req, res) => {
-      if (req.method !== 'GET') {
-        res.statusCode = 405;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Method not allowed', places: [] }));
-        return;
-      }
-
-      // Opt-in per-IP throttle (GEV_RATELIMIT_GOOGLE_PER_MIN). No-op when unset.
-      // Inlined (like nearby-places) so the 429 body keeps the `places: []`
-      // contract the client expects on every error response.
-      const _grl = googleRateLimiter();
-      if (_grl && !_grl(clientKey(req))) {
-        res.statusCode = 429;
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Retry-After', '5');
-        res.end(JSON.stringify({ error: 'Rate limit exceeded', places: [] }));
-        return;
-      }
-
-      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-      if (!apiKey) {
-        res.statusCode = 503;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'GOOGLE_MAPS_API_KEY is not set', places: [] }));
-        return;
-      }
-
-      const requestUrl = new URL(req.url || '', 'http://localhost');
-      const textQuery = String(requestUrl.searchParams.get('q') || '').trim();
-      const latitude = Number(requestUrl.searchParams.get('lat'));
-      const longitude = Number(requestUrl.searchParams.get('lon'));
-      const radiusM = Math.max(50, Math.min(50000, Number(requestUrl.searchParams.get('radiusM')) || 4000));
-      if (!textQuery || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        res.statusCode = 400;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'q, lat and lon are required', places: [] }));
-        return;
-      }
-
+    use('/api/google/text-search', true, async (req, res, { textQuery, latitude, longitude, radiusM }, apiKey) => {
       try {
-        const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        const { response, text } = await fetchVoiceProviderText('https://places.googleapis.com/v1/places:searchText', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -6399,8 +6347,11 @@ function googlePlacesContextProxy() {
             },
             maxResultCount: 5,
           }),
-        });
-        const data = await response.json().catch(() => ({}));
+        }, { fetchImpl, timeoutMs: upstreamTimeoutMs });
+        if (!response.ok) return fail(res, response.status >= 400 && response.status <= 599 ? response.status : 502, 'Google Places request failed');
+        const data = JSON.parse(text);
+        if (!data || typeof data !== 'object' || Array.isArray(data) || data.error
+          || (data.places !== undefined && !Array.isArray(data.places))) throw new Error('Invalid Places response');
         const places = Array.isArray(data.places) ? data.places
           .map((place) => {
             const placeLatitude = place.location?.latitude ?? null;
@@ -6429,19 +6380,17 @@ function googlePlacesContextProxy() {
               viewport,
             };
           })
-          .filter((place) => place.name) : [];
+          .filter((place) => place.name).slice(0, 5) : [];
 
-        res.statusCode = response.ok ? 200 : response.status;
+        res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.setHeader('Cache-Control', 'private, max-age=300');
         res.end(JSON.stringify({
           places,
-          error: response.ok ? null : data.error?.message || 'Google Places request failed',
+          error: null,
         }));
-      } catch (error) {
-        res.statusCode = 502;
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.end(JSON.stringify({ error: error?.message || 'Google Places request failed', places: [] }));
+      } catch {
+        fail(res, 502, 'Google Places request failed');
       }
     });
   }

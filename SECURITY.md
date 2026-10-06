@@ -60,6 +60,10 @@ earlier hardening statements do not certify the whole inherited server.
 The [31-mount source inventory](docs/architecture/astroeye-route-inventory.md)
 records remaining Google Places/GBFS, error, lifecycle and access findings.
 Inventory coverage is not security acceptance or a public-deployment guarantee.
+Its Google Places F1 finding is now [implemented and tested](docs/architecture/astroeye-google-places-security.md):
+nearby/text routes require local same-origin context and valid queries, bound
+provider reads and return generic no-store failures. This guard does not change
+the separate client-visible Maps key, its restrictions or provider rights.
 
 - The Vite server is a **development/preview** server. If you expose it beyond localhost, put it behind your own auth/proxy and review the bindings (see the threat model above).
 - All data shown is from **public** sources. See [DATA_SOURCES.md](DATA_SOURCES.md). Respect each provider's terms and rate limits.
