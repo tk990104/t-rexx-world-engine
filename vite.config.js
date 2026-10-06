@@ -5903,9 +5903,10 @@ function trackBackfillProxies() {
  * Keeps OPENAI_API_KEY server-side while the browser connects to the
  * Realtime API over WebRTC with a short-lived secret.
  */
-function openAiRealtimeProxy() {
+export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = process.env, rateLimiter = openAiRateLimiter } = {}) {
   function install(middlewares) {
     middlewares.use('/api/openai/hud-summary', async (req, res) => {
+      res.setHeader('Cache-Control', 'no-store');
       if (req.method !== 'POST') {
         res.statusCode = 405;
         res.setHeader('Content-Type', 'application/json');
@@ -5914,11 +5915,11 @@ function openAiRealtimeProxy() {
       }
 
       // Opt-in per-IP throttle (GEV_RATELIMIT_OPENAI_PER_MIN). No-op when unset.
-      if (!enforceOptInRateLimit(openAiRateLimiter(), req, res)) return;
+      if (!enforceOptInRateLimit(rateLimiter(), req, res)) return;
 
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = env.OPENAI_API_KEY;
       if (!apiKey) {
-        // 501 Not Implemented, not 503 Service Unavailable, and cacheable.
+        // 501 tells the client to disable this feature rather than keep retrying.
         //
         // 503 means "try again later", which is exactly what the client did:
         // every fifteen seconds, forever, in every open tab. A missing key is
@@ -5926,7 +5927,6 @@ function openAiRealtimeProxy() {
         // deployment — so say so in a way the client can act on once.
         res.statusCode = 501;
         res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
         res.end(JSON.stringify({
           error: 'OPENAI_API_KEY is not set',
           disabled: true,
@@ -5937,14 +5937,14 @@ function openAiRealtimeProxy() {
       try {
         const body = await readRequestBody(req, 64 * 1024);
         const context = JSON.parse(body || '{}');
-        const response = await fetch('https://api.openai.com/v1/responses', {
+        const response = await fetchImpl('https://api.openai.com/v1/responses', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: process.env.OPENAI_HUD_SUMMARY_MODEL || OPENAI_HUD_SUMMARY_MODEL_DEFAULT,
+            model: env.OPENAI_HUD_SUMMARY_MODEL || OPENAI_HUD_SUMMARY_MODEL_DEFAULT,
             instructions: [
               "Write one concise intelligence-HUD summary for God's Eye View.",
               'Use only the supplied place, street, nearby-place, and enabled-layer text labels.',
@@ -5957,19 +5957,27 @@ function openAiRealtimeProxy() {
             max_output_tokens: 100,
           }),
         });
-        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          // Provider errors may echo credentials or request context. Never forward them.
+          void response.body?.cancel().catch(() => {});
+          res.statusCode = response.status >= 400 && response.status <= 599 ? response.status : 502;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ summary: null, error: 'OpenAI HUD summary request failed' }));
+          return;
+        }
+        const data = await response.json();
         const summary = toFiveWordHudSummary(extractOpenAiResponseText(data));
-        res.statusCode = response.ok && summary ? 200 : response.status || 502;
+        res.statusCode = summary ? 200 : 502;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.setHeader('Cache-Control', 'no-store');
         res.end(JSON.stringify({
           summary: summary || null,
-          error: response.ok ? null : data.error?.message || 'OpenAI HUD summary request failed',
+          error: summary ? null : 'OpenAI HUD summary request failed',
         }));
-      } catch (error) {
+      } catch {
         res.statusCode = 502;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: error?.message || 'OpenAI HUD summary request failed' }));
+        res.end(JSON.stringify({ error: 'OpenAI HUD summary request failed' }));
       }
     });
 
@@ -5999,6 +6007,8 @@ function openAiRealtimeProxy() {
     });
 
     middlewares.use('/api/realtime/token', async (req, res) => {
+      // Ephemeral credentials must never be retained by HTTP caches, on any branch.
+      res.setHeader('Cache-Control', 'no-store');
       if (req.method !== 'GET' && req.method !== 'POST') {
         res.statusCode = 405;
         res.setHeader('Content-Type', 'application/json');
@@ -6007,11 +6017,11 @@ function openAiRealtimeProxy() {
       }
 
       // Opt-in per-IP throttle (GEV_RATELIMIT_OPENAI_PER_MIN). No-op when unset.
-      if (!enforceOptInRateLimit(openAiRateLimiter(), req, res)) return;
+      if (!enforceOptInRateLimit(rateLimiter(), req, res)) return;
 
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = env.OPENAI_API_KEY;
       if (!apiKey) {
-        // 501 Not Implemented, not 503 Service Unavailable, and cacheable.
+        // 501 tells the client to disable this feature rather than keep retrying.
         //
         // 503 means "try again later", which is exactly what the client did:
         // every fifteen seconds, forever, in every open tab. A missing key is
@@ -6019,7 +6029,6 @@ function openAiRealtimeProxy() {
         // deployment — so say so in a way the client can act on once.
         res.statusCode = 501;
         res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
         res.end(JSON.stringify({
           error: 'OPENAI_API_KEY is not set',
           disabled: true,
@@ -6043,17 +6052,17 @@ function openAiRealtimeProxy() {
       const tier = resolveVoiceModel(requestedTier).tier;
       const model =
         tier === 'mini'
-          ? process.env.OPENAI_REALTIME_MODEL_MINI || OPENAI_REALTIME_MODEL_MINI_DEFAULT
-          : process.env.OPENAI_REALTIME_MODEL || OPENAI_REALTIME_MODEL_DEFAULT;
-      const voice = process.env.OPENAI_REALTIME_VOICE || OPENAI_REALTIME_VOICE_DEFAULT;
-      const effort = process.env.OPENAI_REALTIME_REASONING_EFFORT || OPENAI_REALTIME_REASONING_DEFAULT;
+          ? env.OPENAI_REALTIME_MODEL_MINI || OPENAI_REALTIME_MODEL_MINI_DEFAULT
+          : env.OPENAI_REALTIME_MODEL || OPENAI_REALTIME_MODEL_DEFAULT;
+      const voice = env.OPENAI_REALTIME_VOICE || OPENAI_REALTIME_VOICE_DEFAULT;
+      const effort = env.OPENAI_REALTIME_REASONING_EFFORT || OPENAI_REALTIME_REASONING_DEFAULT;
       const contextTokenLimit = Math.round(Math.max(
         1000,
-        Math.min(12000, Number(process.env.OPENAI_REALTIME_CONTEXT_TOKENS) || OPENAI_REALTIME_CONTEXT_TOKENS_DEFAULT)
+        Math.min(12000, Number(env.OPENAI_REALTIME_CONTEXT_TOKENS) || OPENAI_REALTIME_CONTEXT_TOKENS_DEFAULT)
       ));
       const contextRetentionRatio = Math.max(
         0.1,
-        Math.min(1, Number(process.env.OPENAI_REALTIME_CONTEXT_RETENTION) || OPENAI_REALTIME_CONTEXT_RETENTION_DEFAULT)
+        Math.min(1, Number(env.OPENAI_REALTIME_CONTEXT_RETENTION) || OPENAI_REALTIME_CONTEXT_RETENTION_DEFAULT)
       );
       const sessionConfig = {
         session: {
@@ -6150,7 +6159,7 @@ function openAiRealtimeProxy() {
       };
 
       try {
-        const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+        const response = await fetchImpl('https://api.openai.com/v1/realtime/client_secrets', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -6159,6 +6168,13 @@ function openAiRealtimeProxy() {
           },
           body: JSON.stringify(sessionConfig),
         });
+        if (!response.ok) {
+          void response.body?.cancel().catch(() => {});
+          res.statusCode = response.status >= 400 && response.status <= 599 ? response.status : 502;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: 'Failed to create Realtime token' }));
+          return;
+        }
         const body = await response.text();
         res.statusCode = response.status;
         res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
@@ -6172,10 +6188,10 @@ function openAiRealtimeProxy() {
           res.setHeader('X-GEV-Voice-Tier-Fallback', '1');
         }
         res.end(body);
-      } catch (error) {
+      } catch {
         res.statusCode = 502;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: error?.message || 'Failed to create Realtime token' }));
+        res.end(JSON.stringify({ error: 'Failed to create Realtime token' }));
       }
     });
   }

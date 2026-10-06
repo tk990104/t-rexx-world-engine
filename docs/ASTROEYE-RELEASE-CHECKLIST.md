@@ -52,6 +52,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 131: [OpenAI proxy error/cache boundaries](architecture/astroeye-openai-proxy-security.md)
+replace raw provider/exception errors with fixed messages and set no-store on all
+voice-token/HUD branches. Temporary credentials and tier fallback remain usable.
+All 83 offline focused tests and production build pass. Existing-key reuse approved,
+no real credential changes/live API/microphone/push/deployment. L2 remains open;
+six accepted, nine open. Recording, access policy, resource bounds and rights are
+explicit remaining review items, not certified by these tests.
+
 October 5, checkpoint 130: [backup text-size boundary](architecture/astroeye-import-size-security.md)
 enforces the existing UI 10 MiB policy at the shared JSON import API before parsing
 or storage access. Unicode/exact-limit/rejection/retry checks pass; saved records

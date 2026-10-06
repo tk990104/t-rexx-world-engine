@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 5, 2026, checkpoint 130. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
+Updated October 5, 2026, checkpoint 131. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [backup text-size boundary](architecture/astroeye-import-size-security.md).
+Latest completed outcome: [OpenAI proxy error/cache boundaries](architecture/astroeye-openai-proxy-security.md).
+Voice-token and HUD routes no longer return raw upstream/exception errors and now
+send no-store on all branches. Temporary-token delivery remains intact. All 83
+offline focused tests and production build pass. Existing-key reuse was approved;
+no real-key changes, live calls, microphone, push or deployment. Six accepted,
+nine open; next diagnostic-recording review. L2 and actual-host checks remain open.
+
+Checkpoint 130 outcome: [backup text-size boundary](architecture/astroeye-import-size-security.md).
 The shared record API now enforces the UI's 10 MiB limit before parsing JSON text,
 including Unicode byte sizes. Rejected imports preserve records and clear stale
 approval. All 31 focused tests and production build pass. Six accepted, nine open;
@@ -94,7 +101,7 @@ must be rechecked when affected by changes.
 | U1: complete user workflow | Manual/provider entry through charts, comparison, notes, backup/recovery, sharing and Director handoff | **Next active work package.** Consolidate existing scenario evidence and verify the missing composed paths using synthetic data. |
 | U2: usability/accessibility | Keyboard, focus, status, reduced motion and narrow/wide behavior | Reuse valid evidence; distinguish DOM checks from actual screen-reader and host behavior. Record manual-only checks explicitly. |
 | U3: performance | Reviewed collection limits and timing budgets with shared-state safety | Baselines exist; finish actual-host/representative measurements and explicitly accept supported limits. Do not claim that 1,000-event test runs establish a device guarantee. |
-| L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Provider response and backup JSON byte limits enforced (checkpoints 129–130); focused privacy/import tests pass. Remaining routes/recording and deployment-specific rights review still required. |
+| L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Provider/backup byte limits and OpenAI error/cache boundaries fixed (129–131). Next diagnostic recording; access/origin policy, remaining response bounds/routes and deployment-specific rights remain open. |
 | L3: deployment and handoff | Approved target smoke test, backup/restore, rollback and release notes | Target and publication require explicit approval. No deployment or tag is preauthorized. |
 
 Accepted checks: A3 supported-range/reference candidate; V1 bounded commands;
