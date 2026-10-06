@@ -3,8 +3,8 @@ import { EventBus } from '../src/core/eventBus.js';
 import { createResearchAnnotationLayer, researchNoteEntityId } from '../src/modules/astroeye/researchAnnotationLayer.js';
 import { RESEARCH_ANNOTATIONS_ID } from '../src/modules/astroeye/researchAnnotations.js';
 
-/** Offline rendering fixture, never imported by main and never reads browser records. */
-export function mountMarkerScene(host) {
+/** QA-only offline fixture: in-memory records by default, optional isolated test loader. Never imported by main. */
+export function mountMarkerScene(host, { eventBus = new EventBus(), loadAnnotations } = {}) {
   const viewer = new Cesium.Viewer(host, {
     baseLayer: false, baseLayerPicker: false, terrainProvider: new Cesium.EllipsoidTerrainProvider(),
     animation: false, timeline: false, geocoder: false, homeButton: false, sceneModePicker: false,
@@ -31,29 +31,28 @@ export function mountMarkerScene(host) {
   viewer.scene.renderError.addEventListener((_scene, error) => renderErrors.push(String(error.message).slice(0, 300)));
   viewer.camera.lookAt(Cesium.Cartesian3.fromDegrees(-75, 40, 0), new Cesium.HeadingPitchRange(0, -Math.PI / 3, 100000));
   viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
-  const eventBus = new EventBus(); let reads = 0;
+  let reads = 0;
   const records = { id: RESEARCH_ANNOTATIONS_ID, kind: 'astroeye-event-annotations', schemaVersion: 1,
     annotations: [[40.22, -75.34], [40, -75], [39.78, -74.66]].map(([latitude, longitude], i) => ({
       id: `astroeye-note:render-${i}`, schemaVersion: 1, eventId: `synthetic-${i}`,
       chartTimeUtc: `2026-09-15T1${i}:00:00.000Z`, latitude, longitude, note: 'PRIVATE-SYNTHETIC-NOTE',
     })) };
   const layer = createResearchAnnotationLayer({ viewer, eventBus,
-    loadAnnotations: async () => { reads++; return structuredClone(records); },
+    loadAnnotations: async () => { reads++; return loadAnnotations ? loadAnnotations() : structuredClone(records); },
     modeTarget: document.body, canDisplay: () => !document.body.classList.contains('scene-playback-mode'),
   });
   const camera = () => ({ position: Cesium.Cartesian3.clone(viewer.camera.positionWC),
     direction: Cesium.Cartesian3.clone(viewer.camera.directionWC), up: Cesium.Cartesian3.clone(viewer.camera.upWC) });
-  function points() {
-    return records.annotations.map((note) => {
-      const position = Cesium.Cartesian3.fromDegrees(note.longitude, note.latitude, 100);
-      const pixel = viewer.scene.cartesianToCanvasCoordinates(position);
-      if (!pixel) return null;
-      const picked = viewer.scene.pick(pixel);
-      return { id: researchNoteEntityId(note.id), x: pixel.x, y: pixel.y,
-        picked: picked?.id?.id === researchNoteEntityId(note.id) };
-    });
+  function pointFor(note) {
+    const position = Cesium.Cartesian3.fromDegrees(note.longitude, note.latitude, 100);
+    const pixel = viewer.scene.cartesianToCanvasCoordinates(position);
+    if (!pixel) return null;
+    const picked = viewer.scene.pick(pixel);
+    return { id: researchNoteEntityId(note.id), x: pixel.x, y: pixel.y,
+      picked: picked?.id?.id === researchNoteEntityId(note.id) };
   }
-  return { viewer, layer, camera, points, reads: () => reads,
+  const points = () => records.annotations.map(pointFor);
+  return { viewer, layer, camera, points, pointFor, reads: () => reads,
     async coincide() {
       records.annotations.forEach((note) => { note.latitude = 40; note.longitude = -75; });
       await layer.refresh();

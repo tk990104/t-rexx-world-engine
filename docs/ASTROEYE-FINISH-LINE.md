@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 5, 2026, checkpoint 124. Runtime candidate: `7368c55`.
+Updated October 5, 2026, checkpoint 125. Runtime candidate: `7368c55`.
 
-Latest completed outcome: [provider-to-form review](architecture/astroeye-provider-workspace-validation.md)
+Latest completed outcome: [composed event-note editor and real marker renderer](architecture/astroeye-map-workspace-validation.md)
+passes save/edit/confirmed delete/Undo, opt-in privacy, unchanged chart/camera and
+owned-entity cleanup. Existing three-marker render regression also passes; both
+final runs exit 0 with graceful cleanup. QA-only, isolated synthetic records and
+WGS84 reference mesh: no terrain/full-app/embedded-host certification. Embedded
+tooling failed before tab access; the linked short manual host check is next.
+
+Checkpoint 124 outcome: [provider-to-form review](architecture/astroeye-provider-workspace-validation.md)
 and [Director handoff/Stop/Escape/completion](architecture/astroeye-director-workspace-validation.md)
 passed together on normal browser asset transport, first run, exit 0 and graceful
 cleanup. Synthetic responses and simulated camera/style; user data untouched.
@@ -13,7 +20,8 @@ cleanup. Synthetic responses and simulated camera/style; user data untouched.
 | Share restoration/privacy | Checkpoint 123 passes with a separate recipient context | Embedded-host behavior |
 | Provider-to-reviewed-form and manual fallback | Checkpoint 124 passes | Live-provider availability or rights |
 | Director handoff/cancel/completion and private-data exclusion | Checkpoint 124 passes with real engine/adapter | Real camera, terrain, full style or embedded-host behavior |
-| Full app / actual-host map and annotation behavior | **Next active integration check** | Not accepted by the fixture passes above |
+| Composed note editor, storage and real 3D marker layer | Checkpoint 125 passes, including delete/Undo and pixel/picking assertions | Reference mesh only, no terrain/full app/embedded host |
+| Full app / actual-host map and annotation behavior | **Next: bounded manual host check or restored browser tooling** | Not accepted by the fixture passes above |
 
 Tally remains five accepted, ten open. U1/R2 are not closed by this matrix; it
 separates completed composed checks from the specific integration evidence still
@@ -96,9 +104,12 @@ gaps, not enlarge the date/location matrix without a stated acceptance purpose.
 
 ## Execution and reporting
 
-1. Next, verify missing actual-host/map integration for U1/R2. The composed manual,
+1. Next, verify missing actual-host/map integration for U1/R2 using the short host
+   check in the checkpoint 125 evidence. Browser tooling is currently blocked
+   before tab access; do not replace host evidence with repeated fixture runs.
+   The composed manual,
    recovery, share, provider and Director fixture checks passed in checkpoints
-   123–124; do not rerun them by default. Include R2 where the same workflow can
+   123–125; do not rerun them by default. Include R2 where the same workflow can
    supply valid evidence for both.
 2. Resolve outstanding U2/U3 checks in bounded runs. Ask for specific manual host
    actions only when tools cannot supply the required evidence.

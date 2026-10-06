@@ -52,6 +52,15 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 125: [composed note editor and real marker renderer](architecture/astroeye-map-workspace-validation.md)
+passes opt-in save/edit/confirmed delete/Undo, private-label exclusions, unchanged
+chart/camera and owned-entity cleanup in an isolated native-storage profile.
+Existing three-marker render regression passes too; both final runs exit 0 with
+graceful cleanup. Initial harness confirmation stall hit the 60-second watchdog;
+only the test was fixed, not the timeout. Reference mesh only, not terrain/full app.
+Embedded tooling fails before tab access; short manual host check documented.
+Runtime/user records/preview untouched; five accepted, ten open. U1/R2 remain open.
+
 October 5, checkpoint 124: [provider review](architecture/astroeye-provider-workspace-validation.md)
 and [Director handoff](architecture/astroeye-director-workspace-validation.md) pass
 together on normal browser asset transport, first attempt, exit 0. Validation by
