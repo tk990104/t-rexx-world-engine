@@ -52,6 +52,15 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 6, checkpoint 143: [U1 complete workflow accepted](architecture/astroeye-full-workflow-acceptance.md)
+for personal-local standalone Chromium. Four production-app phases pass manual/
+synthetic-provider review, frozen comparison and notes, actual downloads, deletion
+recovery, reviewed import, fresh-browser sharing/reload and actual Director/Cesium
+Stop/Escape/completion. Reuses same-build R2 map evidence. All final runs exit 0
+and clean up gracefully. Eight accepted, seven open; next remaining U2 checks.
+QA/docs only; runtime/build unchanged, embedded preview unverified, no personal
+data/key changes, live providers/microphone, push or deployment.
+
 October 6, checkpoint 142: [R2 event-note workflow accepted](architecture/astroeye-note-workflow-acceptance.md)
 for the user-approved personal-local standalone Chromium target. Four production-app
 phases pass save/edit/delete/Undo, native reload, keyboard opt-in and actual OSM/Re:Earth
@@ -698,10 +707,13 @@ browser retry exits 0 with graceful cleanup after one shutdown-timeout failure.
 U1/U2 remain open: this is seeded-controller data and a mocked viewer, not complete
 manual/provider/share/Director/embedded-host acceptance.
 
-- [ ] **U1 — End-to-end acceptance:** with isolated synthetic data, exercise manual entry,
+- [x] **U1 — End-to-end acceptance:** with isolated synthetic data, exercise manual entry,
   provider-to-reviewed-form handoff, selection/time preview, map, comparison, annotations,
   notes, export/import and deletion recovery. Verify share restoration in a fresh browser
   and the Director event-tour handoff/stop behavior without leaking private research.
+  Accepted in [checkpoint 143](architecture/astroeye-full-workflow-acceptance.md)
+  for standalone Chromium; earlier U1-open statements are historical. U2/U3 and
+  embedded-preview limitations are not waived by this workflow acceptance.
 - [ ] **U2 — Accessible and discoverable:** verify keyboard-only navigation, focus/escape
   behavior, labels/status announcements, reduced motion and narrow/wide layouts. Provide
   a short first-use guide that makes Compare charts, Saved events and Research notes easy

@@ -1,8 +1,16 @@
 # AstroEye finish-line tracker
 
-Updated October 6, 2026, checkpoint 142. Latest changes are local; last hosted CI candidate: `eb1a716`.
+Updated October 6, 2026, checkpoint 143. Latest changes are local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [R2 event-note workflow accepted](architecture/astroeye-note-workflow-acceptance.md).
+Latest completed outcome: [U1 complete workflow accepted](architecture/astroeye-full-workflow-acceptance.md).
+Four production-app Chromium phases pass manual/provider entry, frozen comparison
+and notes, real downloads, delete/Undo, reviewed import, fresh-profile share/restore,
+and actual Director/Cesium Stop/Escape/completion. Reuses same-build R2 map evidence.
+All final runs exit 0 and close gracefully; runtime/build unchanged from `06f1ccd`.
+**Eight accepted, seven open.** Next: remaining U2 usability/accessibility checks.
+No user data/key changes, live provider/microphone use, push or deployment.
+
+Checkpoint 142 outcome: [R2 event-note workflow accepted](architecture/astroeye-note-workflow-acceptance.md).
 The user selected personal-local use and standalone Chromium as the first-release
 browser target; embedded preview remains explicitly unverified. Full production-app
 save/edit/delete/Undo, fresh-process persistence, keyboard opt-in and real OSM/Re:Earth
@@ -139,16 +147,16 @@ cleanup. Synthetic responses and simulated camera/style; user data untouched.
 
 | U1 workflow slice | Current evidence | What this does not certify |
 | --- | --- | --- |
-| Manual charts, comparison, both notes, delete/undo and full backup recovery | Checkpoint 123 passes, including fresh-profile restoration and reload | Native file-save behavior, full app or globe |
-| Share restoration/privacy | Checkpoint 123 passes with a separate recipient context | Embedded-host behavior |
-| Provider-to-reviewed-form and manual fallback | Checkpoint 124 passes | Live-provider availability or rights |
-| Director handoff/cancel/completion and private-data exclusion | Checkpoint 124 passes with real engine/adapter | Real camera, terrain, full style or embedded-host behavior |
+| Manual charts, comparison, both notes, delete/undo and full backup recovery | Checkpoint 143 passes in production app, including actual downloads and recipient reload | Native OS file-picker/dialog behavior and embedded host |
+| Share restoration/privacy | Checkpoint 143 passes in a fresh native profile | Embedded-host behavior |
+| Provider-to-reviewed-form and manual fallback | Checkpoint 143 passes in production app with synthetic responses | Live-provider availability or rights |
+| Director handoff/cancel/completion and private-data exclusion | Checkpoint 143 passes with real engine, camera and styles | Remote map states during playback and embedded host |
 | Composed note editor, storage and real 3D marker layer | Checkpoint 125 passes, including delete/Undo and pixel/picking assertions | Reference mesh only, no terrain/full app/embedded host |
-| Full production-app map and annotation behavior | **Checkpoint 142 passes; R2 accepted on approved standalone Chromium** | Embedded preview, full Director playback and broader U1/U2/U3 remain unverified |
+| Full production-app map and annotation behavior | **Checkpoint 142 passes; R2 accepted on approved standalone Chromium** | Embedded preview and broader U2/U3 remain unverified; Director has separate checkpoint 143 evidence |
 
-Matrix updated at checkpoint 142: seven accepted, eight open. R2 is accepted by
-the linked full-app review; U1 remains open. This separates passing composed
-checks from missing integration evidence. Reuse results unless relevant code changes.
+Matrix updated at checkpoint 143: eight accepted, seven open. R2 and U1 are
+accepted by their linked full-app reviews for standalone Chromium. Embedded
+preview and broader U2/U3 remain unverified. Reuse results unless relevant code changes.
 
 Checkpoint 123 outcome: [composed everyday workflow and fresh-profile recovery](architecture/astroeye-everyday-workflow.md)
 passed, together with a current share-link regression, using normal browser asset
@@ -170,7 +178,7 @@ The embedded preview is explicitly unverified; no public/LAN deployment is appro
 Work through a complete acceptance outcome when safely possible instead of asking
 the user to continue after each small slice; pause for genuine missing authority.
 
-**Seven release checks accepted; eight open.** This is an acceptance tally, not a
+**Eight release checks accepted; seven open.** This is an acceptance tally, not a
 percentage of implementation complete. Many open checks concern verification of
 already implemented functionality. The detailed [release checklist](ASTROEYE-RELEASE-CHECKLIST.md)
 remains authoritative; earlier evidence is tied to its reviewed candidate and
@@ -183,7 +191,6 @@ must be rechecked when affected by changes.
 | A1: chart angles and houses | Accepted independent reference coverage, including polar/boundary cases | Numerical candidate exists, but its reference redistribution disposition and remaining coverage are not accepted. Do not publish that local pack. |
 | A2: planetary hours | Final independent accuracy decision | Consolidated below. Short-hour precision and daily classification remain unresolved; more passing internal tests do not close them. |
 | V3: live voice | Authorized live smoke test and complete failure/interaction review | Offline implementation evidence exists. Obtain specific consent before microphone/provider transmissions or metered usage. Manual operation must remain usable. |
-| U1: complete user workflow | Manual/provider entry through charts, comparison, notes, backup/recovery, sharing and Director handoff | **Next active work package.** Consolidate existing scenario evidence and verify the missing composed paths using synthetic data. |
 | U2: usability/accessibility | Keyboard, focus, status, reduced motion and narrow/wide behavior | Reuse valid evidence; distinguish DOM checks from actual screen-reader and host behavior. Record manual-only checks explicitly. |
 | U3: performance | Reviewed collection limits and timing budgets with shared-state safety | Baselines exist; finish actual-host/representative measurements and explicitly accept supported limits. Do not claim that 1,000-event test runs establish a device guarantee. |
 | L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Provider/backup limits, OpenAI error/cache boundaries, metadata/error privacy, token/HUD response bounds, HUD/diagnostic inbound reads and local voice origin access addressed (129–136). Global connection limits, remaining routes, public authentication and deployment-specific rights remain open. |
@@ -192,7 +199,8 @@ must be rechecked when affected by changes.
 Accepted checks: A3 supported-range/reference candidate; V1 bounded commands;
 V2 voice transport integration; R1 annotation record contract; R3 annotation
 recovery/privacy; L1 reproducible candidate (eb1a716, checkpoint 128); R2 event-note
-workflow (personal-local standalone Chromium, checkpoint 142). These are
+workflow (personal-local standalone Chromium, checkpoint 142); U1 complete workflow
+(same target, checkpoint 143). These are
 scoped decisions, not whole-release certification.
 
 ## Consolidated A2 decision
@@ -232,11 +240,10 @@ gaps, not enlarge the date/location matrix without a stated acceptance purpose.
 
 ## Execution and reporting
 
-1. Next, consolidate the missing full-app U1 paths on the user-approved standalone
-   Chromium target. R2's full production-app/native-storage/real-terrain result
-   is accepted; reuse it and unchanged manual, recovery, share, provider and
-   Director fixture checks from checkpoints 123–125. Embedded browser tooling
-   remains blocked before tab access and that preview remains unverified.
+1. R2 and U1 are accepted for the user-approved standalone Chromium target.
+   Reuse checkpoints 142–143 full-app/native-storage/map/download/Director evidence;
+   do not rerun unchanged scenarios instead of closing remaining U2/U3 gaps.
+   Embedded browser tooling remains blocked and that preview remains unverified.
 2. Resolve outstanding U2/U3 checks in bounded runs. Ask for specific manual host
    actions only when tools cannot supply the required evidence.
 3. Return to the precise A1/A2 evidence/rights decisions and authorized V3 check.
