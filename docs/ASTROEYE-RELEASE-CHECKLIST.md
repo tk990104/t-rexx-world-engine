@@ -52,6 +52,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 6, checkpoint 139: [route/key inventory](architecture/astroeye-route-inventory.md)
+covers 31 application API mounts (not every subroute/Vite internal). S2 inventory
+is complete; five bounded finding groups remain, starting with the Google Places
+pair and GBFS transport. Coverage/diff/local-link checks pass; this is not security
+acceptance. Six accepted, nine open. No runtime changes, tests/build rerun, live
+provider/microphone, user data/key inspection, push or deployment.
+
 October 6, checkpoint 138: [OpenRouter safeguards](architecture/astroeye-openrouter-security.md)
 complete L2/S1's implementation slice: local status/chat guard, bounded uploads and
 provider responses, a shared fallback deadline and generic failures. All 67 focused

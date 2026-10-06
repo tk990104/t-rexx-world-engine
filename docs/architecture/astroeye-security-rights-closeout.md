@@ -11,6 +11,11 @@ fallback deadline and generic errors. All 67 focused tests pass; final build
 result is in the finish-line tracker. The S1 row below preserves the initial
 finding, not the current code. S2 is next; S2/S3 and R1–R4 remain open.
 
+Checkpoint 139 update: [S2 route inventory](astroeye-route-inventory.md) covers
+31 application API mounts and the source credential boundary. Inventory is
+complete, remediation is not: five finding groups remain. Google Places is next,
+then GBFS. S2/S3 and rights outcomes stay open; no runtime or deployment change.
+
 ## What is already verified
 
 Reuse the scoped evidence in checkpoints 129–136: sports upstream size bounds,

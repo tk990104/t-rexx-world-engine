@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 6, 2026, checkpoint 138. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
+Updated October 6, 2026, checkpoint 139. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [OpenRouter fallback safeguards](architecture/astroeye-openrouter-security.md).
+Latest completed outcome: [31-mount route/key inventory](architecture/astroeye-route-inventory.md).
+S2's inventory pass is complete, not its remediation or security acceptance.
+Five finding groups have concrete stopping conditions; Google Places is the next
+coding slice, followed by GBFS. Existing reviewed safeguards are not rerun by default.
+Six accepted, nine open. Documentation/coverage/link checks only; no runtime,
+key/data changes, test/build rerun, live calls/microphone, push or deployment.
+
+Checkpoint 138 outcome: [OpenRouter fallback safeguards](architecture/astroeye-openrouter-security.md).
 Local access checks, upload/response caps, shared fallback deadline and safe errors
 complete the S1 implementation slice. All 67 focused tests pass (29.659s).
 Production build passes (263 modules, 17.81s). Six accepted, nine open; S1 is not all of L2.
