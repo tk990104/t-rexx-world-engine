@@ -52,6 +52,14 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 127: [isolated clean Windows candidate](architecture/astroeye-clean-candidate.md)
+passes npm ci, all 3,413 unit/allocation tests, seven CI/runner checks and production
+build for 89468fc (Node 24.21.0/npm 11.19.0). The overlay allocation file initially
+hit a too-short harness limit; its bounded resume passes with unchanged budgets.
+No passing install/unit stages repeated. Lockfile unchanged, known install/build
+warnings retained. L1's local portion is complete, not hosted CI or actual-host
+acceptance. Five accepted, ten open; no push/deployment/user-data changes.
+
 October 5, checkpoint 126: [release CI foundation](architecture/astroeye-release-ci.md)
 adds the previously missing Windows/Linux workflow with pinned Node/actions,
 read-only permissions, clean locked install, complete unit/allocation tests and

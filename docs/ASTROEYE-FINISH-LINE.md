@@ -1,8 +1,16 @@
 # AstroEye finish-line tracker
 
-Updated October 5, 2026, checkpoint 126. Runtime candidate: `7368c55`.
+Updated October 5, 2026, checkpoint 127. Runtime candidate: `7368c55`.
 
-Latest completed outcome: [release CI foundation](architecture/astroeye-release-ci.md)
+Latest completed outcome: [clean Windows candidate verification](architecture/astroeye-clean-candidate.md)
+passes locked installation, all 3,413 unit/allocation tests, seven CI/runner checks
+and production build from an isolated archive of `89468fc`. The initial overlay
+run hit the helper's too-short limit; only that step/build were resumed with a
+five-minute cap and unchanged allocation budgets. No source/data changes or remote
+CI execution. The local clean-install portion of L1 is complete; hosted CI and
+actual-host acceptance still remain. Five accepted, ten open.
+
+Checkpoint 126 outcome: [release CI foundation](architecture/astroeye-release-ci.md)
 adds pinned-Node Windows/Linux clean-install, complete unit/allocation and build
 jobs, with read-only permissions and execution limits. All seven local YAML/runner
 contract tests pass. No GitHub run, clean install, push or deployment occurred;
@@ -66,7 +74,7 @@ must be rechecked when affected by changes.
 | U1: complete user workflow | Manual/provider entry through charts, comparison, notes, backup/recovery, sharing and Director handoff | **Next active work package.** Consolidate existing scenario evidence and verify the missing composed paths using synthetic data. |
 | U2: usability/accessibility | Keyboard, focus, status, reduced motion and narrow/wide behavior | Reuse valid evidence; distinguish DOM checks from actual screen-reader and host behavior. Record manual-only checks explicitly. |
 | U3: performance | Reviewed collection limits and timing budgets with shared-state safety | Baselines exist; finish actual-host/representative measurements and explicitly accept supported limits. Do not claim that 1,000-event test runs establish a device guarantee. |
-| L1: reproducible release candidate | Clean install, CI, build and applicable tests on one candidate | CI workflow now implemented and locally contract-tested; actual clean-install/remote execution and candidate consolidation remain. Push/dispatch not performed. |
+| L1: reproducible release candidate | Clean install, CI, build and applicable tests on one candidate | CI implemented; isolated Windows install, 3,413 tests and build pass for 89468fc. Hosted Windows/Linux execution and final candidate consolidation remain. Push/dispatch not performed. |
 | L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Resolve actual deployment-specific rights and configuration; no license purchase or redistribution is implied. |
 | L3: deployment and handoff | Approved target smoke test, backup/restore, rollback and release notes | Target and publication require explicit approval. No deployment or tag is preauthorized. |
 
@@ -122,8 +130,9 @@ gaps, not enlarge the date/location matrix without a stated acceptance purpose.
    actions only when tools cannot supply the required evidence.
 3. Return to the precise A1/A2 evidence/rights decisions and authorized V3 check.
    They remain release requirements, not reasons to repeat unrelated edge tests.
-4. Consolidate L1/L2, then seek target/publication approval for L3. The L1 workflow
-   foundation is now implemented; seek authorization before pushing/running it.
+4. Consolidate L1/L2, then seek target/publication approval for L3. L1's workflow
+   and local clean-install/full-test/build check are complete; seek authorization
+   before pushing/running hosted CI. Reuse the candidate results unless affected.
 
 Do not add feature scope or silently waive gates. Reuse unchanged evidence;
 rerun checks affected by an implementation change. No browser/build rerun is
