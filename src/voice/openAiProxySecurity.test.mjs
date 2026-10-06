@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { Readable } from 'node:stream';
 import { openAiRealtimeProxy } from '../../vite.config.js';
+import { VOICE_PROVIDER_MAX_BYTES } from '../../server/voiceProviderResponse.js';
 
 const TOKEN = '/api/realtime/token';
 const HUD = '/api/openai/hud-summary';
@@ -35,6 +36,26 @@ async function invoke(handlers, route, { method = route === TOKEN ? 'GET' : 'POS
 }
 
 for (const hook of ['configureServer', 'configurePreviewServer']) {
+  for (const route of [TOKEN, HUD]) {
+    test(`${hook}: ${route} returns safe failures for oversized/stalled replies and permits retry`, async () => {
+      let attempt = 0;
+      const handlers = routes({ upstreamTimeoutMs: 20, fetchImpl: async (_url, options) => {
+        assert.equal(options.redirect, 'error');
+        assert.ok(options.signal instanceof AbortSignal);
+        attempt++;
+        if (attempt === 1) return new Response(' '.repeat(VOICE_PROVIDER_MAX_BYTES + 1));
+        if (attempt === 2) return new Promise(() => {});
+        return Response.json(route === TOKEN ? { value: 'temporary-credential' } : { output_text: 'One two three four five' });
+      } }, hook);
+      for (let failure = 0; failure < 2; failure++) {
+        const result = await invoke(handlers, route);
+        assert.equal(result.status, 502);
+        assert.equal(result.body.includes(PRIVATE), false);
+      }
+      assert.equal((await invoke(handlers, route)).status, 200);
+      assert.equal(attempt, 3);
+    });
+  }
   test(`${hook}: token success preserves the temporary credential and tier echo without caching`, async () => {
     let request;
     const body = JSON.stringify({ value: 'synthetic-ephemeral-value', expires_at: 12345 });

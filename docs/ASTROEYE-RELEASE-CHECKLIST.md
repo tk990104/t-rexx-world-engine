@@ -52,6 +52,13 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 5, checkpoint 134: [voice response limits](architecture/astroeye-voice-response-limits.md)
+bound token/HUD upstream replies to 256 KiB and one 15-second fetch/body deadline,
+reject redirects, cancel failures/late responses and preserve generic no-store
+errors with retry. All 43 focused tests and build pass (263 modules, 1m 53s). Six
+accepted, nine open; L2 access/origin, inbound-request and rights review remains.
+No live API/microphone, real-key/data changes, publication or new hosted CI.
+
 October 5, checkpoint 133: [browser error-history privacy](architecture/astroeye-voice-error-privacy.md)
 replaces persistent raw-error records with a 30-entry memory-only history of fixed
 categories/guidance and connection states. Report copies are isolated; console/UI

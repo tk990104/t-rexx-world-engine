@@ -1,8 +1,15 @@
 # AstroEye finish-line tracker
 
-Updated October 5, 2026, checkpoint 133. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
+Updated October 5, 2026, checkpoint 134. Latest security hardening is local; last hosted CI candidate: `eb1a716`.
 
-Latest completed outcome: [browser voice error privacy](architecture/astroeye-voice-error-privacy.md).
+Latest completed outcome: [voice provider response limits](architecture/astroeye-voice-response-limits.md).
+Token/HUD requests now reject redirects and enforce a 256 KiB body cap plus one
+15-second fetch/body deadline. Cancellation, safe failure and retry are covered by
+all 43 passing focused tests. Production build passes (263 modules, 1m 53s). Six accepted, nine open;
+next access/origin and inbound-request review, with rights decisions still open.
+No live provider/microphone, key/data changes, push, deployment or new hosted CI.
+
+Checkpoint 133 outcome: [browser voice error privacy](architecture/astroeye-voice-error-privacy.md).
 Error history is now 30 immutable, allowlisted records in memory; no legacy-history
 reads/writes, raw message/extra retention or shared report objects. Existing data
 is preserved. All 159 focused tests and production build pass (263 modules, 25.15s).
@@ -116,7 +123,7 @@ must be rechecked when affected by changes.
 | U1: complete user workflow | Manual/provider entry through charts, comparison, notes, backup/recovery, sharing and Director handoff | **Next active work package.** Consolidate existing scenario evidence and verify the missing composed paths using synthetic data. |
 | U2: usability/accessibility | Keyboard, focus, status, reduced motion and narrow/wide behavior | Reuse valid evidence; distinguish DOM checks from actual screen-reader and host behavior. Record manual-only checks explicitly. |
 | U3: performance | Reviewed collection limits and timing budgets with shared-state safety | Baselines exist; finish actual-host/representative measurements and explicitly accept supported limits. Do not claim that 1,000-event test runs establish a device guarantee. |
-| L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Provider/backup limits, OpenAI error/cache boundaries, metadata logging and memory-only error history fixed (129–133). Voice response bounds, access/origin policy, remaining routes and deployment-specific rights remain open. |
+| L2: security and rights | Current route/input/secret/provider/data/asset/recording review | Provider/backup limits, OpenAI error/cache boundaries, metadata/error privacy and token/HUD response bounds addressed (129–134). Access/origin and inbound-request policy, remaining routes and deployment-specific rights remain open. |
 | L3: deployment and handoff | Approved target smoke test, backup/restore, rollback and release notes | Target and publication require explicit approval. No deployment or tag is preauthorized. |
 
 Accepted checks: A3 supported-range/reference candidate; V1 bounded commands;

@@ -47,6 +47,7 @@ import { defineConfig, loadEnv } from 'vite';
 import cesium from 'vite-plugin-cesium';
 import { sportsScheduleProxy } from './server/sportsScheduleProxy.js';
 import { createVoiceDiagnosticHandler, createVoiceDiagnosticSink } from './server/voiceDiagnostics.js';
+import { fetchVoiceProviderText, VOICE_PROVIDER_TIMEOUT_MS } from './server/voiceProviderResponse.js';
 import { normalizeRadioCountryInput } from './src/data/radioCountry.js';
 import {
   normalizeRegionalArticles,
@@ -5902,7 +5903,7 @@ function trackBackfillProxies() {
  * Keeps OPENAI_API_KEY server-side while the browser connects to the
  * Realtime API over WebRTC with a short-lived secret.
  */
-export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = process.env, rateLimiter = openAiRateLimiter } = {}) {
+export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = process.env, rateLimiter = openAiRateLimiter, upstreamTimeoutMs = VOICE_PROVIDER_TIMEOUT_MS } = {}) {
   function install(middlewares) {
     middlewares.use('/api/openai/hud-summary', async (req, res) => {
       res.setHeader('Cache-Control', 'no-store');
@@ -5936,7 +5937,7 @@ export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = proces
       try {
         const body = await readRequestBody(req, 64 * 1024);
         const context = JSON.parse(body || '{}');
-        const response = await fetchImpl('https://api.openai.com/v1/responses', {
+        const { response, text } = await fetchVoiceProviderText('https://api.openai.com/v1/responses', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -5955,16 +5956,15 @@ export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = proces
             reasoning: { effort: 'minimal' },
             max_output_tokens: 100,
           }),
-        });
+        }, { fetchImpl, timeoutMs: upstreamTimeoutMs });
         if (!response.ok) {
           // Provider errors may echo credentials or request context. Never forward them.
-          void response.body?.cancel().catch(() => {});
           res.statusCode = response.status >= 400 && response.status <= 599 ? response.status : 502;
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({ summary: null, error: 'OpenAI HUD summary request failed' }));
           return;
         }
-        const data = await response.json();
+        const data = JSON.parse(text);
         const summary = toFiveWordHudSummary(extractOpenAiResponseText(data));
         res.statusCode = summary ? 200 : 502;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -6139,7 +6139,7 @@ export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = proces
       };
 
       try {
-        const response = await fetchImpl('https://api.openai.com/v1/realtime/client_secrets', {
+        const { response, text: body } = await fetchVoiceProviderText('https://api.openai.com/v1/realtime/client_secrets', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -6147,15 +6147,13 @@ export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = proces
             'OpenAI-Safety-Identifier': 'gev-local-dev',
           },
           body: JSON.stringify(sessionConfig),
-        });
+        }, { fetchImpl, timeoutMs: upstreamTimeoutMs });
         if (!response.ok) {
-          void response.body?.cancel().catch(() => {});
           res.statusCode = response.status >= 400 && response.status <= 599 ? response.status : 502;
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({ error: 'Failed to create Realtime token' }));
           return;
         }
-        const body = await response.text();
         res.statusCode = response.status;
         res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
         // Which tier/model this secret was actually minted for. The upstream
