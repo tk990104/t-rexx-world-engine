@@ -52,6 +52,15 @@ This is bounded overlap improvement, not terrain/embedded-host or R1/R2/R3 accep
 
 ## Finish line
 
+October 6, checkpoint 136: [local voice request access](architecture/astroeye-voice-request-access.md)
+guards all three voice routes in dev/preview before downstream work. Requires a
+loopback peer/Host/port and matching browser-origin context; rejects foreign,
+same-site, missing/contradictory context and navigation without provider/log work.
+Local fetch remains supported; remote/custom-host voice intentionally fails closed.
+All 52 focused tests pass (51.161s); production build passes (263 modules, 58.63s).
+Six accepted, nine open. L2 still needs remaining-route/resource and rights review;
+this is not public authentication. No keys/data/live calls/microphone/push/deployment.
+
 October 6, checkpoint 135: [incoming voice body limits](architecture/astroeye-voice-request-limits.md)
 add one 10-second deadline, fixed buffers at existing byte caps and abort/close/error
 cleanup for HUD/diagnostic uploads. Failed reads destroy incomplete requests before

@@ -14,7 +14,7 @@ const record = { event: 'tool.result', status: 'executing', payload: { text: PRI
 
 async function invoke(handler, method = 'POST') {
   const response = { statusCode: 200, headers: {}, setHeader(key, value) { this.headers[key] = value; }, end(body = '') { this.body = body; } };
-  await handler({ method }, response);
+  await handler({ method, headers: { host: '127.0.0.1:5173', 'sec-fetch-site': 'same-origin' }, socket: { remoteAddress: '127.0.0.1', localPort: 5173 } }, response);
   assert.equal(response.headers['Cache-Control'], 'no-store');
   return response;
 }

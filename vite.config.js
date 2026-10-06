@@ -49,6 +49,7 @@ import { sportsScheduleProxy } from './server/sportsScheduleProxy.js';
 import { createVoiceDiagnosticHandler, createVoiceDiagnosticSink } from './server/voiceDiagnostics.js';
 import { fetchVoiceProviderText, VOICE_PROVIDER_TIMEOUT_MS } from './server/voiceProviderResponse.js';
 import { readVoiceRequestBody, VOICE_REQUEST_TIMEOUT_MS } from './server/voiceRequestBody.js';
+import { withLocalVoiceAccess } from './server/voiceRequestAccess.js';
 import { normalizeRadioCountryInput } from './src/data/radioCountry.js';
 import {
   normalizeRegionalArticles,
@@ -5906,7 +5907,8 @@ function trackBackfillProxies() {
  */
 export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = process.env, rateLimiter = openAiRateLimiter, upstreamTimeoutMs = VOICE_PROVIDER_TIMEOUT_MS, requestTimeoutMs = VOICE_REQUEST_TIMEOUT_MS } = {}) {
   function install(middlewares) {
-    middlewares.use('/api/openai/hud-summary', async (req, res) => {
+    const use = (route, handler) => middlewares.use(route, withLocalVoiceAccess(handler));
+    use('/api/openai/hud-summary', async (req, res) => {
       res.setHeader('Cache-Control', 'no-store');
       if (req.method !== 'POST') {
         res.statusCode = 405;
@@ -5981,13 +5983,13 @@ export function openAiRealtimeProxy({ fetchImpl = globalThis.fetch, env = proces
       }
     });
 
-    middlewares.use('/api/realtime/debug-log', createVoiceDiagnosticHandler({
+    use('/api/realtime/debug-log', createVoiceDiagnosticHandler({
       enabled: () => env.GEV_VOICE_DIAGNOSTICS === '1',
       readBody: (req, limit) => readVoiceRequestBody(req, limit, { timeoutMs: requestTimeoutMs }),
       append: createVoiceDiagnosticSink(REALTIME_DEBUG_LOG_DIR),
     }));
 
-    middlewares.use('/api/realtime/token', async (req, res) => {
+    use('/api/realtime/token', async (req, res) => {
       // Ephemeral credentials must never be retained by HTTP caches, on any branch.
       res.setHeader('Cache-Control', 'no-store');
       if (req.method !== 'GET' && req.method !== 'POST') {

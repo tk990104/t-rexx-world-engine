@@ -22,7 +22,7 @@ function routes(options = {}, hook = 'configureServer') {
 
 async function invoke(handlers, route, { method = route === TOKEN ? 'GET' : 'POST', body = '{}', url = '/' } = {}) {
   const req = Readable.from([Buffer.from(body)]);
-  Object.assign(req, { method, url, headers: {}, socket: { remoteAddress: '127.0.0.1' } });
+  Object.assign(req, { method, url, headers: { host: '127.0.0.1:5173', 'sec-fetch-site': 'same-origin' }, socket: { remoteAddress: '127.0.0.1', localPort: 5173 } });
   const result = { status: 200, headers: {}, body: '', ended: false };
   const res = {
     set statusCode(value) { result.status = value; },

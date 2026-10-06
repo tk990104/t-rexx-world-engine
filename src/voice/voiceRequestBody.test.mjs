@@ -97,14 +97,15 @@ for (const hook of ['configureServer', 'configurePreviewServer']) {
       requestTimeoutMs: 30, fetchImpl: async () => { calls++; return Response.json({ output_text: 'one two three four five' }); },
     })[hook]({ middlewares: { use: (path, handler) => handlers.set(path, handler) } });
     const handler = handlers.get('/api/openai/hud-summary');
-    const req = new PassThrough(); Object.assign(req, { method: 'POST', headers: {} });
+    const requestContext = { method: 'POST', headers: { host: '127.0.0.1:5173', 'sec-fetch-site': 'same-origin' }, socket: { remoteAddress: '127.0.0.1', localPort: 5173 } };
+    const req = new PassThrough(); Object.assign(req, requestContext);
     const res = response();
     const pending = handler(req, res);
     req.write(Buffer.from('{"unfinished":"'));
     await pending;
     assert.equal(calls, 0); assert.equal(req.destroyed, true);
     assert.equal(res.statusCode, 502); assert.equal(res.headers['Cache-Control'], 'no-store');
-    const retry = Readable.from([Buffer.from('{}')]); Object.assign(retry, { method: 'POST', headers: {} });
+    const retry = Readable.from([Buffer.from('{}')]); Object.assign(retry, requestContext);
     const success = response(); await handler(retry, success);
     assert.equal(success.statusCode, 200); assert.equal(calls, 1);
   });
