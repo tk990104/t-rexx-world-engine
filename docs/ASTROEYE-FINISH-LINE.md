@@ -1,6 +1,17 @@
 # AstroEye finish-line tracker
 
-Updated October 6, 2026, checkpoint 145. Latest changes are local; last hosted CI candidate: `eb1a716`.
+Updated October 10, 2026, checkpoint 146. Latest changes are local; last hosted CI candidate: `eb1a716`.
+
+Checkpoint 146: the U3 retry is blocked at Chromium startup with Windows access
+denied (`3221225506`); no performance measurement ran. Current session policy
+rejects sandbox elevation. Advanced independent L2 work: the ADS-B military
+route no longer reads/relays provider error bodies, keeps errors no-store, and
+preserves successful cache/retry/stale fallback. Ten focused offline tests pass
+for development and preview. Production build passes (263 modules, 14.62 seconds),
+with existing browser-externalization and large-chunk warnings.
+[F3 scope and remaining routes](architecture/astroeye-route-inventory.md).
+**Nine accepted, six open.** U3 and L2 remain open; next executable security work
+is the remaining F3 raw errors/metadata. Browser work resumes when launch is allowed.
 
 Latest completed outcome: [U2 usability/accessibility accepted](architecture/astroeye-usability-acceptance.md).
 Wide/narrow keyboard, visible focus, browser accessibility labels/live status,

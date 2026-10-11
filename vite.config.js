@@ -5629,47 +5629,51 @@ function cctvProxy() {
  *
  * @returns {import('vite').Plugin}
  */
-function adsbLolProxy() {
+export function adsbLolProxy({ fetchImpl = globalThis.fetch, now = Date.now } = {}) {
   /** @type {string|null} Cached upstream JSON body. */
   let _cache = null;
   /** @type {number} Epoch-ms when the cache was populated. */
   let _cacheAt = 0;
   /** Response cache TTL (ms). */
   const CACHE_MS = 12000;
-  return {
-    name: 'adsblol-proxy',
-    configureServer(server) {
+  function install(server) {
       server.middlewares.use('/api/adsblol/mil', async (req, res) => {
         try {
-          const now = Date.now();
-          if (_cache && now - _cacheAt < CACHE_MS) {
+          const requestedAt = now();
+          if (_cache && requestedAt - _cacheAt < CACHE_MS) {
             res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-ADS-B-Cache': 'HIT' });
             res.end(_cache);
             return;
           }
-          const upstream = await fetch('https://api.adsb.lol/v2/mil', {
+          const upstream = await fetchImpl('https://api.adsb.lol/v2/mil', {
             headers: { 'User-Agent': 'gods-eye-view-adsblol-proxy/1.0' },
           });
-          const body = await upstream.text();
-          if (upstream.ok) {
-            _cache = body;
-            _cacheAt = now;
+          if (!upstream.ok) {
+            // Never read or relay provider error bodies: they may contain
+            // credential-bearing URLs or internal diagnostics. Cancellation
+            // cannot delay the fixed failure response or a subsequent retry.
+            try { void Promise.resolve(upstream.body?.cancel()).catch(() => {}); } catch { /* no-op */ }
+            res.writeHead(upstream.status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-ADS-B-Cache': 'MISS' });
+            res.end(JSON.stringify({ error: 'ADS-B upstream request failed' }));
+            return;
           }
+          const body = await upstream.text();
+          _cache = body;
+          _cacheAt = requestedAt;
           res.writeHead(upstream.status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-ADS-B-Cache': 'MISS' });
           res.end(body);
-        } catch (e) {
-          console.error('[adsb.lol Proxy]', e.message);
+        } catch {
           if (_cache) {
-            res.writeHead(200, { 'Content-Type': 'application/json', 'X-ADS-B-Cache': 'STALE' });
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-ADS-B-Cache': 'STALE' });
             res.end(_cache);
             return;
           }
-          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.writeHead(502, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
           res.end(JSON.stringify({ error: 'ADS-B proxy error' }));
         }
       });
-    },
-  };
+  }
+  return { name: 'adsblol-proxy', configureServer: install, configurePreviewServer: install };
 }
 
 /**

@@ -62,6 +62,16 @@ full-suite or hosted-CI run.
 
 ## Open boundary
 
+October 10 retry: shell execution recovered, but
+`node scripts/qa-astroeye-full-app-workflow.mjs --phase=performance-1000 --session=session-VgZTGW`
+still exited 1 at startup: Chromium launch code `3221225506` (Windows access
+denied). No page or performance measurement ran; cleanup reported `not-owned`.
+The current session automatically rejects sandbox-elevation requests. This is
+the current blocker, not a newly verified account usage limit. Idle/active runs
+were not repeated because they use the same unavailable browser launcher.
+U3 remains open. Retry after browser execution is permitted; if the production
+fingerprint changes, create a fresh workflow session first.
+
 The `performance-1000` production-app run was attempted but could not start in
 the current restricted session: standalone Chromium launch is unavailable without
 the elevated runner, and the elevation review is blocked by the account usage

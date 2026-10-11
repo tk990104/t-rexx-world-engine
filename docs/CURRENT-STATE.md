@@ -4,6 +4,16 @@ Updated: August 24, 2026
 
 ## T-Rexx AstroEye addition — September 12, 2026
 
+October 10, checkpoint 146: Chromium still cannot launch in this restricted
+session (Windows code `3221225506`); the 1,000-event run stopped before page
+startup and U3 remains open. Sandbox elevation is disabled by current session
+policy; an account usage-limit cause was not re-established. Advanced L2's F3
+ADS-B military error boundary with ten passing offline development/preview
+tests: unread/canceled non-OK bodies, fixed no-store errors and preserved success,
+retry and stale-cache behavior. Other F3 routes and F4/F5 remain outstanding.
+Nine accepted, six open. Changes are local; no user records/keys or live provider
+calls, push or deployment. See the finish-line tracker for next work.
+
 October 6, checkpoint 145: U3 remains open. The production app's isolated 100-event
 benchmark passes with a provisional 500 ms median/2,000 ms maximum action budget,
 25-row/100-marker caps, varied cache-miss charts, and exact records/camera/layer/

@@ -12,6 +12,16 @@ with local access/input checks, bounded provider reads and safe no-store errors;
 
 ## Scope and counting
 
+October 10, checkpoint 146: the ADS-B military portion of F3 is fixed. Non-OK
+upstream bodies are canceled unread and replaced with a fixed JSON error while
+preserving the upstream status. Exception failures are fixed, no-store responses;
+success cache/retry/stale behavior remains intact. Development and preview share
+the same handler. Ten offline tests in `src/data/adsbLolProxySecurity.test.mjs`
+pass, including synthetic secret/path errors, rejecting/stalled cancellation,
+successful retry, cache hits and stale fallback. No provider call is made.
+F3 is still open for the other listed routes and metadata; F4 response/deadline
+bounds and F5 access/method review are not covered by this error-only fix.
+
 Checkpoint 141 update: [F2 GBFS implemented](astroeye-gbfs-security.md) with a
 5 MiB actual-byte cap, 12-second whole-response deadline, redirect rejection,
 cleanup and fixed no-store failures. All 52 focused tests pass. F1/F2 are now
